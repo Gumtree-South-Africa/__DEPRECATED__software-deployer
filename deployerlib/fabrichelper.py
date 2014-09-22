@@ -3,6 +3,7 @@ import logging
 from deployerlib.exceptions import DeployerException
 
 from fabric.api import env
+from fabric.state import output
 from fabric.tasks import execute
 from fabric.contrib import files
 from fabric.context_managers import settings
@@ -14,6 +15,7 @@ class FabricHelper(object):
 
     def __init__(self, username=None, pool_size=0):
         env.warn_only = True
+        output.everything = False
 
         if username:
             env.user = username
@@ -54,20 +56,18 @@ class FabricHelper(object):
         """Upload a file to a remote host"""
 
         with settings(**fabric_settings):
-            res = execute(put, local_file, remote_dir)
-
-        return res
+            return execute(put, local_file, remote_dir)
 
     def file_exists(self, remote_file, **fabric_settings):
         """Check whether a file exists on a remote server"""
 
         with settings(**fabric_settings):
-            res = execute(files.exists, remote_file)
-
-        return res
+            return execute(files.exists, remote_file)
 
     def execute_remote(self, command, use_sudo=False, **fabric_settings):
         """Execute a command via fabric"""
+
+        logging.debug('Executing {0} on {1}'.format(command, env.host))
 
         with settings(**fabric_settings):
             if use_sudo:

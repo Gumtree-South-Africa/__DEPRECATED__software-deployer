@@ -25,6 +25,12 @@ class Service(object):
         self.version = self.get_version_from_packagename(self.packagename)
         self.sha, self.timestamp = self.split_version(self.version)
 
+        if self.upload_location:
+            self.remote_filename = os.path.join(self.upload_location, self.filename)
+
+        if self.install_location:
+            self.install_destination = os.path.join(self.install_location, self.packagename)
+
     def __str__(self):
         """Show readable representation"""
         return self.servicename

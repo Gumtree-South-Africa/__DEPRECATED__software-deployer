@@ -40,7 +40,7 @@ class Uploader(object):
 
         if not self.target_hosts:
             logging.info('{0} is not needed on any hosts'.format(self.service.filename))
-            return True
+            return
 
         logging.debug('Uploading {0} to {1} on {2}'.format(
           self.service.fullpath, self.service.upload_location, ', '.join(self.target_hosts)))
