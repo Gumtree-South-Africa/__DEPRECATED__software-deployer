@@ -7,10 +7,13 @@ from deployerlib.exceptions import DeployerException
 class Service(object):
     """Manage information about a package and the service it provides"""
 
-    def __init__(self, filename):
+    def __init__(self, filename, upload_location='/opt/tarballs', install_location='/opt/webapps'):
         logging.info('Creating service from file: {0}'.format(filename))
 
         self.verify_file_access(filename)
+
+        self.upload_location = upload_location
+        self.install_location = install_location
 
         self.fullpath = os.path.abspath(filename)
         self.filename = os.path.basename(self.fullpath)
