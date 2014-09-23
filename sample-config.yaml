@@ -1,0 +1,114 @@
+ams01-backend:
+  hosts: [mp-be001.aurora.ams01, mp-be002.aurora.ams01, mp-be003.aurora.ams01, mp-be004.aurora.ams01,
+    mp-be005.aurora.ams01, mp-be006.aurora.ams01, mp-be007.aurora.ams01, mp-be008.aurora.ams01]
+  user: mpdeploy
+ams01-be-loadbalancer: {api_password: api_user, api_user: api_user, ipaddress: 10.32.230.8}
+ams01-fe-loadbalancer: {api_password: api_user, api_user: api_user, ipaddress: 10.32.230.4}
+ams01-frontend:
+  hosts: [mp-fe001.aurora.ams01, mp-fe002.aurora.ams01, mp-fe003.aurora.ams01, mp-fe004.aurora.ams01,
+    mp-fe005.aurora.ams01, mp-fe006.aurora.ams01, mp-fe007.aurora.ams01, mp-fe008.aurora.ams01,
+    mp-fe009.aurora.ams01, mp-fe010.aurora.ams01, mp-fe011.aurora.ams01, mp-fe012.aurora.ams01]
+  user: mpdeploy
+ams01-ranking:
+  hosts: [rank001.aurora.ams01, rank002.aurora.ams01]
+  user: mpdeploy
+ams01-scrubber:
+  hosts: [mp-scrubber001.aurora.ams01, mp-scrubber002.aurora.ams01]
+  user: mpdeploy
+datacenters:
+  datacenters: [ams01, fra01]
+fra01-backend:
+  hosts: [mp-be001.aurora.fra01, mp-be002.aurora.fra01, mp-be003.aurora.fra01, mp-be004.aurora.fra01,
+    mp-be005.aurora.fra01, mp-be006.aurora.fra01]
+  user: mpdeploy
+fra01-be-loadbalancer: {api_password: api_user, api_user: api_user, ipaddress: 10.34.230.8}
+fra01-fe-loadbalancer: {api_password: api_user, api_user: api_user, ipaddress: 10.34.230.4}
+fra01-frontend:
+  hosts: [mp-fe001.aurora.fra01, mp-fe002.aurora.fra01, mp-fe003.aurora.fra01, mp-fe004.aurora.fra01,
+    mp-fe005.aurora.fra01, mp-fe006.aurora.fra01, mp-fe007.aurora.fra01, mp-fe008.aurora.fra01,
+    mp-fe009.aurora.fra01, mp-fe010.aurora.fra01, mp-fe011.aurora.fra01, mp-fe012.aurora.fra01]
+  user: mpdeploy
+fra01-ranking:
+  hosts: [rank001.aurora.ams01, rank002.aurora.ams01]
+  user: mpdeploy
+fra01-scrubber:
+  hosts: [mp-scrubber101.aurora.fra01, mp-scrubber102.aurora.fra01]
+  user: mpdeploy
+general:
+  destination: /opt/tarballs
+  environment: production
+  keepversions: 5
+  logs: /opt/logs
+  platform: aurora
+  properties: /etc/marktplaats
+  proxy: {10.32.230.10: 3128}
+  service_check_location: /usr/lib/nagios/mp-plugins
+  services: /etc/service
+  spare_hosts:
+  startup_try_count: 30
+  tarballs: /opt/tarballs
+  webapps: /opt/webapps
+graphite: {carbon_host: mp-graph001, carbon_port: 2003, metric_prefix: mp.events.releases}
+history: {archivedir: /opt/tarballs/archive/aurora/, depth: 5}
+jolokia_ports: {nl.marktplaats.advertisementhub.advertisementhub-server: 10537, nl.marktplaats.advertisementlifecycle.advertisementlifecycle-server: 10557,
+  nl.marktplaats.aurora-common-api-v3-frontend: 10827, nl.marktplaats.aurora-soap-api-frontend: 10927,
+  nl.marktplaats.authorization.authorizationservice-server: 10417, nl.marktplaats.bidlifecycle.bidlifecycle-server: 10647,
+  nl.marktplaats.bids.bids-server: 10917, nl.marktplaats.capi-frontend: 10497, nl.marktplaats.capi.notification.notificationservice-server: 10407,
+  nl.marktplaats.car.cardetailsservice-server: 10307, nl.marktplaats.category.categoryservice-server: 10127,
+  nl.marktplaats.customermessaging.customermessaging-server: 10597, nl.marktplaats.datawarehousehub.datawarehousehub-server: 10527,
+  nl.marktplaats.emailcenter.emailcenter-server: 10357, nl.marktplaats.favorites.favorites-server: 10857,
+  nl.marktplaats.flagservice.flagservice-server: 10707, nl.marktplaats.guaranteedbidlifecycle.guaranteedbidlifecycle-server: 10887,
+  nl.marktplaats.location.locationservice-server: 10097, nl.marktplaats.marketplace.marketplace-server: 10147,
+  nl.marktplaats.marktplaats-frontend: 10477, nl.marktplaats.marktplaats-rbs-notifications-frontend: 10687,
+  nl.marktplaats.mas-frontend: 10507, nl.marktplaats.media.medialibrary-server: 10167,
+  nl.marktplaats.mweb-frontend: 10487, nl.marktplaats.order.orderservice-server: 10177,
+  nl.marktplaats.payment.paymentservice-server: 10277, nl.marktplaats.scrubby.scrubbyservice-server: 10437,
+  nl.marktplaats.searchintelligence.searchintelligence-server: 10837, nl.marktplaats.user.userservice-server: 10067,
+  nl.marktplaats.voyager.voyagerindexerservice-server: 10157, nl.marktplaats.voyager.voyagersearcher-server: 10317}
+loadbalancer: {api_password: api_user, api_user: api_user, be_be_hostip: 10.32.232.60,
+  be_bindweight: 40, be_fe_hostip: 10.32.231.60, be_servicetimeout: 9000, be_servicetype: TCP,
+  ipaddress: 10.32.230.4, spare_hosts: }
+repos:
+  destination: /data/repository/aurora
+  url: 'http://repos/aurora/'
+  user: aurorascp
+services:
+  deployment_order: [properties, scrubby, cardetails, category, payment, medialibrary,
+    emailcenter, location, datawarehousehub, user, searchintelligence, orderservice,
+    bids, favorites, marketplace, voyagerindexer, voyagersearcher, advertisementhub,
+    customermessaging, authorization, notification, flagservice, guaranteedbidlifecycle,
+    lifecycle, frontend, admin]
+  nl.marktplaats.advertisementhub.advertisementhub-server: 10530
+  nl.marktplaats.advertisementlifecycle.advertisementlifecycle-server: 10550
+  nl.marktplaats.aurora-common-api-v3-frontend: 8087
+  nl.marktplaats.aurora-csba-api-frontend: 8086
+  nl.marktplaats.aurora-soap-api-frontend: 8088
+  nl.marktplaats.authorization.authorizationservice-server: 10410
+  nl.marktplaats.bidlifecycle.bidlifecycle-server: 10640
+  nl.marktplaats.bids.bids-server: 10910
+  nl.marktplaats.capi-frontend: 8084
+  nl.marktplaats.capi.notification.notificationservice-server: 10400
+  nl.marktplaats.car.cardetailsservice-server: 10300
+  nl.marktplaats.category.categoryservice-server: 10120
+  nl.marktplaats.customermessaging.customermessaging-server: 10590
+  nl.marktplaats.datawarehousehub.datawarehousehub-server: 10520
+  nl.marktplaats.emailcenter.emailcenter-server: 10350
+  nl.marktplaats.favorites.favorites-server: 10850
+  nl.marktplaats.flagservice.flagservice-server: 10700
+  nl.marktplaats.guaranteed-bidding-frontend: 10890
+  nl.marktplaats.guaranteedbidlifecycle.guaranteedbidlifecycle-server: 10880
+  nl.marktplaats.location.locationservice-server: 10090
+  nl.marktplaats.marketplace.marketplace-server: 10140
+  nl.marktplaats.marktplaats-frontend: 8080
+  nl.marktplaats.marktplaats-rbs-notifications-frontend: 8081
+  nl.marktplaats.mas-frontend: 8083
+  nl.marktplaats.media.medialibrary-server: 10160
+  nl.marktplaats.mweb-frontend: 8082
+  nl.marktplaats.order.orderservice-server: 10170
+  nl.marktplaats.payment.paymentservice-server: 10270
+  nl.marktplaats.scrubby.scrubbyservice-server: 10430
+  nl.marktplaats.searchintelligence.searchintelligence-server: 10830
+  nl.marktplaats.user.userservice-server: 10060
+  nl.marktplaats.voyager.voyagerindexerservice-server: 10150
+  nl.marktplaats.voyager.voyagersearcher-server: 10310
+user: {deploy_user: mpdeploy}

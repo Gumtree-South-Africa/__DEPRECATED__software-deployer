@@ -1,0 +1,64 @@
+general:
+    dns_suffix: aurora.integration.mp.ecg.so
+    destination: /opt/tarballs
+    environment: production
+    keepversions: 5
+    logs: /opt/logs
+    platform: aurora
+    properties: /etc/marktplaats
+    service_check_location: /usr/lib/nagios/mp-plugins
+    services: /etc/service
+    startup_try_count: 30
+    tarballs: /opt/tarballs
+    webapps: /opt/webapps
+    graphite: {carbon_host: mp-graph001, carbon_port: 2003, metric_prefix: mp.events.releases}
+    history: {archivedir: /opt/tarballs/archive/aurora/, depth: 5}
+    user: mpdeploy
+    deployment_order: [properties, scrubby, cardetails, category, payment, medialibrary,
+        emailcenter, location, datawarehousehub, user, searchintelligence, orderservice,
+        bids, favorites, marketplace, voyagerindexer, voyagersearcher, advertisementhub,
+        customermessaging, authorization, notification, flagservice, guaranteedbidlifecycle,
+        lifecycle, frontend, admin]
+
+datacenters:
+    dc1:
+        names:
+        - dro
+    dc2:
+        names:
+        - ix5
+        - ams01
+    dc3:
+        names:
+        - esh
+        - fra01
+
+dc1:
+    hosts:
+    - fe001.dro
+    - fe002.dro
+    - be001.dro
+    - be002.dro
+
+dc2:
+    hosts:
+    - mp-fe001.aurora.ams01
+    - mp-fe002.aurora.ams01
+    - mp-be001.aurora.ams01
+    - mp-be002.aurora.ams01
+
+dc3:
+    hosts:
+    - mp-fe001.aurora.fra01
+    - mp-fe002.aurora.fra01
+    - mp-be001.aurora.fra01
+    - mp-be002.aurora.fra01
+
+service_defaults:
+
+services:
+    nl.marktplaats.advertisementhub.advertisementhub-server:
+        port: 10530
+        jport: 10537
+        type: thrift
+

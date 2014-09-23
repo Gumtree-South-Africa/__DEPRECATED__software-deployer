@@ -1,0 +1,73 @@
+from fabric.colors import red, green, yellow, cyan
+from fabric.api import env
+from time import strftime
+#import getpass
+import sys
+import logging
+import logging.handlers
+#import deployerlib
+from time import gmtime, strftime
+#from deployerlib.exceptions import *
+
+class Log(object):
+
+    def __init__(self, instance='DEPLOYER', level=logging.DEBUG):
+
+        self.logger = logging.getLogger(instance)
+        self.logger.setLevel(level)
+
+        d = strftime("%Y-%m-%d-%H:%M:%S", gmtime())
+
+        console = logging.StreamHandler(strm=sys.stdout)
+        console.setLevel(level)
+
+        formatter = logging.Formatter('%(asctime)s [%(name)-15s] [%(levelname)-7s] %(deployhost)s: %(message)s')
+
+        console.setFormatter(formatter)
+        self.logger.addHandler(console)
+
+#        # silently create log directory
+#        try:
+#            auroralib.util.DUtil.mkdir_p('/opt/log')
+#        except IOError, e:
+#            raise DBailException("Can not create logging directory /opt/log. Permission denied?")
+#
+#        try:
+#            logfile = logging.FileHandler('/opt/log/deployer-%s.log' % d)
+#        except IOError, e:
+#            raise DBailException("Can not open logfile, permission denied?")
+#
+#        logfile.setLevel(logging.DEBUG)
+#
+#        logfile.setFormatter(formatter)
+#        logger.addHandler(logfile)
+#        #logger.handlers[0].doRollover()  # we want a new log each time we deploy something
+
+    def log(self, message, level):
+        """
+        Pretty logger with levels and colors for the console.
+        If scripts are running as user 'hudson' or 'jenkins' colors are ommited.
+        Takes: message (Logger reporting for duty!), level (info, warn, error)
+        Gives: formatted message to the console
+        """
+
+        if env.host:
+            self.logger.log(level, message, extra={'deployhost':env.host})
+        else:
+            self.logger.log(level, message, extra={'deployhost':'*'})
+
+    def debug(self, message):
+        self.log(message, logging.DEBUG)
+
+    def info(self, message):
+        self.log(message, logging.INFO)
+
+    def warn(self, message):
+        self.log(message, logging.WARNING)
+
+    def error(self, message):
+        self.log(message, logging.ERROR)
+
+    def critical(self, message):
+        self.log(message, logging.CRITICAL)
+
