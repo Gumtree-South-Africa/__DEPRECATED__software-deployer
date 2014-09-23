@@ -28,7 +28,8 @@ class RemoteVersions(object):
         for service in self.services:
             remote_versions[service.servicename] = {}
             remote_symlink = os.path.join(service.install_location, service.servicename)
-            res = self.fabrichelper.get_symlink_target(remote_symlink, hosts=self.hosts, pool_size=self.pool_size)
+            res = self.fabrichelper.execute_remote('/bin/readlink {0}'.format(remote_symlink),
+              hosts=self.hosts, pool_size=self.pool_size)
 
             for host in self.hosts:
                 if not res[host]:

@@ -74,8 +74,3 @@ class FabricHelper(object):
                 return execute(sudo, command)
             else:
                 return execute(run, command)
-
-    def get_symlink_target(self, remote_file, **fabric_settings):
-        """Get the target of a remote symlink"""
-
-        return self.execute_remote('/bin/readlink {0}'.format(remote_file), **fabric_settings)
