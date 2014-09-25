@@ -1,5 +1,4 @@
-import logging
-
+from deployerlib.log import Log
 from deployerlib.exceptions import DeployerException
 
 from fabric.api import env
@@ -14,6 +13,8 @@ class FabricHelper(object):
     """Handle remote execution"""
 
     def __init__(self, username=None, pool_size=0):
+        self.log = Log(self.__class__.__name__)
+
         env.warn_only = True
         output.everything = False
 
@@ -34,7 +35,7 @@ class FabricHelper(object):
             self.disable_parallel()
 
         if pool_size > 1:
-            logging.info('Setting fabric pool_size to {0}'.format(pool_size))
+            self.log.info('Setting default fabric pool_size to {0}'.format(pool_size))
             env.pool_size = pool_size
             env.parallel = True
             env.serial = False
@@ -47,7 +48,7 @@ class FabricHelper(object):
     def disable_parallel(self):
         """Disable parallel"""
 
-        logging.info('Disabling parallel execution')
+        self.log.info('Disabling parallel execution')
         env.pool_size = 1
         env.parallel = False
         env.serial = True
@@ -66,8 +67,6 @@ class FabricHelper(object):
 
     def execute_remote(self, command, use_sudo=False, **fabric_settings):
         """Execute a command via fabric"""
-
-        logging.debug('Executing {0} on {1}'.format(command, env.host))
 
         with settings(**fabric_settings):
             if use_sudo:
