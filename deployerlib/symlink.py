@@ -1,15 +1,15 @@
-import logging
-
+from deployerlib.log import Log
 from deployerlib.exceptions import DeployerException
 
 
 class SymLink(object):
     """Manage a remote symlink"""
 
-    def __init__(self, fabrichelper, linkname, pool_size=3):
+    def __init__(self, fabrichelper, linkname):
+        self.log = Log(self.__class__.__name__)
+
         self.fabrichelper = fabrichelper
         self.linkname = linkname
-        self.pool_size = pool_size
 
     def get_target(self, hosts):
         """Get the link target"""
@@ -21,10 +21,10 @@ class SymLink(object):
         """Set the link target"""
 
         if not hosts:
-            logging.info('Symlink {0} does not need to be changed on any hosts'.format(self.linkname))
+            self.log.info('Symlink {0} does not need to be changed on any hosts'.format(self.linkname))
             return
 
-        logging.info('Setting symlink for {0} on {1}'.format(link_target, ', '.join(hosts)))
+        self.log.info('Setting symlink for {0} on {1}'.format(link_target, ', '.join(hosts)))
 
         return self.fabrichelper.execute_remote('ln -sf {0} {1}'.format(link_target, self.linkname),
-          hosts=hosts, pool_size=self.pool_size)
+          hosts=hosts)

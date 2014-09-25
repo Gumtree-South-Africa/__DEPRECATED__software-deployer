@@ -1,62 +1,66 @@
 import os
-import logging
 
+from deployerlib.log import Log
 from deployerlib.exceptions import DeployerException
+
 
 class Uploader(object):
     """Upload files to a server"""
 
-    def __init__(self, fabrichelper, service, hosts, pool_size=10, redeploy=False):
-        self.fabrichelper = fabrichelper
-        self.service = service
-        self.hosts = hosts
-        self.redeploy = redeploy
+    def __init__(self, deployer, pool_size=10):
+        self.log = Log(self.__class__.__name__)
+
+        self.deployer = deployer
         self.pool_size = pool_size
+        self.upload_hosts = {}
 
-        self.target_hosts = self.get_upload_hosts(os.path.join(self.service.upload_location, self.service.filename))
+        for service in self.deployer.services:
+            self.upload_hosts[service.servicename] = self.get_upload_hosts(service)
 
-    def get_upload_hosts(self, target_file):
+    def get_upload_hosts(self, service):
         """Get the list of hosts to which the package should be uploaded"""
 
-        if self.redeploy:
-            return self.hosts
+        if self.deployer.args.redeploy or not service.hosts:
+            return service.hosts
 
-        res = self.fabrichelper.file_exists(target_file, hosts=self.hosts)
+        res = self.deployer.fabrichelper.file_exists(service.remote_filename, hosts=service.hosts)
 
         target_hosts = [host for host in res if not res[host]]
         skip_hosts = [host for host in res if not host in target_hosts]
 
         if skip_hosts:
-            logging.debug('Package {0} already exists on hosts: {1}'.format(self.service.filename,
+            self.log.debug('Package {0} already exists on hosts: {1}'.format(service.filename,
               ', '.join(skip_hosts)))
 
-        logging.debug('Upload target hosts: {0}'.format(', '.join(target_hosts)))
-
         return target_hosts
-
 
     def upload(self):
         """Upload files to a server"""
 
-        if not self.target_hosts:
-            logging.info('{0} is not needed on any hosts'.format(self.service.filename))
-            return
+        for service in self.deployer.services:
 
-        logging.debug('Uploading {0} to {1} on {2}'.format(
-          self.service.fullpath, self.service.upload_location, ', '.join(self.target_hosts)))
+            if self.deployer.args.redeploy:
+                upload_hosts = service.hosts
+            else:
+                upload_hosts = self.get_upload_hosts(service)
 
-        res = self.fabrichelper.put_remote(self.service.fullpath, self.service.upload_location,
-          hosts=self.target_hosts, pool_size=self.pool_size)
+            if not upload_hosts:
+                self.log.info('{0} is not needed on any hosts'.format(service.filename))
+                return
 
-        self.succeeded = [x for x in res.keys() if res[x]]
-        self.failed = [x for x in res.keys() if not x in self.succeeded]
+            self.log.debug('Uploading {0} to {1} on {2}'.format(
+              service.fullpath, service.upload_location, ', '.join(upload_hosts)))
 
-        logging.info('Uploaded {0} to {1} hosts'.format(self.service.servicename, len(self.succeeded)))
+            res = self.deployer.fabrichelper.put_remote(service.fullpath, service.upload_location,
+              hosts=upload_hosts, pool_size=self.pool_size)
 
-        if self.succeeded:
-            logging.debug('Uploaded to hosts: {0}'.format(', '.join(self.succeeded)))
+            succeeded = [x for x in res.keys() if res[x]]
+            failed = [x for x in res.keys() if not x in succeeded]
 
-        if self.failed:
-            logging.critical('Failed to upload to {0} hosts: {1}'.format(len(self.failed), ', '.join(self.failed)))
+            self.log.info('Uploaded {0} to {1} hosts'.format(service.servicename, len(succeeded)))
 
-        return not self.failed
+            if succeeded:
+                self.log.debug('Uploaded to hosts: {0}'.format(', '.join(succeeded)))
+
+            if failed:
+                self.log.critical('Failed to upload to {0} hosts: {1}'.format(len(failed), ', '.join(failed)))
