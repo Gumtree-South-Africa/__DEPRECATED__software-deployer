@@ -1,15 +1,21 @@
 import os
 
 from deployerlib.log import Log
+from deployerlib.fabrichelper import FabricHelper
 from deployerlib.exceptions import DeployerException
 
 
 class Unpacker(object):
     """Unpack a packge on a remote host"""
 
-    def __init__(self, deployer):
+    def __init__(self, services, args, config):
         self.log = Log(self.__class__.__name__)
-        self.deployer = deployer
+
+        self.services = services
+        self.args = args
+        self.config = config
+
+        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel)
 
     def get_unpack_command(self, service):
         """Based on the package type, determine the command line to unpack the package"""
@@ -33,7 +39,7 @@ class Unpacker(object):
         if not service.hosts:
             return service.hosts, None
 
-        res = self.deployer.fabrichelper.file_exists(service.install_destination, hosts=service.hosts)
+        res = self.fabrichelper.file_exists(service.install_destination, hosts=service.hosts)
 
         target_hosts = [host for host in res if not res[host]]
         exists_hosts = [host for host in res if not host in target_hosts]
@@ -48,8 +54,7 @@ class Unpacker(object):
     def unpack(self):
         """Unpack the remote package"""
 
-
-        for service in self.deployer.services:
+        for service in self.services:
             target_hosts, exists_hosts = self.get_target_hosts(service)
             unpack_command = self.get_unpack_command(service)
 
@@ -57,10 +62,10 @@ class Unpacker(object):
                 self.log.info('The following hosts already have {0} in place: {1}'.format(
                   service.packagename, ', '.join(exists_hosts)))
 
-                if self.deployer.args.redeploy:
+                if self.args.redeploy:
                     # Todo: This should not be done as part of "pre_deploy" tasks
                     self.log.info('Removing {0} on {1}'.format(service.install_destination, ', '.join(exists_hosts)))
-                    res = self.deployer.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(service.install_destination),
+                    res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(service.install_destination),
                       hosts=exists_hosts)
                     target_hosts = service.hosts
 
@@ -69,4 +74,4 @@ class Unpacker(object):
                 continue
 
             self.log.info('Unpacking {0} on hosts: {1}'.format(service.servicename, ', '.join(target_hosts)))
-            self.deployer.fabrichelper.execute_remote(unpack_command, hosts=target_hosts)
+            self.fabrichelper.execute_remote(unpack_command, hosts=target_hosts)

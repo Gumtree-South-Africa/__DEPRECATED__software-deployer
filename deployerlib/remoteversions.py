@@ -17,7 +17,7 @@ class RemoteVersions(object):
         self._remote_versions = self._get_remote_versions()
 
     def __repr__(self):
-        """Show unambiguous representation"""
+
         return '{0}(services={1})'.format(self.__class__.__name__,
           repr([x.servicename for x in self.services]))
 
