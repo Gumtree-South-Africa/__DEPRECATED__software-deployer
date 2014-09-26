@@ -18,7 +18,7 @@ class Log(object):
 
         d = strftime("%Y-%m-%d-%H:%M:%S", gmtime())
 
-        console = logging.StreamHandler(stream=sys.stdout)
+        console = logging.StreamHandler(sys.stdout)
         console.setLevel(level)
 
         formatter = logging.Formatter('%(asctime)s [%(name)-15s] [%(levelname)-7s] %(deployhost)s: %(message)s')

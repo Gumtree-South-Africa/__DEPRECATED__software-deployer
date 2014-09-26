@@ -57,8 +57,10 @@ dc3:
 service_defaults:
 
 services:
-    nl.marktplaats.advertisementhub.advertisementhub-server:
+    advertisementhub-server:
+        name: nl.marktplaats.advertisementhub.advertisementhub-server
         port: 10530
         jport: 10537
-        type: thrift
+        protocol: thrift
+        type: daemontools
 

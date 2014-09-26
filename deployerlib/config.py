@@ -1,6 +1,7 @@
 import os
 import sys
 import yaml
+from attrdict import AttrDict
 from deployerlib.exceptions import DeployerException
 from deployerlib.log import *
 
@@ -8,11 +9,12 @@ class Config(object):
     """Config object class for reading in configuration from file"""
 
     def __init__(self, conf_file):
-        self.log = Log('config_class')
+        self.log = Log('Config')
         self.log.info('Reading config from: {0}'.format(conf_file))
         try:
             fp = open(conf_file, 'r')
             self.conf_data = yaml.load(fp)
+            self.conf_adict = AttrDict(self.conf_data)
         except Exception, e:
             self.log.error(e.message)
 
@@ -38,6 +40,13 @@ class Config(object):
         """Dumper to return conf_data in several formats"""
         if format == 'yaml':
             return yaml.dump(self.conf_data, default_flow_style=False, indent=2)
+        else:
+            self.log.error('Requested format "%s" is not supported' % format)
+
+    def adump(self, format='yaml'):
+        """Dumper to return conf_data in several formats"""
+        if format == 'yaml':
+            return yaml.dump(self.conf_adict, default_flow_style=False, indent=2)
         else:
             self.log.error('Requested format "%s" is not supported' % format)
 
