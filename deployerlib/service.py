@@ -7,9 +7,35 @@ from deployerlib.exceptions import DeployerException
 class Service(object):
     """Manage information about a package and the service it provides"""
 
-    def __init__(self, filename, args=None, config=None):
+    def __init__(self, filename, args, config):
         self.log = Log(self.__class__.__name__)
-        self.log.info('Creating service from file: {0}'.format(filename))
+
+        self.log.info('Creating package from file: {0}'.format(filename))
+
+        self.args = args
+        self.config = config
+
+        self.get_attributes_from_filename(filename)
+
+        self.deployment_type = self.config.services[self.servicename]['type']
+        self.upload_location = self.config.general.destination
+        self.install_location = self.config.general.webapps
+        self.remote_filename = os.path.join(self.upload_location, self.filename)
+        self.install_destination = os.path.join(self.install_location, self.packagename)
+
+        self.hosts = self.get_remote_hosts()
+
+    def __str__(self):
+
+        return self.servicename
+
+    def __repr__(self):
+
+        return '{0}(servicename={1}, version={2})'.format(self.__class__.__name__,
+          repr(self.servicename), repr(self.version))
+
+    def get_attributes_from_filename(self, filename):
+        """Gather information about a package from its filename"""
 
         self.verify_file_access(filename)
 
@@ -23,35 +49,11 @@ class Service(object):
         self.version = self.get_version_from_packagename(self.packagename)
         self.sha, self.timestamp = self.split_version(self.version)
 
-        if config:
-            service_config = config.get(['services'])[self.servicename]
-            self.deployment_type = service_config['type']
-
-            general = config.get(['general'])
-            self.upload_location = general['destination']
-            self.install_location = general['webapps']
-
-            self.remote_filename = os.path.join(self.upload_location, self.filename)
-            self.install_destination = os.path.join(self.install_location, self.packagename)
-
-            #self.add_target_hosts(self.get_remote_hosts(args, config))
-            self.hosts = self.get_remote_hosts(args, config)
-
-
-    def __str__(self):
-        """Show readable representation"""
-        return self.servicename
-
-    def __repr__(self):
-        """Show unambiguous representation"""
-        return '{0}(servicename={1}, version={2})'.format(self.__class__.__name__,
-          repr(self.servicename), repr(self.version))
-
     def verify_file_access(self, path):
         """Make sure the file exists and is readable"""
 
         if not os.path.isfile(path):
-            raise DeployerException('Unable to create service: {0} does not exist'.format(path))
+            raise DeployerException('Unable to create service: {0} does not exist or is not a regular file'.format(path))
 
         if not os.access(path, os.R_OK):
             raise DeployerException('Unable to create service: {0} is not readable'.format(path))
@@ -115,41 +117,25 @@ class Service(object):
 
         try:
             sha, timestamp = version.split('-')
+            self.log.debug('SHA is {0}, timestamp is {1}'.format(sha, timestamp))
         except:
-            raise DeployerException('Unable to extract SHA and timestamp from package version: {0}'.format(
+            self.log.debug('Unable to extract SHA and timestamp from package version: {0}'.format(
               version))
+            sha, timestamp = None, None
 
-        self.log.debug('SHA is {0}, timestamp is {1}'.format(sha, timestamp))
         return sha, timestamp
 
-    def get_remote_hosts(self, args, config):
+    def get_remote_hosts(self):
         """Get the list of hosts this service should be deployed to"""
 
         hosts = []
 
-        if args.host:
+        if self.args.host:
             hosts.append(args.host)
 
         else:
-            for datacenter in config.get(['datacenters']):
-                dc_config = config.get([datacenter])
-                hosts += dc_config['hosts']
+            for datacenter in self.config['datacenters']:
+                hosts += self.config[datacenter]['hosts']
 
         self.log.info('{0} is configured to run on: {1}'.format(self.servicename, ', '.join(hosts)))
         return hosts
-
-    def add_target_hosts(self, *hosts):
-        """Add hosts to the list of target hosts"""
-
-        for host in hosts:
-            if not host in self.hosts:
-                self.log.debug('Adding target host for {0}: {1}'.format(self.servicename, host))
-                self.hosts.append(host)
-
-    def remove_target_hosts(self, *hosts):
-        """Remove hosts from the list of target hosts"""
-
-        for host in hosts:
-            if host in self.hosts:
-                self.log.debug('Removing target host for {0}: {1}'.format(self.servicename, host))
-                self.hosts = [x for x in self.hosts if x != host]

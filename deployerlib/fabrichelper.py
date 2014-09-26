@@ -1,3 +1,5 @@
+import time
+
 from deployerlib.log import Log
 from deployerlib.exceptions import DeployerException
 
@@ -22,6 +24,11 @@ class FabricHelper(object):
             env.user = username
 
         self.set_pool_size(pool_size)
+
+    def __repr__(self):
+
+        return '{0}(user={1}, parallel={2}, pool_size={3})'.format(self.__class__.__name__,
+          env.user, env.parallel, env.pool_size)
 
     def set_pool_size(self, pool_size):
         """Set pool size for parallel execution
@@ -73,3 +80,61 @@ class FabricHelper(object):
                 return execute(sudo, command)
             else:
                 return execute(run, command)
+
+    def _restart_service(self, stop_command, start_command, check_command, timeout, use_sudo):
+
+        if use_sudo:
+            call = sudo
+        else:
+            call = run
+
+        res = call(stop_command)
+
+        if res.failed:
+            raise DeployerException('Failed to stop service: {0}'.format(res))
+
+        if check_command:
+            timeout = time.time() + timeout
+            success = False
+
+            while time.time() < timeout:
+                time.sleep(2)
+                res = run(check_command)
+
+                if res.return_code != 0:
+                    success = True
+                    break
+
+            if success:
+                self.log.info('Stopped: {0}'.format(res))
+            else:
+                raise DeployerException('Failed to stop service: {0}'.format(res))
+
+        if start_command:
+            res = call(start_command)
+
+            if res.failed:
+                raise DeployerException('Failed to start service: {0}'.format(res))
+
+        if check_command:
+            timeout = time.time() + timeout
+            success = False
+
+            while time.time() < timeout:
+                time.sleep(2)
+                res = run(check_command)
+
+                if res.return_code == 0:
+                    success = True
+                    break
+
+            if success:
+                self.log.info('Started: {0}'.format(res))
+            else:
+                raise DeployerException('Failed to start service: {0}'.format(res))
+
+    def restart_service(self, stop_command, start_command=None, check_command=None, timeout=60, use_sudo=True, **fabric_settings):
+        """External method for restarting a remote service"""
+
+        with settings(**fabric_settings):
+            return execute(self._restart_service, stop_command, start_command, check_command, timeout, use_sudo)

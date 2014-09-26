@@ -1,15 +1,23 @@
 from deployerlib.log import Log
+from deployerlib.fabrichelper import FabricHelper
 from deployerlib.exceptions import DeployerException
 
 
 class SymLink(object):
     """Manage a remote symlink"""
 
-    def __init__(self, fabrichelper, linkname):
+    def __init__(self, linkname, args, config):
         self.log = Log(self.__class__.__name__)
 
-        self.fabrichelper = fabrichelper
+        self.args = args
+        self.config = config
+
+        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel)
         self.linkname = linkname
+
+    def __repr__(self):
+
+        return '{0}(linkname={1})'.format(self.__class__.__name__, repr(self.linkname))
 
     def get_target(self, hosts):
         """Get the link target"""

@@ -20,26 +20,25 @@ class Deployer(object):
         self.args = args
         self.config = config
 
-        general = self.config.get(['general'])
+        self.fabrichelper = FabricHelper(self.config.general['user'], pool_size=self.args.parallel)
 
         self.services = self.get_services()
-        self.fabrichelper = FabricHelper(general['user'], pool_size=self.args.parallel)
 
     def get_services(self):
 
         services = []
 
         if self.args.component:
-            self.log.info('Adding service: {0}'.format(self.args.component))
+            self.log.info('Adding service {0}'.format(self.args.component))
             services.append(Service(self.args.component, self.args, self.config))
 
         elif self.args.directory:
 
             if not os.path.isdir(self.args.directory):
-                self.log.critical('Not a directory: {0}'.format(self.args.directory))
+                raise DeployerException('Not a directory: {0}'.format(self.args.directory))
 
-            for file in os.listdir(self.args.directory):
-                fullpath = os.path.join(self.args.directory, file)
+            for filename in os.listdir(self.args.directory):
+                fullpath = os.path.join(self.args.directory, filename)
                 self.log.info('Adding service: {0}'.format(fullpath))
                 services.append(Service(fullpath, self.args, self.config))
 
@@ -64,10 +63,10 @@ class Deployer(object):
                 self.log.info('{0} will be deployed to: {1}'.format(service.servicename,
                   ', '.join(service.hosts)))
 
-        uploader = Uploader(self)
+        uploader = Uploader(self.services, self.args, self.config)
         uploader.upload()
 
-        unpacker = Unpacker(self)
+        unpacker = Unpacker(self.services, self.args, self.config)
         unpacker.unpack()
 
     def deploy(self):
@@ -75,5 +74,5 @@ class Deployer(object):
 
         for service in self.services:
             symlink_target = os.path.join(service.install_location, service.servicename)
-            symlink = SymLink(self.fabrichelper, symlink_target)
+            symlink = SymLink(symlink_target, self.args, self.config)
             symlink.set_target(service.install_destination, service.hosts)

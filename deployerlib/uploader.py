@@ -1,29 +1,33 @@
 import os
 
 from deployerlib.log import Log
+from deployerlib.fabrichelper import FabricHelper
 from deployerlib.exceptions import DeployerException
 
 
 class Uploader(object):
     """Upload files to a server"""
 
-    def __init__(self, deployer, pool_size=10):
+    def __init__(self, services, args, config, pool_size=10):
         self.log = Log(self.__class__.__name__)
 
-        self.deployer = deployer
-        self.pool_size = pool_size
+        self.services = services
+        self.args = args
+        self.config = config
         self.upload_hosts = {}
 
-        for service in self.deployer.services:
+        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=pool_size)
+
+        for service in self.services:
             self.upload_hosts[service.servicename] = self.get_upload_hosts(service)
 
     def get_upload_hosts(self, service):
         """Get the list of hosts to which the package should be uploaded"""
 
-        if self.deployer.args.redeploy or not service.hosts:
+        if self.args.redeploy or not service.hosts:
             return service.hosts
 
-        res = self.deployer.fabrichelper.file_exists(service.remote_filename, hosts=service.hosts)
+        res = self.fabrichelper.file_exists(service.remote_filename, hosts=service.hosts)
 
         target_hosts = [host for host in res if not res[host]]
         skip_hosts = [host for host in res if not host in target_hosts]
@@ -37,9 +41,9 @@ class Uploader(object):
     def upload(self):
         """Upload files to a server"""
 
-        for service in self.deployer.services:
+        for service in self.services:
 
-            if self.deployer.args.redeploy:
+            if self.args.redeploy:
                 upload_hosts = service.hosts
             else:
                 upload_hosts = self.get_upload_hosts(service)
@@ -51,8 +55,8 @@ class Uploader(object):
             self.log.debug('Uploading {0} to {1} on {2}'.format(
               service.fullpath, service.upload_location, ', '.join(upload_hosts)))
 
-            res = self.deployer.fabrichelper.put_remote(service.fullpath, service.upload_location,
-              hosts=upload_hosts, pool_size=self.pool_size)
+            res = self.fabrichelper.put_remote(service.fullpath, service.upload_location,
+              hosts=upload_hosts)
 
             succeeded = [x for x in res.keys() if res[x]]
             failed = [x for x in res.keys() if not x in succeeded]
