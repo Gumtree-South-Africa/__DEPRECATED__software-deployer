@@ -29,30 +29,25 @@ class Restarter(object):
         """Stop all services"""
 
         for service in self.services:
-            command = self.get_service_control(service, 'stop')
+            stop_command = self.get_service_control(service, 'stop')
+            check_command = self.get_service_control(service, 'check')
             self.log.info('Stopping {0} on hosts: {1}'.format(service.servicename, ', '.join(service.hosts)))
-            self.fabrichelper.execute_remote(command, use_sudo=True, hosts=service.hosts, warn_only=False)
+            self.fabrichelper.control_service(stop_command, check_command, use_sudo=True, wanted_state=2, hosts=service.hosts)
 
     def start(self):
         """Start all services"""
 
         for service in self.services:
-            command = self.get_service_control(service, 'start')
+            start_command = self.get_service_control(service, 'start')
+            check_command = self.get_service_control(service, 'check')
             self.log.info('Starting {0} on hosts: {1}'.format(service.servicename, ', '.join(service.hosts)))
-            self.fabrichelper.execute_remote(command, use_sudo=True, hosts=service.hosts, warn_only=False)
+            self.fabrichelper.control_service(start_command, check_command, use_sudo=True, hosts=service.hosts)
 
     def restart(self):
         """Restart all services"""
 
-        for service in self.services:
-            stop_command = self.get_service_control(service, 'stop')
-            start_command = self.get_service_control(service, 'start')
-            check_command = self.get_service_control(service, 'check')
-
-            self.fabrichelper.restart_service(stop_command, start_command, check_command, hosts=service.hosts)
-
-        #self.stop()
-        #self.start()
+        self.stop()
+        self.start()
 
     def refresh(self):
         """Refresh a service"""

@@ -23,6 +23,9 @@ class Service(object):
         self.remote_filename = os.path.join(self.upload_location, self.filename)
         self.install_destination = os.path.join(self.install_location, self.packagename)
 
+        if 'control_commands' in self.config.services[self.servicename]:
+            self.control_commands = self.config.services[self.servicename]['control_commands']
+
         self.hosts = self.get_remote_hosts()
 
     def __str__(self):

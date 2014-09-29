@@ -81,14 +81,15 @@ class FabricHelper(object):
             else:
                 return execute(run, command)
 
-    def _restart_service(self, stop_command, start_command, check_command, timeout, use_sudo):
+    def _control_service(self, command, check_command, wanted_state, timeout, use_sudo):
+        """Callable for control_service"""
 
         if use_sudo:
             call = sudo
         else:
             call = run
 
-        res = call(stop_command)
+        res = call(command)
 
         if res.failed:
             raise DeployerException('Failed to stop service: {0}'.format(res))
@@ -101,40 +102,23 @@ class FabricHelper(object):
                 time.sleep(2)
                 res = run(check_command)
 
-                if res.return_code != 0:
+                if res.return_code == wanted_state:
                     success = True
                     break
 
             if success:
-                self.log.info('Stopped: {0}'.format(res))
+                self.log.info('Control service successful: {0}'.format(res))
             else:
-                raise DeployerException('Failed to stop service: {0}'.format(res))
+                raise DeployerException('Failed to control service: {0}'.format(res))
 
-        if start_command:
-            res = call(start_command)
-
-            if res.failed:
-                raise DeployerException('Failed to start service: {0}'.format(res))
-
-        if check_command:
-            timeout = time.time() + timeout
-            success = False
-
-            while time.time() < timeout:
-                time.sleep(2)
-                res = run(check_command)
-
-                if res.return_code == 0:
-                    success = True
-                    break
-
-            if success:
-                self.log.info('Started: {0}'.format(res))
-            else:
-                raise DeployerException('Failed to start service: {0}'.format(res))
-
-    def restart_service(self, stop_command, start_command=None, check_command=None, timeout=60, use_sudo=True, **fabric_settings):
-        """External method for restarting a remote service"""
+    def control_service(self, command, check_command=None, wanted_state=0, timeout=60, use_sudo=True, **fabric_settings):
+        """Stop, start or restart a service
+           - command: The command to stop, start or restart a service
+           - check_command: An optional command to check the state of the service after controlling it
+           - wanted_state: The expected return code from check_command
+           - timeout: Maximum time to wait for check_command to enter wanted_state
+           - use_sudo: Whether to use sudo to run the service control command
+        """
 
         with settings(**fabric_settings):
-            return execute(self._restart_service, stop_command, start_command, check_command, timeout, use_sudo)
+            return execute(self._control_service, command, check_command, wanted_state, timeout, use_sudo)
