@@ -6,33 +6,37 @@ from deployerlib.exceptions import DeployerException
 class SymLink(object):
     """Manage a remote symlink"""
 
-    def __init__(self, linkname, args, config):
+    def __init__(self, services, args, config):
         self.log = Log(self.__class__.__name__)
 
         self.args = args
         self.config = config
+        self.services = services
 
         self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel)
-        self.linkname = linkname
 
     def __repr__(self):
 
-        return '{0}(linkname={1})'.format(self.__class__.__name__, repr(self.linkname))
+        return '{0}(services={1})'.format(self.__class__.__name__, repr(self.services))
 
-    def get_target(self, hosts):
-        """Get the link target"""
-
-        return self.fabrichelper.execute_remote('/bin/readlink {0}'.format(self.linkname),
-          hosts=hosts, pool_size=self.pool_size)
-
-    def set_target(self, link_target, hosts):
+    def set_target(self):
         """Set the link target"""
 
-        if not hosts:
-            self.log.info('Symlink {0} does not need to be changed on any hosts'.format(self.linkname))
-            return
+        for service in self.services:
 
-        self.log.info('Setting symlink for {0} on {1}'.format(link_target, ', '.join(hosts)))
+            if not service.hosts:
+                self.log.info('Service {0} does not need to be activated on any hosts'.format(service.servicename))
+                continue
 
-        return self.fabrichelper.execute_remote('ln -sf {0} {1}'.format(link_target, self.linkname),
-          hosts=hosts)
+            self.log.info('Setting symlink for {0} on {1}'.format(service.servicename, ', '.join(service.hosts)))
+
+            res = self.fabrichelper.execute_remote('ln -sf {0} {1}'.format(service.install_destination, service.symlink_target),
+              hosts=service.hosts)
+
+            failed = [host for host in res if res[host].failed]
+
+            if failed:
+                raise DeployerException('Activate service {0} failed on hosts: {1}'.format(
+                  service.servicename, ', '.join(failed)))
+
+        return True

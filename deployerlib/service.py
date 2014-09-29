@@ -22,6 +22,7 @@ class Service(object):
         self.install_location = self.config.general.webapps
         self.remote_filename = os.path.join(self.upload_location, self.filename)
         self.install_destination = os.path.join(self.install_location, self.packagename)
+        self.symlink_target = os.path.join(self.install_location, self.servicename)
 
         if 'control_commands' in self.config.services[self.servicename]:
             self.control_commands = self.config.services[self.servicename]['control_commands']
@@ -131,12 +132,13 @@ class Service(object):
     def get_remote_hosts(self):
         """Get the list of hosts this service should be deployed to"""
 
-        hosts = []
-
         if self.args.host:
-            hosts.append(args.host)
+
+            hosts = [self.args.host]
 
         else:
+            hosts = []
+
             for datacenter in self.config['datacenters']:
                 hosts += self.config[datacenter]['hosts']
 

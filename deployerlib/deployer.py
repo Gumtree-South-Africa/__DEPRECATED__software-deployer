@@ -1,10 +1,10 @@
 import os
 
 from deployerlib.service import Service
-from deployerlib.fabrichelper import FabricHelper
 from deployerlib.remoteversions import RemoteVersions
 from deployerlib.uploader import Uploader
 from deployerlib.unpacker import Unpacker
+from deployerlib.restarter import Restarter
 from deployerlib.symlink import SymLink
 
 from deployerlib.log import Log
@@ -20,9 +20,11 @@ class Deployer(object):
         self.args = args
         self.config = config
 
-        self.fabrichelper = FabricHelper(self.config.general['user'], pool_size=self.args.parallel)
-
         self.services = self.get_services()
+        self.steps = self.get_steps(config.steps)
+
+        if not args.redeploy and set(['upload', 'unpack', 'activate']).intersection(config.steps):
+            self.get_matrix()
 
     def get_services(self):
 
@@ -47,32 +49,68 @@ class Deployer(object):
 
         return services
 
-    def pre_deploy(self):
-        """Upload and unpack"""
+    def get_steps(self, steps):
+        """Verify the list of steps to be run for deployment"""
 
-        if not self.args.redeploy:
-            remoteversions = RemoteVersions(self.fabrichelper, self.services)
+        callables = []
 
-            for service in self.services:
-                need_upgrade = remoteversions.get_hosts_not_running_version(service.servicename, service.version)
+        for step in steps:
+            method_name = '_step_{0}'.format(step)
 
-                if need_upgrade != service.hosts:
-                    self.log.debug('Modifying deployment list for {0}'.format(service.servicename))
-                    service.hosts = list(set(service.hosts).intersection(need_upgrade))
+            if hasattr(self, method_name):
+                callables.append(getattr(self, method_name))
+            else:
+                raise DeployerException('Unknown deployment step: {0}'.format(step))
 
-                self.log.info('{0} will be deployed to: {1}'.format(service.servicename,
-                  ', '.join(service.hosts)))
+        return callables
+
+    def get_matrix(self):
+        """Determine which hosts need to be touched"""
+
+        remoteversions = RemoteVersions(self.args, self.config, self.services)
+
+        for service in self.services:
+            need_upgrade = remoteversions.get_hosts_not_running_version(service.servicename, service.version)
+
+            if need_upgrade != service.hosts:
+                self.log.debug('Modifying deployment list for {0}'.format(service.servicename))
+                service.hosts = list(set(service.hosts).intersection(need_upgrade))
+
+            self.log.info('{0} will be deployed to: {1}'.format(service.servicename,
+              ', '.join(service.hosts)))
+
+    def deploy(self):
+        """Run the requested deployment steps"""
+
+        for step in self.steps:
+            step()
+
+    def _step_upload(self):
+        """Upload packages to destination hosts"""
 
         uploader = Uploader(self.services, self.args, self.config)
         uploader.upload()
 
+    def _step_unpack(self):
+        """Unpack packages on destination hosts"""
+
         unpacker = Unpacker(self.services, self.args, self.config)
         unpacker.unpack()
 
-    def deploy(self):
-        """Activate new version"""
+    def _step_stop(self):
+        """Stop services"""
 
-        for service in self.services:
-            symlink_target = os.path.join(service.install_location, service.servicename)
-            symlink = SymLink(symlink_target, self.args, self.config)
-            symlink.set_target(service.install_destination, service.hosts)
+        restarter = Restarter(self.services, self.args, self.config)
+        restarter.stop()
+
+    def _step_start(self):
+        """Start services"""
+
+        restarter = Restarter(self.services, self.args, self.config)
+        restarter.start()
+
+    def _step_activate(self):
+        """Activate a service using a symbolic link"""
+
+        symlink = SymLink(self.services, self.args, self.config)
+        symlink.set_target()

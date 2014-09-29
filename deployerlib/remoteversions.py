@@ -1,16 +1,17 @@
 import os
 
 from deployerlib.log import Log
+from deployerlib.fabrichelper import FabricHelper
 from deployerlib.exceptions import DeployerException
 
 
 class RemoteVersions(object):
     """Manage information about remote versions of services"""
 
-    def __init__(self, fabrichelper, services, pool_size=10):
+    def __init__(self, args, config, services, pool_size=10):
         self.log = Log(self.__class__.__name__)
 
-        self.fabrichelper = fabrichelper
+        self.fabrichelper = FabricHelper(config.general.user, pool_size)
         self.services = services
         self.pool_size = pool_size
 

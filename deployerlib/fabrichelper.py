@@ -14,11 +14,13 @@ from fabric.operations import run, sudo, put
 class FabricHelper(object):
     """Handle remote execution"""
 
-    def __init__(self, username=None, pool_size=0):
+    def __init__(self, username=None, pool_size=1):
         self.log = Log(self.__class__.__name__)
 
         env.warn_only = True
         output.everything = False
+        env.parallel = True
+        env.serial = False
 
         if username:
             env.user = username
@@ -39,26 +41,13 @@ class FabricHelper(object):
         try:
             pool_size = int(pool_size)
         except:
-            self.disable_parallel()
+            pool_size = 1
 
-        if pool_size > 1:
-            self.log.info('Setting default fabric pool_size to {0}'.format(pool_size))
-            env.pool_size = pool_size
-            env.parallel = True
-            env.serial = False
-        else:
-            self.disable_parallel()
+        self.log.info('Setting default fabric pool_size to {0}'.format(pool_size))
+        env.pool_size = pool_size
 
     def get_pool_size(self):
         return env.pool_size
-
-    def disable_parallel(self):
-        """Disable parallel"""
-
-        self.log.info('Disabling parallel execution')
-        env.pool_size = 1
-        env.parallel = False
-        env.serial = True
 
     def put_remote(self, local_file, remote_dir, **fabric_settings):
         """Upload a file to a remote host"""
