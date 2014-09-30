@@ -13,8 +13,21 @@ class Log(object):
 
     def __init__(self, instance='DEPLOYER', level=logging.DEBUG):
 
-        self.logger = logging.getLogger(instance)
-        self.logger.setLevel(level)
+        self.logger = self.get_logger(instance, level)
+
+    def get_logger(self, instance, level):
+        """If a logger exists for this instance, return it; otherwise create a new logger"""
+
+        if instance in logging.Logger.manager.loggerDict:
+            return logging.Logger.manager.loggerDict[instance]
+        else:
+            return self.create_logger(instance, level)
+
+    def create_logger(self, instance, level):
+        """Create and return a new logger"""
+
+        logger = logging.getLogger(instance)
+        logger.setLevel(level)
 
         d = strftime("%Y-%m-%d-%H:%M:%S", gmtime())
 
@@ -24,7 +37,7 @@ class Log(object):
         formatter = logging.Formatter('%(asctime)s [%(name)-15s] [%(levelname)-7s] %(deployhost)s: %(message)s')
 
         console.setFormatter(formatter)
-        self.logger.addHandler(console)
+        logger.addHandler(console)
 
 #        # silently create log directory
 #        try:
@@ -42,6 +55,8 @@ class Log(object):
 #        logfile.setFormatter(formatter)
 #        logger.addHandler(logfile)
 #        #logger.handlers[0].doRollover()  # we want a new log each time we deploy something
+
+        return logger
 
     def log(self, message, level):
         """
