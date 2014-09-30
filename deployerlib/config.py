@@ -1,52 +1,22 @@
 import os
 import sys
 import yaml
-from attrdict import AttrDict
+from attrdict import AttrDict, load
 from deployerlib.exceptions import DeployerException
-from deployerlib.log import *
+from deployerlib.log import Log
 
 class Config(object):
-    """Config object class for reading in configuration from file"""
+    """Config object class for reading config from file provided on commandline.
+    The parsed args given on commandline will be part of the config object"""
 
-    def __init__(self, conf_file):
-        self.log = Log('Config')
-        self.log.info('Reading config from: {0}'.format(conf_file))
-        try:
-            fp = open(conf_file, 'r')
-            self.conf_data = yaml.load(fp)
-            self.conf_adict = AttrDict(self.conf_data)
-        except Exception, e:
-            self.log.error(e.message)
+    def __init__(self, args):
+        log = Log('Config')
+        conf_file = args.config
+        log.info('Reading config from: {0}'.format(conf_file))
+        self.conf_adict = load(conf_file, load_function=yaml.safe_load)
+        self.conf_adict.args = AttrDict()
+        for k,v in args.iteritems():
+            self.conf_adict.args[k] = v
 
-    def get(self, keys=[]):
-        """Getter for any item in conf_data, by keys_list"""
-        error = False
-        keys_pointer = []
-        temp_data = self.conf_data
-        for k in keys:
-            keys_pointer.append(k)
-            if type(temp_data) == type({}) and k in temp_data:
-                temp_data = temp_data[k]
-            else:
-                error = True
-                break
-        if error:
-            self.log.error('Could not find value for [{0}] in config'.format(', '.join(keys_pointer)))
-        else:
-            self.log.debug('Found value for [{0}] in config'.format(', '.join(keys)))
-            return temp_data
-
-    def dump(self, format='yaml'):
-        """Dumper to return conf_data in several formats"""
-        if format == 'yaml':
-            return yaml.dump(self.conf_data, default_flow_style=False, indent=2)
-        else:
-            self.log.error('Requested format "%s" is not supported' % format)
-
-    def adump(self, format='yaml'):
-        """Dumper to return conf_data in several formats"""
-        if format == 'yaml':
-            return yaml.dump(self.conf_adict, default_flow_style=False, indent=2)
-        else:
-            self.log.error('Requested format "%s" is not supported' % format)
-
+    def get(self):
+        return self.conf_adict

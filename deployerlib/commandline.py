@@ -1,3 +1,4 @@
+import sys
 import logging
 import argparse
 
@@ -8,7 +9,7 @@ class CommandLine(object):
     """Handle the command line of front-end scripts"""
 
     def __init__(self, parents=[], require_component=True, require_host=False):
-        self.log = Log(self.__class__.__name__)
+        log = Log(self.__class__.__name__)
 
         parser = argparse.ArgumentParser(parents=parents)
 
@@ -31,7 +32,7 @@ class CommandLine(object):
 
         parser.parse_args(namespace=self)
 
-        self.log.debug('CommandLine: {0}'.format(self))
+        log.debug('Commandline "{0}" resulted in this CommandLine object: {1}'.format(' '.join(sys.argv),self))
 
     def __str__(self):
         """String representation"""
@@ -44,3 +45,6 @@ class CommandLine(object):
         """Unambiguous representation"""
 
         return '{0}({1})'.format(self.__class__.__name__, self.__str__())
+
+    def iteritems(self):
+        return self.__dict__.iteritems()

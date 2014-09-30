@@ -1,3 +1,7 @@
+# WARNING: duplicate yaml-nodes are overwritten by latest version
+---
+steps: [upload, unpack, stop, activate, start]
+
 general:
     dns_suffix: aurora.integration.mp.ecg.so
     destination: /opt/tarballs
@@ -55,12 +59,26 @@ dc3:
     - mp-be002.aurora.fra01
 
 service_defaults:
+    control:
+        handler: /usr/bin/svc
+        stop: -d
+        start: -u
+    check:
+        handlers:
+            http: /usr/lib/nagios/plugins/check_http -I localhost -u http://localhost:{port}/ -p {port} -e "200,301"
 
 services:
-    advertisementhub-server:
+    advertisementhub:
         name: nl.marktplaats.advertisementhub.advertisementhub-server
         port: 10530
         jport: 10537
         protocol: thrift
         type: daemontools
+    advertisementlifecycle:
+        name: nl.marktplaats.advertisementlifecycle.advertisementlifecycle-server
+        port: 10550
+        jport: 10557
+        protocol: thrift
+        type: daemontools
+
 
