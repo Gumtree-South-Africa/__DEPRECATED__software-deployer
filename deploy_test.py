@@ -9,8 +9,8 @@ from deployerlib.deployer import Deployer
 
 
 args = CommandLine()
-c = Config(args.config)
-config = c.conf_adict
+c = Config(args)
+config = c.get()
 deployer = Deployer(args, config)
 
 deployer.deploy()
