@@ -14,8 +14,14 @@ from fabric.operations import run, sudo, put
 class FabricHelper(object):
     """Handle remote execution"""
 
-    def __init__(self, username=None, pool_size=1):
-        self.log = Log(self.__class__.__name__)
+    def __init__(self, username=None, pool_size=1, caller=None):
+
+        if caller:
+            log_name = '{0}-FH'.format(caller)
+        else:
+            log_name = self.__class__.__name__
+
+        self.log = Log(log_name)
 
         env.warn_only = True
         output.everything = False

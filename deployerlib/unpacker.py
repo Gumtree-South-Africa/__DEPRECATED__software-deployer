@@ -15,7 +15,7 @@ class Unpacker(object):
         self.args = args
         self.config = config
 
-        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel)
+        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel, caller=self.__class__.__name__)
 
     def get_unpack_command(self, service):
         """Based on the package type, determine the command line to unpack the package"""

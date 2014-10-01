@@ -13,7 +13,7 @@ class SymLink(object):
         self.config = config
         self.services = services
 
-        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel)
+        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel, caller=self.__class__.__name__)
 
     def __repr__(self):
 

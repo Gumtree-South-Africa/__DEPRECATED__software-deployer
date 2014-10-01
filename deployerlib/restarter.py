@@ -11,7 +11,7 @@ class Restarter(object):
     def __init__(self, services, args, config):
         self.log = Log(self.__class__.__name__)
 
-        self.fabrichelper = FabricHelper(config.general.user, args.parallel)
+        self.fabrichelper = FabricHelper(config.general.user, args.parallel, caller=self.__class__.__name__)
         self.services = services
 
     def get_service_control(self, service, command):

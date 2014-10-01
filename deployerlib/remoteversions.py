@@ -11,7 +11,7 @@ class RemoteVersions(object):
     def __init__(self, args, config, services, pool_size=10):
         self.log = Log(self.__class__.__name__)
 
-        self.fabrichelper = FabricHelper(config.general.user, pool_size)
+        self.fabrichelper = FabricHelper(config.general.user, pool_size, caller=self.__class__.__name__)
         self.services = services
         self.pool_size = pool_size
 

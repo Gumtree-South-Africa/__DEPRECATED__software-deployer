@@ -16,7 +16,7 @@ class Uploader(object):
         self.config = config
         self.upload_hosts = {}
 
-        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=pool_size)
+        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=pool_size, caller=self.__class__.__name__)
 
         for service in self.services:
             self.upload_hosts[service.servicename] = self.get_upload_hosts(service)
