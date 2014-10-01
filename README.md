@@ -8,7 +8,7 @@ A modular, extendable, configuration-driven deployment system.
 To do
 --
 - Order of steps may need to depend on the state of the host (i.e. stop needs to come before unpack if redeploying the version that is currently active)
-- Separate Package and Service classes? Or how to implment actions that don't require packages to be provided? (i.e. restarting services)
+- ~~Separate Package and Service classes? Or how to implment actions that don't require packages to be provided? (i.e. restarting services)~~
 - Templating or defaults sections in configuration files
 - Database migrations
 - Load balancer control
