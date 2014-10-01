@@ -8,10 +8,10 @@ from deployerlib.exceptions import DeployerException
 class Restarter(object):
     """Handle remote service restarts"""
 
-    def __init__(self, services, args, config):
+    def __init__(self, config, services):
         self.log = Log(self.__class__.__name__)
 
-        self.fabrichelper = FabricHelper(config.general.user, args.parallel, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(config.general.user, config.args.parallel, caller=self.__class__.__name__)
         self.services = services
 
     def get_service_control(self, service, command):

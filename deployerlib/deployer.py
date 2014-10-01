@@ -14,35 +14,35 @@ from deployerlib.exceptions import DeployerException
 class Deployer(object):
     """Manage stages of deployment"""
 
-    def __init__(self, args, config):
+    def __init__(self, config):
         self.log = Log(self.__class__.__name__)
 
-        self.args = args
         self.config = config
 
         self.services = self.get_services()
         self.steps = self.get_steps(config.steps)
 
-        if not args.redeploy and set(['upload', 'unpack', 'activate']).intersection(config.steps):
+        if not config.args.redeploy and set(['upload', 'unpack', 'activate']).intersection(config.steps):
             self.get_matrix()
 
     def get_services(self):
 
         services = []
 
-        if self.args.component:
-            self.log.info('Adding service {0}'.format(self.args.component))
-            services.append(Service(self.args.component, self.args, self.config))
+        if self.config.args.component:
+            for filename in self.config.args.component:
+                self.log.info('Adding service {0}'.format(filename))
+                services.append(Service(self.config, filename))
 
-        elif self.args.directory:
+        elif self.config.args.directory:
 
-            if not os.path.isdir(self.args.directory):
-                raise DeployerException('Not a directory: {0}'.format(self.args.directory))
+            if not os.path.isdir(self.config.args.directory):
+                raise DeployerException('Not a directory: {0}'.format(self.config.args.directory))
 
-            for filename in os.listdir(self.args.directory):
-                fullpath = os.path.join(self.args.directory, filename)
+            for filename in os.listdir(self.config.args.directory):
+                fullpath = os.path.join(self.config.args.directory, filename)
                 self.log.info('Adding service: {0}'.format(fullpath))
-                services.append(Service(fullpath, self.args, self.config))
+                services.append(Service(self.config, fullpath))
 
         else:
             raise DeployerException('Invalid configuration: no components to deploy')
@@ -67,7 +67,7 @@ class Deployer(object):
     def get_matrix(self):
         """Determine which hosts need to be touched"""
 
-        remoteversions = RemoteVersions(self.args, self.config, self.services)
+        remoteversions = RemoteVersions(self.config, self.services)
 
         for service in self.services:
             need_upgrade = remoteversions.get_hosts_not_running_version(service.servicename, service.version)
@@ -88,29 +88,29 @@ class Deployer(object):
     def _step_upload(self):
         """Upload packages to destination hosts"""
 
-        uploader = Uploader(self.services, self.args, self.config)
+        uploader = Uploader(self.config, self.services)
         uploader.upload()
 
     def _step_unpack(self):
         """Unpack packages on destination hosts"""
 
-        unpacker = Unpacker(self.services, self.args, self.config)
+        unpacker = Unpacker(self.config, self.services)
         unpacker.unpack()
 
     def _step_stop(self):
         """Stop services"""
 
-        restarter = Restarter(self.services, self.args, self.config)
+        restarter = Restarter(self.config, self.services)
         restarter.stop()
 
     def _step_start(self):
         """Start services"""
 
-        restarter = Restarter(self.services, self.args, self.config)
+        restarter = Restarter(self.config, self.services)
         restarter.start()
 
     def _step_activate(self):
         """Activate a service using a symbolic link"""
 
-        symlink = SymLink(self.services, self.args, self.config)
+        symlink = SymLink(self.config, self.services)
         symlink.set_target()

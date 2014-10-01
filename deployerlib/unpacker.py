@@ -8,14 +8,14 @@ from deployerlib.exceptions import DeployerException
 class Unpacker(object):
     """Unpack a packge on a remote host"""
 
-    def __init__(self, services, args, config):
+    def __init__(self, config, services):
         self.log = Log(self.__class__.__name__)
 
         self.services = services
-        self.args = args
         self.config = config
 
-        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(self.config.general.user,
+          pool_size=self.config.args.parallel, caller=self.__class__.__name__)
 
     def get_unpack_command(self, service):
         """Based on the package type, determine the command line to unpack the package"""
@@ -62,7 +62,7 @@ class Unpacker(object):
                 self.log.info('The following hosts already have {0} in place: {1}'.format(
                   service.packagename, ', '.join(exists_hosts)))
 
-                if self.args.redeploy:
+                if self.config.args.redeploy:
                     # Todo: This should not be done as part of "pre_deploy" tasks
                     self.log.info('Removing {0} on {1}'.format(service.install_destination, ', '.join(exists_hosts)))
                     res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(service.install_destination),

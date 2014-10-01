@@ -8,11 +8,10 @@ from deployerlib.exceptions import DeployerException
 class Uploader(object):
     """Upload files to a server"""
 
-    def __init__(self, services, args, config, pool_size=10):
+    def __init__(self, config, services, pool_size=10):
         self.log = Log(self.__class__.__name__)
 
         self.services = services
-        self.args = args
         self.config = config
         self.upload_hosts = {}
 
@@ -24,7 +23,7 @@ class Uploader(object):
     def get_upload_hosts(self, service):
         """Get the list of hosts to which the package should be uploaded"""
 
-        if self.args.redeploy or not service.hosts:
+        if self.config.args.redeploy or not service.hosts:
             return service.hosts
 
         res = self.fabrichelper.file_exists(service.remote_filename, hosts=service.hosts)
@@ -43,7 +42,7 @@ class Uploader(object):
 
         for service in self.services:
 
-            if self.args.redeploy:
+            if self.config.args.redeploy:
                 upload_hosts = service.hosts
             else:
                 upload_hosts = self.get_upload_hosts(service)

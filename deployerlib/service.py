@@ -7,22 +7,27 @@ from deployerlib.exceptions import DeployerException
 class Service(object):
     """Manage information about a package and the service it provides"""
 
-    def __init__(self, filename, args, config):
+    def __init__(self, config, filename=None, servicename=None):
         self.log = Log(self.__class__.__name__)
 
         self.log.info('Creating package from file: {0}'.format(filename))
 
-        self.args = args
         self.config = config
 
-        self.get_attributes_from_filename(filename)
+        if filename:
+            self.get_attributes_from_filename(filename)
+        elif servicename:
+            self.servicename = servicename
+        else:
+            raise DeployerException('{0} must be instantiated with a filename or a service name'.format(
+              self.__class__.__name__))
+
+        if not self.servicename in self.config.services:
+            raise DeployerException('No service {0} defined in platform configuration'.format(self.servicename))
 
         self.deployment_type = self.config.services[self.servicename]['type']
         self.upload_location = self.config.general.destination
         self.install_location = self.config.general.webapps
-        self.remote_filename = os.path.join(self.upload_location, self.filename)
-        self.install_destination = os.path.join(self.install_location, self.packagename)
-        self.symlink_target = os.path.join(self.install_location, self.servicename)
 
         if 'control_commands' in self.config.services[self.servicename]:
             self.control_commands = self.config.services[self.servicename]['control_commands']
@@ -52,6 +57,10 @@ class Service(object):
         self.servicetype = self.get_servicetype_from_servicename(self.servicename)
         self.version = self.get_version_from_packagename(self.packagename)
         self.sha, self.timestamp = self.split_version(self.version)
+
+        self.remote_filename = os.path.join(self.upload_location, self.filename)
+        self.install_destination = os.path.join(self.install_location, self.packagename)
+        self.symlink_target = os.path.join(self.install_location, self.servicename)
 
     def verify_file_access(self, path):
         """Make sure the file exists and is readable"""
@@ -132,9 +141,9 @@ class Service(object):
     def get_remote_hosts(self):
         """Get the list of hosts this service should be deployed to"""
 
-        if self.args.host:
+        if self.config.args.host:
 
-            hosts = [self.args.host]
+            hosts = self.config.args.host
 
         else:
             hosts = []
@@ -142,5 +151,7 @@ class Service(object):
             for datacenter in self.config['datacenters']:
                 hosts += self.config[datacenter]['hosts']
 
+        # debug
+        print hosts
         self.log.info('{0} is configured to run on: {1}'.format(self.servicename, ', '.join(hosts)))
         return hosts

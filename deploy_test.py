@@ -8,9 +8,9 @@ from deployerlib.config import Config
 from deployerlib.deployer import Deployer
 
 
-args = CommandLine()
+args = CommandLine(require_component=True)
 c = Config(args)
 config = c.get()
-deployer = Deployer(args, config)
+deployer = Deployer(config)
 
 deployer.deploy()

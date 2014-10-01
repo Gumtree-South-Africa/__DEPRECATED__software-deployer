@@ -6,14 +6,13 @@ from deployerlib.exceptions import DeployerException
 class SymLink(object):
     """Manage a remote symlink"""
 
-    def __init__(self, services, args, config):
+    def __init__(self, config, services):
         self.log = Log(self.__class__.__name__)
 
-        self.args = args
         self.config = config
         self.services = services
 
-        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.args.parallel, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.config.args.parallel, caller=self.__class__.__name__)
 
     def __repr__(self):
 
