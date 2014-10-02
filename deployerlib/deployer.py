@@ -21,6 +21,7 @@ class Deployer(object):
 
         self.services = self.get_services()
         self.steps = self.get_steps(config.steps)
+        self.tasks = []
 
         if not config.args.redeploy and set(['upload', 'unpack', 'activate']).intersection(config.steps):
             self.get_matrix()
@@ -64,6 +65,20 @@ class Deployer(object):
 
         return callables
 
+    def get_task(self, classtype, *args, **kwargs):
+        """Create new or get existing task object"""
+
+        for task in self.tasks:
+            if isinstance(task, classtype):
+                self.log.debug('Reusing existing {0}'.format(classtype))
+                return task
+
+        self.log.debug('Creating new {0}'.format(classtype))
+        newobj = classtype(*args, **kwargs)
+        self.tasks.append(newobj)
+
+        return newobj
+
     def get_matrix(self):
         """Determine which hosts need to be touched"""
 
@@ -88,29 +103,29 @@ class Deployer(object):
     def _step_upload(self):
         """Upload packages to destination hosts"""
 
-        uploader = Uploader(self.config, self.services)
+        uploader = self.get_task(Uploader, self.config, self.services)
         uploader.upload()
 
     def _step_unpack(self):
         """Unpack packages on destination hosts"""
 
-        unpacker = Unpacker(self.config, self.services)
+        unpacker = self.get_task(Unpacker, self.config, self.services)
         unpacker.unpack()
 
     def _step_stop(self):
         """Stop services"""
 
-        restarter = Restarter(self.config, self.services)
+        restarter = self.get_task(Restarter, self.config, self.services)
         restarter.stop()
 
     def _step_start(self):
         """Start services"""
 
-        restarter = Restarter(self.config, self.services)
+        restarter = self.get_task(Restarter, self.config, self.services)
         restarter.start()
 
     def _step_activate(self):
         """Activate a service using a symbolic link"""
 
-        symlink = SymLink(self.config, self.services)
+        symlink = self.get_task(SymLink, self.config, self.services)
         symlink.set_target()
