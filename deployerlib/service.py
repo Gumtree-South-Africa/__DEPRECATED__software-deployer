@@ -29,6 +29,14 @@ class Service(object):
         self.upload_location = self.config.general.destination
         self.install_location = self.config.general.webapps
 
+        if hasattr(self, 'filename'):
+            self.remote_filename = os.path.join(self.upload_location, self.filename)
+
+        if hasattr(self, 'packagename'):
+            self.install_destination = os.path.join(self.install_location, self.packagename)
+
+        self.symlink_target = os.path.join(self.install_location, self.servicename)
+
         if 'control_commands' in self.config.services[self.servicename]:
             self.control_commands = self.config.services[self.servicename]['control_commands']
 
@@ -57,10 +65,6 @@ class Service(object):
         self.servicetype = self.get_servicetype_from_servicename(self.servicename)
         self.version = self.get_version_from_packagename(self.packagename)
         self.sha, self.timestamp = self.split_version(self.version)
-
-        self.remote_filename = os.path.join(self.upload_location, self.filename)
-        self.install_destination = os.path.join(self.install_location, self.packagename)
-        self.symlink_target = os.path.join(self.install_location, self.servicename)
 
     def verify_file_access(self, path):
         """Make sure the file exists and is readable"""
