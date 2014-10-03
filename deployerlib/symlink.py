@@ -6,36 +6,31 @@ from deployerlib.exceptions import DeployerException
 class SymLink(object):
     """Manage a remote symlink"""
 
-    def __init__(self, config, services):
+    def __init__(self, config, service, host):
         self.log = Log(self.__class__.__name__)
 
         self.config = config
-        self.services = services
+        self.service = service
+        self.host = host
 
-        self.fabrichelper = FabricHelper(self.config.general.user, pool_size=self.config.args.parallel, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(self.config.general.user, self.host, caller=self.__class__.__name__)
 
     def __repr__(self):
 
-        return '{0}(services={1})'.format(self.__class__.__name__, repr(self.services))
+        return '{0}(service={1})'.format(self.__class__.__name__, repr(self.service))
 
     def set_target(self):
         """Set the link target"""
 
-        for service in self.services:
+        self.log.info('Setting symlink for {0} on {1}'.format(self.service.servicename, self.host))
 
-            if not service.hosts:
-                self.log.info('Service {0} does not need to be activated on any hosts'.format(service.servicename))
-                continue
+        res = self.fabrichelper.execute_remote('ln -sf {0} {1}'.format(
+          self.service.install_destination, self.service.symlink_target))
 
-            self.log.info('Setting symlink for {0} on {1}'.format(service.servicename, ', '.join(service.hosts)))
+        failed = [host for host in res if res[host].failed]
 
-            res = self.fabrichelper.execute_remote('ln -sf {0} {1}'.format(service.install_destination, service.symlink_target),
-              hosts=service.hosts)
+        if res.failed:
+            self.log.critical('Activate service {0} failed on host {1}: {2}'.format(
+              self.service.servicename, self.host, res))
 
-            failed = [host for host in res if res[host].failed]
-
-            if failed:
-                raise DeployerException('Activate service {0} failed on hosts: {1}'.format(
-                  service.servicename, ', '.join(failed)))
-
-        return True
+        return res.succeeded

@@ -24,9 +24,9 @@ class Deployer(object):
         self.steps = self.get_steps(config.steps)
         self.tasks = []
 
-        # steps that require interaction with remote hosts
-        if not config.args.redeploy and set(['upload', 'unpack', 'activate']).intersection(config.steps):
-            self.get_matrix()
+#        # steps that require interaction with remote hosts
+#        if not config.args.redeploy and set(['upload', 'unpack', 'activate']).intersection(config.steps):
+#            self.get_matrix()
 
     def get_services(self):
         """Get the list of services to deploy"""
@@ -92,70 +92,60 @@ class Deployer(object):
 
         return callables
 
-    def get_task(self, classtype, *args, **kwargs):
-        """Create new or get existing task object"""
-
-        for task in self.tasks:
-            if isinstance(task, classtype):
-                self.log.debug('Reusing existing {0}'.format(classtype))
-                return task
-
-        self.log.debug('Creating new {0}'.format(classtype))
-        newobj = classtype(*args, **kwargs)
-        self.tasks.append(newobj)
-
-        return newobj
-
-    def get_matrix(self):
-        """Determine which hosts need to be touched"""
-
-        remoteversions = RemoteVersions(self.config, self.services)
-
-        for service in self.services:
-            need_upgrade = remoteversions.get_hosts_not_running_version(service.servicename, service.version)
-
-            if need_upgrade != service.hosts:
-                self.log.debug('Modifying deployment list for {0}'.format(service.servicename))
-                service.hosts = list(set(service.hosts).intersection(need_upgrade))
-
-            self.log.info('{0} will be deployed to: {1}'.format(service.servicename,
-              ', '.join(service.hosts)))
+#    def get_matrix(self):
+#        """Determine which hosts need to be touched"""
+#
+#        remoteversions = RemoteVersions(self.config, self.services)
+#
+#        for service in self.services:
+#            need_upgrade = remoteversions.get_hosts_not_running_version(service.servicename, service.version)
+#
+#            if need_upgrade != service.hosts:
+#                self.log.debug('Modifying deployment list for {0}'.format(service.servicename))
+#                service.hosts = list(set(service.hosts).intersection(need_upgrade))
+#
+#            self.log.info('{0} will be deployed to: {1}'.format(service.servicename,
+#              ', '.join(service.hosts)))
 
     def deploy(self):
         """Run the requested deployment steps"""
 
+        # test running single-threaded
         for step in self.steps:
-            step()
+            for service in self.services:
+                for host in service.hosts:
+                    step(service, host)
+
 
         if hasattr(self, 'lb'):
             self.logout_loadbalancers()
 
-    def _step_upload(self):
+    def _step_upload(self, service, host):
         """Upload packages to destination hosts"""
 
-        uploader = self.get_task(Uploader, self.config, self.services)
+        uploader = Uploader(self.config, service, host)
         uploader.upload()
 
-    def _step_unpack(self):
+    def _step_unpack(self, service, host):
         """Unpack packages on destination hosts"""
 
-        unpacker = self.get_task(Unpacker, self.config, self.services)
+        unpacker = Unpacker(self.config, service, host)
         unpacker.unpack()
 
-    def _step_stop(self):
+    def _step_stop(self, service, host):
         """Stop services"""
 
-        restarter = self.get_task(Restarter, self.config, self.services)
+        restarter = Restarter(self.config, service, host)
         restarter.stop()
 
-    def _step_start(self):
+    def _step_start(self, service, host):
         """Start services"""
 
-        restarter = self.get_task(Restarter, self.config, self.services)
+        restarter = Restarter(self.config, service, host)
         restarter.start()
 
-    def _step_activate(self):
+    def _step_activate(self, service, host):
         """Activate a service using a symbolic link"""
 
-        symlink = self.get_task(SymLink, self.config, self.services)
+        symlink = SymLink(self.config, service, host)
         symlink.set_target()

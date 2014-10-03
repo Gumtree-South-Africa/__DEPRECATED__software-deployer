@@ -42,7 +42,7 @@ class LoadBalancer(object):
         self.log.info('Logged out from LB {0}'.format(self.hostname))
 
     def get_service(self, lbservice):
-        """Get a loadbalancer service object"""
+        """Get a loadbalancer service object from a service name"""
 
         service = NSService()
         service.set_name(lbservice)
