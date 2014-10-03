@@ -10,13 +10,13 @@ class Service(object):
     def __init__(self, config, filename=None, servicename=None):
         self.log = Log(self.__class__.__name__)
 
-        self.log.info('Creating package from file: {0}'.format(filename))
-
         self.config = config
 
         if filename:
+            self.log.info('Creating package from file: {0}'.format(filename))
             self.get_attributes_from_filename(filename)
         elif servicename:
+            self.log.info('Creating service from service name: {0}'.format(servicename))
             self.servicename = servicename
         else:
             raise DeployerException('{0} must be instantiated with a filename or a service name'.format(
@@ -155,7 +155,5 @@ class Service(object):
             for datacenter in self.config['datacenters']:
                 hosts += self.config[datacenter]['hosts']
 
-        # debug
-        print hosts
         self.log.info('{0} is configured to run on: {1}'.format(self.servicename, ', '.join(hosts)))
         return hosts
