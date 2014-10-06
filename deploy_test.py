@@ -5,12 +5,12 @@ import sys
 
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
-from deployerlib.deployer import Deployer
+from deployerlib.orchestrator import Orchestrator
 
 
 args = CommandLine(require_component=True)
 c = Config(args)
 config = c.get()
-deployer = Deployer(config)
 
-deployer.deploy()
+orchestrator = Orchestrator(config)
+orchestrator.run()
