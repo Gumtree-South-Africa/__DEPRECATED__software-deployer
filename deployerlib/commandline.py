@@ -8,7 +8,7 @@ from deployerlib.log import Log
 class CommandLine(object):
     """Handle the command line of front-end scripts"""
 
-    def __init__(self, parents=[], require_component=False, require_host=False):
+    def __init__(self, parents=[], require_host=False):
         log = Log(self.__class__.__name__)
 
         if type(parents) is not list:
@@ -21,10 +21,6 @@ class CommandLine(object):
         output_group.add_argument('-d', '--debug', action='store_true', help='Show a lot more information')
 
         parser.add_argument('-c', '--config', required=True, help='Specify a platform config file')
-
-        component_group = parser.add_mutually_exclusive_group(required=require_component)
-        component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
-        component_group.add_argument('--directory', help='Specify a directory of components to deploy')
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
         host_group.add_argument('--cluster', help='Specify a cluster of hosts to deploy to')

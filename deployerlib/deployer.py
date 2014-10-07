@@ -43,34 +43,40 @@ class Deployer(object):
         self.log.info('Deploying {0} to {1}'.format(self.service, self.host))
 
         for step in self.steps:
-            step(self.service, self.host)
+            res = step(self.service, self.host)
+
+            if not res:
+                self.log.critical('Step "{0}" failed!'.format(step))
+                return res
+
+        return True
 
     def _step_upload(self, service, host):
         """Upload packages to destination hosts"""
 
         uploader = Uploader(self.config, service, host)
-        uploader.upload()
+        return uploader.upload()
 
     def _step_unpack(self, service, host):
         """Unpack packages on destination hosts"""
 
         unpacker = Unpacker(self.config, service, host)
-        unpacker.unpack()
+        return unpacker.unpack()
 
     def _step_stop(self, service, host):
         """Stop services"""
 
         restarter = Restarter(self.config, service, host)
-        restarter.stop()
+        return restarter.stop()
 
     def _step_start(self, service, host):
         """Start services"""
 
         restarter = Restarter(self.config, service, host)
-        restarter.start()
+        return restarter.start()
 
     def _step_activate(self, service, host):
         """Activate a service using a symbolic link"""
 
         symlink = SymLink(self.config, service, host)
-        symlink.set_target()
+        return symlink.set_target()

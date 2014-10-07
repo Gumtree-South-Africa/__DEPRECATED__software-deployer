@@ -81,14 +81,14 @@ class Restarter(object):
     def stop(self):
         """Stop all services"""
 
-        self._control_service('stop')
+        return self._control_service('stop')
 
     def start(self):
         """Start all services"""
 
-        self._control_service('start')
+        return self._control_service('start')
 
     def restart(self):
         """Restart all services"""
 
-        self._control_service('restart')
+        return self._control_service('restart')

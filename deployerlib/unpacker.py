@@ -44,6 +44,12 @@ class Unpacker(object):
                 # Todo: This should not be done before stopping the service
                 self.log.info('Removing {0} on {1}'.format(self.service.install_destination, self.host))
                 res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(self.service.install_destination))
+
+                if not res:
+                    self.log.critical('Failed to remove {0}: {1}'.format(
+                      self.service.install_destination, res))
+                    return res
+
             else:
                 self.log.info('{0} is already in place on {1}'.format(self.service.packagename, self.host))
                 return True
