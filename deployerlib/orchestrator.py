@@ -51,7 +51,7 @@ class Orchestrator(object):
         else:
             raise DeployerException('Invalid configuration: no components to deploy')
 
-        if self.config.deployment_order:
+        if hasattr(self.config, 'deployment_order'):
             services = self.sort_services(services, self.config.deployment_order)
         else:
             self.log.info('No deployment_order has been specified')

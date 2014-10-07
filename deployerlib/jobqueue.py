@@ -86,7 +86,8 @@ class JobQueue(FabricJobQueue):
                         done = self._running.pop(id)
                         self._completed.append(done)
 
-                self.log.debug('Job queue has {0} jobs running'.format(len(self._running)))
+                self.log.info('Job queue has {0} jobs running and {1} jobs queued'.format(
+                  len(self._running), len(self._queued)))
 
             if not (self._queued or self._running):
                 self.log.debug('Job queue finished')
