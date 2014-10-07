@@ -14,3 +14,4 @@ To do
 - Load balancer control
 - ~~Logging is duplicated when creating multiple instances of an object (i.e. FabricHelper)~~
 - ~~Parallelism of steps doesn't make sense yet (i.e. stop all services on all hosts, then activate, etc)~~
+- Set global logging level based on command line options (--debug and --verbose)
