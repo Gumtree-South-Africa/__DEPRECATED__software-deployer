@@ -137,7 +137,7 @@ class Orchestrator(object):
         # remove queued jobs from the job list
         self.job_list = [x for x in self.job_list if not x in jobs]
 
-        self.log.debug('Running {0} jobs'.format(len(jobs)))
+        self.log.debug('Running {0} jobs with pool size {1}'.format(len(jobs), parallel))
 
         job_queue.close()
         res = job_queue.run()

@@ -55,8 +55,7 @@ class JobQueue(FabricJobQueue):
         if not self._closed:
             raise Exception("Need to close() before starting.")
 
-        if self._debug:
-            print("Job queue starting.")
+        self.log.debug('Job queue starting')
 
         while len(self._running) < self._max and len(self._running) > 0:
             _advance_the_queue()
@@ -69,18 +68,14 @@ class JobQueue(FabricJobQueue):
             if not self._all_alive():
                 for id, job in enumerate(self._running):
                     if not job.is_alive():
-                        if self._debug:
-                            print("Job queue found finished proc: %s." %
-                                    job.name)
+                        self.log.debug('Job queue found finished process: {0}/{1}'.format(job._host, job._service))
                         done = self._running.pop(id)
                         self._completed.append(done)
 
-                if self._debug:
-                    print("Job queue has %d running." % len(self._running))
+                self.log.debug('Job queue has {0} jobs running'.format(len(self._running)))
 
             if not (self._queued or self._running):
-                if self._debug:
-                    print("Job queue finished.")
+                self.log.debug('Job queue finished')
 
                 for job in self._completed:
                     job.join()
@@ -104,57 +99,3 @@ class JobQueue(FabricJobQueue):
             results[job.name]['exit_code'] = job.exitcode
 
         return results
-
-    def _fill_results(self, results):
-        """
-        Attempt to pull data off self._comms_queue and add to 'results' dict.
-        If no data is available (i.e. the queue is empty), bail immediately.
-        """
-        while True:
-            try:
-                datum = self._comms_queue.get_nowait()
-                results[datum['name']]['results'] = datum['result']
-            except Queue.Empty:
-                break
-
-
-#### Sample
-
-def try_using(parallel_type):
-    """
-    This will run the queue through it's paces, and show a simple way of using
-    the job queue.
-    """
-
-    def print_number(number):
-        """
-        Simple function to give a simple task to execute.
-        """
-        print(number)
-
-    if parallel_type == "multiprocessing":
-        from multiprocessing import Process as Bucket
-
-    elif parallel_type == "threading":
-        from threading import Thread as Bucket
-
-    # Make a job_queue with a bubble of len 5, and have it print verbosely
-    jobs = JobQueue(5)
-    jobs._debug = True
-
-    # Add 20 procs onto the stack
-    for x in range(20):
-        jobs.append(Bucket(
-            target=print_number,
-            args=[x],
-            kwargs={},
-            ))
-
-    # Close up the queue and then start it's execution
-    jobs.close()
-    jobs.run()
-
-
-if __name__ == '__main__':
-    try_using("multiprocessing")
-    try_using("threading")
