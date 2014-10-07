@@ -37,8 +37,12 @@ class Deployer(object):
 
         return callables
 
-    def deploy(self):
-        """Run the requested deployment steps"""
+    def deploy(self, remote_results={}, procname=None):
+        """Run the requested deployment steps
+           remote_results is a Manager dictionary, and procname is a Process name
+           These arguments are optional, and can be used to return deploy results
+           to a job manager.
+        """
 
         self.log.info('Deploying {0} to {1}'.format(self.service, self.host))
 
@@ -47,8 +51,10 @@ class Deployer(object):
 
             if not res:
                 self.log.critical('Step "{0}" failed!'.format(step))
+                remote_results[procname] = res
                 return res
 
+        remote_results[procname] = res
         return True
 
     def _step_upload(self, service, host):

@@ -1,7 +1,7 @@
 import os
 
 from Queue import Queue
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 
 from deployerlib.log import Log
 from deployerlib.service import Service
@@ -16,6 +16,9 @@ class Orchestrator(object):
     def __init__(self, config, services=[]):
         self.config = config
         self.log = Log(self.__class__.__name__)
+
+        manager = Manager()
+        self.job_results = manager.dict()
 
         if services:
             self.services = services
@@ -82,8 +85,9 @@ class Orchestrator(object):
 
         for service in self.services:
             for host in service.hosts:
+                procname = '{0}/{1}'.format(host, service.servicename)
                 deployer = Deployer(self.config, service, host)
-                job = Process(target=deployer.deploy, name=host)
+                job = Process(target=deployer.deploy, args=[self.job_results, procname], name=procname)
                 job._host = host
                 job._service = service.servicename
                 job_list.append(job)
@@ -91,6 +95,7 @@ class Orchestrator(object):
         return job_list
 
     def run(self):
+
         # deploy to a single host
         if hasattr(self.config, 'single_host'):
             single_host = self.config.single_host
@@ -125,7 +130,7 @@ class Orchestrator(object):
             parallel = self.config.args.parallel
 
         queue = Queue()
-        job_queue = JobQueue(parallel, queue)
+        job_queue = JobQueue(parallel, queue, self.job_results)
 
         if self.config.args.debug:
             job_queue._debug = True
@@ -143,10 +148,10 @@ class Orchestrator(object):
         res = job_queue.run()
 
         # check results of each job
-        failed = [x for x in res.keys() if res[x]['exit_code'] != 0]
+        failed = [x for x in self.job_results.keys() if not self.job_results[x]]
 
         if failed:
-            raise DeployerException('Failed jobs: {0}'.format(failed))
+            raise DeployerException('Failed jobs: {0}'.format(', '.join(failed)))
 
         return res
 

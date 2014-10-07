@@ -1,5 +1,4 @@
 import time
-import Queue
 
 from fabric.job_queue import JobQueue as FabricJobQueue
 from fabric.network import ssh
@@ -11,9 +10,10 @@ from deployerlib.exceptions import DeployerException
 
 class JobQueue(FabricJobQueue):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, parallel, queue, remote_results={}, *args, **kwargs):
         self.log = Log(self.__class__.__name__)
-        super(self.__class__, self).__init__(*args, **kwargs)
+        self.remote_results = remote_results
+        super(self.__class__, self).__init__(parallel, queue, *args, **kwargs)
 
     def run(self):
         """
@@ -40,11 +40,12 @@ class JobQueue(FabricJobQueue):
             It also sets the env.host_string from the job.name, so that fabric
             knows that this is the host to be making connections on.
             """
-            job = self._queued.pop()
-            if self._debug:
-                print("Popping '%s' off the queue and starting it" % job.name)
-            with settings(clean_revert=True, host_string=job.name, host=job.name):
+            job = self._queued.pop(0)
+            self.log.debug('Starting job: {0}/{1}'.format(job._host, job._service))
+
+            with settings(clean_revert=True, host_string=job._host, host=job._host):
                 job.start()
+
             self._running.append(job)
 
         # Prep return value so we can start filling it during main loop
@@ -63,6 +64,19 @@ class JobQueue(FabricJobQueue):
         # Main loop!
         while not self._finished:
             while len(self._running) < self._max and self._queued:
+
+                failed = [x for x in self.remote_results.keys() if not self.remote_results[x]]
+
+                if failed:
+                    self.log.critical('Aborting queue due to failed jobs: {0}'.format(', '.join(failed)))
+                    self._fill_results(results)
+                    time.sleep(ssh.io_sleep)
+
+                    for job in self._completed:
+                        job.join()
+
+                    return results
+
                 _advance_the_queue()
 
             if not self._all_alive():
