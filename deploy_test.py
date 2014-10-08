@@ -15,8 +15,7 @@ component_group.add_argument('--component', nargs='+', help='Specify a list of c
 component_group.add_argument('--directory', help='Specify a directory of components to deploy')
 
 args = CommandLine(parents=parser)
-c = Config(args)
-config = c.get()
+config = Config(args)
 
 orchestrator = Orchestrator(config)
 orchestrator.run()

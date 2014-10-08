@@ -15,8 +15,7 @@ action_group.add_argument('--enableservice', nargs='+', metavar='SERVICE', help=
 action_group.add_argument('--listservices', nargs='+', metavar='SERVICE', help='List services on a host or cluster')
 
 args = CommandLine(parents=parser, require_host=True)
-c = Config(args)
-config = c.get()
+config = Config(args)
 
 if config.args.restartservice:
     config.steps = ['stop', 'start']

@@ -77,12 +77,12 @@ class Log(object):
     def info(self, message):
         self.log(message, logging.INFO)
 
-    def warn(self, message):
-        self.log(message, logging.WARNING)
+    def warning(self, message):
+        self.log(yellow(message), logging.WARNING)
 
     def error(self, message):
-        self.log(message, logging.ERROR)
+        self.log(cyan(message), logging.ERROR)
 
     def critical(self, message):
-        self.log(message, logging.CRITICAL)
+        self.log(red(message), logging.CRITICAL)
 

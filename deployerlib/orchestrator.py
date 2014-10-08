@@ -32,19 +32,19 @@ class Orchestrator(object):
 
         services = []
 
-        if self.config.args.component:
+        if self.config.component:
 
-            for filename in self.config.args.component:
+            for filename in self.config.component:
                 self.log.info('Adding service {0}'.format(filename))
                 services.append(Service(self.config, filename))
 
-        elif self.config.args.directory:
+        elif self.config.directory:
 
-            if not os.path.isdir(self.config.args.directory):
-                raise DeployerException('Not a directory: {0}'.format(self.config.args.directory))
+            if not os.path.isdir(self.config.directory):
+                raise DeployerException('Not a directory: {0}'.format(self.config.directory))
 
-            for filename in os.listdir(self.config.args.directory):
-                fullpath = os.path.join(self.config.args.directory, filename)
+            for filename in os.listdir(self.config.directory):
+                fullpath = os.path.join(self.config.directory, filename)
                 self.log.info('Adding service: {0}'.format(fullpath))
                 services.append(Service(self.config, fullpath))
 
@@ -127,12 +127,12 @@ class Orchestrator(object):
 
         # By default use the parallel specified on the command line
         if not parallel:
-            parallel = self.config.args.parallel
+            parallel = self.config.parallel
 
         queue = Queue()
         job_queue = JobQueue(parallel, queue, self.job_results)
 
-        if self.config.args.debug:
+        if self.config.debug:
             job_queue._debug = True
 
         # add jobs to queue
@@ -172,7 +172,7 @@ class Orchestrator(object):
         """Run all jobs for the specified service"""
 
         if not parallel:
-            parallel = self.config.args.parallel
+            parallel = self.config.parallel
 
         if not self.job_list:
             self.log.info('Job queue is empty')

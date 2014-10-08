@@ -1,8 +1,10 @@
 import os
 
+from fabric.colors import green
+
 from deployerlib.uploader import Uploader
 from deployerlib.unpacker import Unpacker
-#from deployerlib.loadbalancer import LoadBalancer
+from deployerlib.loadbalancer import LoadBalancer
 from deployerlib.restarter import Restarter
 from deployerlib.symlink import SymLink
 
@@ -21,6 +23,7 @@ class Deployer(object):
         self.host = host
 
         self.steps = self.get_steps(config.steps)
+        self.tasks = []
 
     def get_steps(self, steps):
         """Verify the list of steps to be run for deployment"""
@@ -37,6 +40,20 @@ class Deployer(object):
 
         return callables
 
+    def get_task(self, classtype, *args, **kwargs):
+        """Create new or get existing task object"""
+
+        for task in self.tasks:
+            if isinstance(task, classtype):
+                self.log.debug('Reusing existing {0} object'.format(classtype.__name__))
+                return task
+
+        self.log.debug('Creating new {0} object'.format(classtype.__name__))
+        newobj = classtype(*args, **kwargs)
+        self.tasks.append(newobj)
+
+        return newobj
+
     def deploy(self, remote_results={}, procname=None):
         """Run the requested deployment steps
            remote_results is a Manager dictionary, and procname is a Process name
@@ -44,16 +61,17 @@ class Deployer(object):
            to a job manager.
         """
 
-        self.log.info('Deploying {0} to {1}'.format(self.service, self.host))
+        self.log.info(green('Deploying {0} to {1}'.format(self.service, self.host)))
 
         for step in self.steps:
             res = step(self.service, self.host)
 
             if not res:
-                self.log.critical('Step "{0}" failed!'.format(step))
+                self.log.critical('Step "{0}" failed!'.format(step.__name__))
                 remote_results[procname] = res
                 return res
 
+        self.log.info(green('Finished deploying {0} to {1}'.format(self.service, self.host)))
         remote_results[procname] = res
         return True
 
@@ -68,6 +86,40 @@ class Deployer(object):
 
         unpacker = Unpacker(self.config, service, host)
         return unpacker.unpack()
+
+    def _step_disable_loadbalancer(self, service, host):
+        """Disable a service on a load balancer"""
+
+        if not hasattr(service, 'lb_service'):
+            self.log.warning('No lb_service configured for {0}, not doing load balancer control'.format(
+              service.servicename))
+            return True
+
+        lb_hostname, lb_username, lb_password = self.config.get_lb_for_host(host)
+
+        with LoadBalancer(lb_hostname, lb_username, lb_password) as loadbalancer:
+            return loadbalancer.disable_service(service.lb_service.format(hostname=self.host))
+
+        self.log.critical('Failed to get load balancer for {0} on {1}'.format(
+          service.lb_service, host))
+        return False
+
+    def _step_enable_loadbalancer(self, service, host):
+        """Enable a service on a load balancer"""
+
+        if not hasattr(service, 'lb_service'):
+            self.log.warning('No lb_service configured for {0}, not doing load balancer control'.format(
+              service.servicename))
+            return True
+
+        lb_hostname, lb_username, lb_password = self.config.get_lb_for_host(host)
+
+        with LoadBalancer(lb_hostname, lb_username, lb_password) as loadbalancer:
+            return loadbalancer.enable_service(service.lb_service.format(hostname=self.host))
+
+        self.log.critical('Failed to get load balancer for {0} on {1}'.format(
+          service.lb_service, host))
+        return False
 
     def _step_stop(self, service, host):
         """Stop services"""

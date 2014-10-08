@@ -40,7 +40,7 @@ class Unpacker(object):
 
         if self.fabrichelper.file_exists(self.service.install_destination):
 
-            if self.config.args.redeploy:
+            if self.config.redeploy:
                 # Todo: This should not be done before stopping the service
                 self.log.info('Removing {0} on {1}'.format(self.service.install_destination, self.host))
                 res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(self.service.install_destination))

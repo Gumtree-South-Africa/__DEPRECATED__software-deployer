@@ -40,6 +40,9 @@ class Service(object):
         if 'control_commands' in self.config.services[self.servicename]:
             self.control_commands = self.config.services[self.servicename]['control_commands']
 
+        if 'lb_service' in self.config.services[self.servicename]:
+            self.lb_service = self.config.services[self.servicename]['lb_service']
+
         self.hosts = self.get_remote_hosts()
 
     def __str__(self):
@@ -145,9 +148,9 @@ class Service(object):
     def get_remote_hosts(self):
         """Get the list of hosts this service should be deployed to"""
 
-        if self.config.args.host:
+        if self.config.host:
 
-            hosts = self.config.args.host
+            hosts = self.config.host
 
         else:
             hosts = []

@@ -21,6 +21,21 @@ class LoadBalancer(object):
     def __repr__(self):
         return '{0}(hostname={1})'.format(self.__class__.__name__, repr(self.hostname))
 
+    def __enter__(self):
+        """When used as a context manager"""
+
+        return self
+
+    def __exit__(self, *err):
+        """Log out of the load balancer if the object is destroyed"""
+
+        if hasattr(self, 'nitro'):
+
+            try:
+                self.logout()
+            except NSNitroError:
+                pass
+
     def connect(self):
         """Connect to a load balancer"""
 
@@ -57,42 +72,59 @@ class LoadBalancer(object):
 
         service = self.get_service(lbservice)
 
-        return service.get_svrstate()
+        if not service:
+            self.log.warning('No such service {0} on {1}'.format(lbservice, self.hostname))
+            return None, None
+        else:
+            return service.get_svrstate(), service
 
     def enable_service(self, lbservice):
         """Get the state of a load balancer service"""
 
-        service = self.get_service(lbservice)
+        cur_state, service = self.get_service_state(lbservice)
 
-        if service.get_svrstate() == 'UP':
+        if not service:
+            return True
+
+        if cur_state == 'UP':
+            self.log.warning('Service {0} is already {1}'.format(lbservice, cur_state))
             return True
 
         NSService.enable(self.nitro, service)
         time.sleep(2)
 
-        service = self.get_service(lbservice)
+        new_state, service = self.get_service_state(lbservice)
 
-        if service.get_svrstate() != 'UP':
-            raise DeployerException('Failed to enable service {0} on {1}'.format(
-              lbservice, self.hostname))
+        if new_state != 'UP':
+            self.log.critical('Failed to enable service {0} on {1} (state is {2}'.format(
+              lbservice, self.hostname, new_state))
+            return False
 
+        self.log.info('{0} is now {1} on {2}'.format(lbservice, new_state, self.hostname))
         return True
 
     def disable_service(self, lbservice):
         """Disable a service on the load balancer"""
 
-        service = self.get_service(lbservice)
+        cur_state, service = self.get_service_state(lbservice)
 
-        if service.get_svrstate() != 'UP':
+        if not service:
+            return True
+
+        if cur_state != 'UP':
+            self.log.warning('Service {0} is already {1}'.format(lbservice, cur_state))
             return True
 
         NSService.disable(self.nitro, service)
         time.sleep(2)
 
         service = self.get_service(lbservice)
+        new_state = service.get_svrstate()
 
-        if service.get_svrstate() == 'UP':
-            raise DeployerException('Failed to disable service {0} on {1}'.format(
-              lbservice, self.hostname))
+        if new_state == 'UP':
+            self.log.critical('Failed to disable service {0} on {1} (state is {2})'.format(
+              lbservice, self.hostname, new_state))
+            return False
 
+        self.log.info('{0} is now {1} on {2}'.format(lbservice, new_state, self.hostname))
         return True
