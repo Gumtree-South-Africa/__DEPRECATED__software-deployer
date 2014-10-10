@@ -113,39 +113,43 @@ class Deployer(object):
 
         return res
 
-    def _step_disable_loadbalancer(self, service, host):
-        """Disable a service on a load balancer"""
+    def _do_on_loadbalancer(self, action, service, host):
+        """Disable/Enable a service on a load balancer"""
+
+        if action == 'disable':
+            action_text = 'Disabling'
+        elif action == 'enable':
+            action_text = 'Enabling'
+        else:
+            raise DeployerException('Unknown loadbalancer action {0}'.format(action))
 
         if not hasattr(service, 'lb_service'):
             self.log.warning('No lb_service configured for {0}, not doing load balancer control'.format(
               service.servicename))
             return True
 
-        lb_hostname, lb_username, lb_password = self.config.get_lb_for_host(host)
+        lb_service = service.lb_service.format(hostname=host)
+        lb_hostname, lb_username, lb_password = self.config.get_lb(service.servicename, host)
 
-        with LoadBalancer(lb_hostname, lb_username, lb_password) as loadbalancer:
-            return loadbalancer.disable_service(service.lb_service.format(hostname=self.host))
+        if lb_hostname:
+            self.log.info('{2} service "{0}" on {1}'.format(lb_service, lb_hostname, action_text))
+            with LoadBalancer(lb_hostname, lb_username, lb_password) as loadbalancer:
+                lb_action = eval('loadbalancer.'+action+'_service')
+                return lb_action(lb_service)
+        else:
+            self.log.critical('Failed to get load balancer for {0} on {1}'.format(
+                service.servicename, host))
+            return False
 
-        self.log.critical('Failed to get load balancer for {0} on {1}'.format(
-          service.lb_service, host))
-        return False
+    def _step_disable_loadbalancer(self, service, host):
+        """Disable a service on a load balancer"""
+
+        return self._do_on_loadbalancer('disable', service, host)
 
     def _step_enable_loadbalancer(self, service, host):
         """Enable a service on a load balancer"""
 
-        if not hasattr(service, 'lb_service'):
-            self.log.warning('No lb_service configured for {0}, not doing load balancer control'.format(
-              service.servicename))
-            return True
-
-        lb_hostname, lb_username, lb_password = self.config.get_lb_for_host(host)
-
-        with LoadBalancer(lb_hostname, lb_username, lb_password) as loadbalancer:
-            return loadbalancer.enable_service(service.lb_service.format(hostname=self.host))
-
-        self.log.critical('Failed to get load balancer for {0} on {1}'.format(
-          service.lb_service, host))
-        return False
+        return self._do_on_loadbalancer('enable', service, host)
 
     def _step_stop_service(self, service, host):
         """Stop services"""

@@ -111,7 +111,7 @@ class Orchestrator(object):
                 job._host = host
                 job_list.append(job)
 
-        self._run_jobs(jobs=job_list, parallel=20)
+        self._run_jobs(jobs=job_list, parallel=10)
 
         return remoteversions.resolve_remote_versions()
 

@@ -13,7 +13,7 @@ class RemoteVersions(object):
     def __init__(self, config):
         self.log = Log(self.__class__.__name__, config=config)
 
-        self.fabrichelper = FabricHelper(config.general.user, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(config.user, caller=self.__class__.__name__)
 
         manager = Manager()
         self._remote_versions = manager.list()

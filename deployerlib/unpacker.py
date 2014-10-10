@@ -19,7 +19,7 @@ class Unpacker(object):
         if self.service.unpack_dir != self.service.install_destination:
             self.clobber = True
 
-        self.fabrichelper = FabricHelper(self.config.general.user, self.host, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(self.config.user, self.host, caller=self.__class__.__name__)
 
     def get_unpack_command(self, service):
         """Based on the package type, determine the command line to unpack the package"""

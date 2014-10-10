@@ -16,7 +16,7 @@ class Restarter(object):
         self.host = host
         self.timeout = timeout
 
-        self.fabrichelper = FabricHelper(config.general.user, self.host, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(config.user, self.host, caller=self.__class__.__name__)
 
     def get_service_control(self, service, command):
         """Get a service control command"""

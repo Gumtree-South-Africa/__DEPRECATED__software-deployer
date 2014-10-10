@@ -39,7 +39,7 @@ class Log(object):
         console = logging.StreamHandler(sys.stdout)
         console.setLevel(level)
 
-        formatter = logging.Formatter('%(asctime)s [%(name)-15s] [%(levelname)-7s] %(deployhost)s: %(message)s')
+        formatter = logging.Formatter('%(asctime)s [%(name)-15s] [%(levelname)-7s] %(deployuser)s@%(deployhost)s: %(message)s')
 
         console.setFormatter(formatter)
         logger.addHandler(console)
@@ -72,9 +72,9 @@ class Log(object):
         """
 
         if env.host:
-            self.logger.log(level, message, extra={'deployhost':env.host})
+            self.logger.log(level, message, extra={'deployhost':env.host, 'deployuser':env.user})
         else:
-            self.logger.log(level, message, extra={'deployhost':'*'})
+            self.logger.log(level, message, extra={'deployhost':'*', 'deployuser':'*'})
 
     def debug(self, message):
         self.log(message, logging.DEBUG)

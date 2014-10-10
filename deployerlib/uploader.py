@@ -16,7 +16,7 @@ class Uploader(object):
         self.config = config
         self.upload_hosts = {}
 
-        self.fabrichelper = FabricHelper(self.config.general.user, self.host, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(self.config.user, self.host, caller=self.__class__.__name__)
 
     def upload(self):
         """Upload files to a server"""
