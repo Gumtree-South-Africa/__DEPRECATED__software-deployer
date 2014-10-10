@@ -41,7 +41,7 @@ class JobQueue(FabricJobQueue):
             knows that this is the host to be making connections on.
             """
             job = self._queued.pop(0)
-            self.log.debug('Starting job: {0}/{1}'.format(job._host, job._service))
+            self.log.debug('Starting job: {0}'.format(job._name))
 
             with settings(clean_revert=True, host_string=job._host, host=job._host):
                 job.start()
@@ -93,7 +93,7 @@ class JobQueue(FabricJobQueue):
             if not self._all_alive():
                 for id, job in enumerate(self._running):
                     if not job.is_alive():
-                        self.log.debug('Found finished process: {0}/{1}'.format(job._host, job._service))
+                        self.log.debug('Found finished job: {0}'.format(job._name))
 
                         if not job._name in self.remote_results:
                             # populate this so the orchestrator will know a job failed

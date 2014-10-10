@@ -45,14 +45,15 @@ class Unpacker(object):
                 self.log.info('Removing {0} on {1}'.format(self.service.install_destination, self.host))
                 res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(self.service.install_destination))
 
-                if not res:
+                if not res.succeeded:
                     self.log.critical('Failed to remove {0}: {1}'.format(
                       self.service.install_destination, res))
-                    return res
+                    return res.succeeded
 
             else:
                 self.log.info('{0} is already in place on {1}'.format(self.service.packagename, self.host))
                 return True
 
         self.log.info('Unpacking {0} on {1}'.format(self.service.servicename, self.host))
-        return self.fabrichelper.execute_remote(unpack_command)
+        res = self.fabrichelper.execute_remote(unpack_command)
+        return res.succeeded

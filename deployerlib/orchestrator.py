@@ -5,6 +5,7 @@ from multiprocessing import Process, Manager
 
 from deployerlib.log import Log
 from deployerlib.service import Service
+from deployerlib.remoteversions import RemoteVersions
 from deployerlib.deployer import Deployer
 from deployerlib.jobqueue import JobQueue
 from deployerlib.exceptions import DeployerException
@@ -25,6 +26,8 @@ class Orchestrator(object):
         else:
             self.services = self.get_services()
 
+        self.job_list = []
+        self.remote_versions = self.get_remote_versions()
         self.job_list = self.get_job_list()
 
     def get_services(self):
@@ -60,8 +63,8 @@ class Orchestrator(object):
 
     def sort_services(self, services, order):
         """Sort a list of services according to a specified order
-           services: A list of service objects
-           order: A list of servicename strings
+           services: A list of service objects to be put into order
+           order: A list of servicename strings by which the services will be ordered
         """
 
         newlist = []
@@ -78,6 +81,24 @@ class Orchestrator(object):
 
         return newlist
 
+    def get_remote_versions(self):
+        """Get the versions of services running on remote hosts"""
+
+        remoteversions = RemoteVersions(self.config)
+        job_list = []
+
+        for service in self.services:
+            for host in service.hosts:
+                procname = 'RemoteVersions({0}/{1})'.format(host, service.servicename)
+                job = Process(target=remoteversions.get_remote_version, args=[service, host,
+                  self.job_results, procname], name=procname)
+                job._host = host
+                job_list.append(job)
+
+        self._run_jobs(jobs=job_list, parallel=20)
+
+        return remoteversions.resolve_remote_versions()
+
     def get_job_list(self):
         """Build a list of jobs"""
 
@@ -85,6 +106,16 @@ class Orchestrator(object):
 
         for service in self.services:
             for host in service.hosts:
+
+                if not self.config.redeploy and service.servicename in self.remote_versions and \
+                  host in self.remote_versions[service.servicename]:
+                    if self.remote_versions[service.servicename][host] == service.version:
+                        self.log.debug('{0} is already at version {1} on {2}'.format(
+                          service.servicename, service.version, host))
+                        continue
+
+                self.log.debug('{0} will be deployed to {1}'.format(service.servicename, host))
+
                 procname = '{0}/{1}'.format(host, service.servicename)
                 deployer = Deployer(self.config, service, host)
                 job = Process(target=deployer.deploy, args=[self.job_results, procname], name=procname)
@@ -95,6 +126,10 @@ class Orchestrator(object):
         return job_list
 
     def run(self):
+
+        if not self.job_list:
+            self.log.info('Nothing to deploy')
+            return True
 
         # deploy to a single host
         if hasattr(self.config, 'single_host'):
@@ -132,9 +167,6 @@ class Orchestrator(object):
         queue = Queue()
         job_queue = JobQueue(parallel, queue, self.job_results)
 
-        if self.config.debug:
-            job_queue._debug = True
-
         # add jobs to queue
         for job in jobs:
             job_queue.append(job)
@@ -161,7 +193,7 @@ class Orchestrator(object):
         jobs = [x for x in self.job_list if x._host == hostname]
 
         if not jobs:
-            self.log.critical('{0} jobs in the queue, but none are destined for {1}'.format(
+            self.log.critical('{0} jobs in the queue, none are destined for {1}'.format(
               len(self.job_list), hostname))
             raise DeployerException('run_host: No jobs to run for this host')
 
@@ -175,13 +207,13 @@ class Orchestrator(object):
             parallel = self.config.parallel
 
         if not self.job_list:
-            self.log.info('Job queue is empty')
+            self.log.debug('Job queue is empty')
             return
 
         jobs = [x for x in self.job_list if x._service == servicename]
 
         if not jobs:
-            self.log.info('{0} jobs in the queue, but none are for service {1}'.format(
+            self.log.debug('{0} jobs in the queue, but none are for service {1}'.format(
               len(self.job_list), servicename))
             return
 

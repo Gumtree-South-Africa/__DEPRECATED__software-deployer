@@ -13,10 +13,10 @@ class Service(object):
         self.config = config
 
         if filename:
-            self.log.info('Creating package from file: {0}'.format(filename))
+            self.log.debug('Creating package from file: {0}'.format(filename))
             self.get_attributes_from_filename(filename)
         elif servicename:
-            self.log.info('Creating service from service name: {0}'.format(servicename))
+            self.log.debug('Creating service from service name: {0}'.format(servicename))
             self.servicename = servicename
         else:
             raise DeployerException('{0} must be instantiated with a filename or a service name'.format(

@@ -75,13 +75,13 @@ class Deployer(object):
         remote_results[procname] = res
         return True
 
-    def _step_upload(self, service, host):
+    def _step_upload_package(self, service, host):
         """Upload packages to destination hosts"""
 
         uploader = Uploader(self.config, service, host)
         return uploader.upload()
 
-    def _step_unpack(self, service, host):
+    def _step_unpack_package(self, service, host):
         """Unpack packages on destination hosts"""
 
         unpacker = Unpacker(self.config, service, host)
@@ -121,19 +121,19 @@ class Deployer(object):
           service.lb_service, host))
         return False
 
-    def _step_stop(self, service, host):
+    def _step_stop_service(self, service, host):
         """Stop services"""
 
         restarter = Restarter(self.config, service, host)
         return restarter.stop()
 
-    def _step_start(self, service, host):
+    def _step_start_service(self, service, host):
         """Start services"""
 
         restarter = Restarter(self.config, service, host)
         return restarter.start()
 
-    def _step_activate(self, service, host):
+    def _step_activate_service(self, service, host):
         """Activate a service using a symbolic link"""
 
         symlink = SymLink(self.config, service, host)
