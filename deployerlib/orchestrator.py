@@ -76,7 +76,10 @@ class Orchestrator(object):
             else:
                 self.log.debug('Service {0} specified in deployment order, but there is no package to deploy'.format(servicename))
 
-        newlist += [x for x in services if not x in newlist]
+        extra_services = [x.servicename for x in services if not x in newlist]
+
+        if extra_services:
+            raise DeployerException('Services not defined in deployment_order: {0}'.format(', '.join(extra_services)))
 
         return newlist
 
