@@ -49,6 +49,7 @@ class JobQueue(FabricJobQueue):
             self._running.append(job)
 
         def _abort_queue(jobs):
+            """Helper function to abort the queue cleanly"""
 
             msg = 'Aborting queue due to failed jobs'
 

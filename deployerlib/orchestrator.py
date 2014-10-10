@@ -18,20 +18,19 @@ class Orchestrator(object):
         self.config = config
         self.log = Log(self.__class__.__name__)
 
-        manager = Manager()
-        self.job_results = manager.dict()
-
         if services:
             self.services = services
         else:
             self.services = self.get_services()
 
-        self.job_list = []
+        manager = Manager()
+        self.job_results = manager.dict()
+
         self.remote_versions = self.get_remote_versions()
-        self.job_list = self.get_job_list()
+        self.deploy_tasks = self.get_job_list()
 
     def get_services(self):
-        """Get the list of services to deploy"""
+        """Get the list of services to deploy as specified on the command line"""
 
         services = []
 
@@ -86,6 +85,7 @@ class Orchestrator(object):
 
         remoteversions = RemoteVersions(self.config)
         job_list = []
+        self.job_results.clear()
 
         for service in self.services:
             for host in service.hosts:
@@ -102,17 +102,34 @@ class Orchestrator(object):
     def get_job_list(self):
         """Build a list of jobs"""
 
+        def _need_deploy(service, host):
+            """Helper function to answer whether or not a service needs to be deployed"""
+
+            if self.config.redeploy:
+                return True
+
+            if not hasattr(self, 'remote_versions'):
+                return True
+
+            if not hasattr(service, 'version'):
+                return True
+
+            if service.servicename in self.remote_versions and host in self.remote_versions[service.servicename]:
+                if self.remote_versions[service.servicename][host] == service.version:
+                    return False
+
+            return True
+
         job_list = []
+        self.job_results.clear()
 
         for service in self.services:
             for host in service.hosts:
 
-                if not self.config.redeploy and service.servicename in self.remote_versions and \
-                  host in self.remote_versions[service.servicename]:
-                    if self.remote_versions[service.servicename][host] == service.version:
-                        self.log.debug('{0} is already at version {1} on {2}'.format(
-                          service.servicename, service.version, host))
-                        continue
+                if not _need_deploy(service, host):
+                    self.log.debug('{0} is already at version {1} on {2}'.format(
+                      service.servicename, service.version, host))
+                    continue
 
                 self.log.debug('{0} will be deployed to {1}'.format(service.servicename, host))
 
@@ -126,36 +143,46 @@ class Orchestrator(object):
         return job_list
 
     def run(self):
+        """Run jobs as a deployment task:
+           - Start with a single host
+           - Then run in parallel, following deployment_order
+           - Finally run all remaining jobs in parallel
+        """
 
-        if not self.job_list:
+        if not self.deploy_tasks:
             self.log.info('Nothing to deploy')
             return True
 
         # deploy to a single host
         if hasattr(self.config, 'single_host'):
             single_host = self.config.single_host
-        else:
-            single_host = self.services[0].hosts[0]
 
-        self._run_host(single_host)
+            # If there are no tasks for the configured host, use the first one we come across
+            if not [x for x in self.deploy_tasks if x._host == single_host]:
+                single_host = self.deploy_tasks[0]._host
+                self.log.debug('No jobs in the queue for {0}, using {1} as the single_host instead'.format(
+                  self.config.single_host, single_host))
+
+            completed = self._run_jobs_for_host(single_host, self.deploy_tasks)
+
+            # remove queued jobs from the job list
+            self.deploy_tasks = [x for x in self.deploy_tasks if not x in completed]
 
         # run services according to the deployment_order
-        if hasattr(self.config, 'deployment_order'):
+        if self.deploy_tasks and hasattr(self.config, 'deployment_order'):
 
             for servicename in self.config.deployment_order:
-                self._run_service(servicename)
+                completed = self._run_jobs_for_service(servicename, self.deploy_tasks)
+
+                # remove queued jobs from the job list
+                self.deploy_tasks = [x for x in self.deploy_tasks if not x in completed]
 
         # run remaining jobs
-        self._run_jobs()
+        self._run_jobs(self.deploy_tasks)
 
-    def _run_jobs(self, jobs=None, parallel=None):
+    def _run_jobs(self, jobs, parallel=None):
         """Start running a job queue"""
 
-        # By default run all jobs in the job list
-        if not jobs:
-            jobs = self.job_list
-
-        # Abort if the job list is empty
         if not jobs:
             self.log.info('Finished running job queue')
             return
@@ -171,9 +198,6 @@ class Orchestrator(object):
         for job in jobs:
             job_queue.append(job)
 
-        # remove queued jobs from the job list
-        self.job_list = [x for x in self.job_list if not x in jobs]
-
         self.log.debug('Running {0} jobs with pool size {1}'.format(len(jobs), parallel))
 
         job_queue.close()
@@ -187,35 +211,35 @@ class Orchestrator(object):
 
         return res
 
-    def _run_host(self, hostname, parallel=1):
+    def _run_jobs_for_host(self, hostname, jobs, parallel=1):
         """Run all jobs for the specified hostname"""
 
-        jobs = [x for x in self.job_list if x._host == hostname]
+        run_now = [x for x in jobs if x._host == hostname]
 
-        if not jobs:
-            self.log.critical('{0} jobs in the queue, none are destined for {1}'.format(
-              len(self.job_list), hostname))
-            raise DeployerException('run_host: No jobs to run for this host')
+        if not run_now:
+            self.log.debug('{0} jobs in the queue, none are destined for {1}'.format(
+              len(jobs), hostname))
+            return []
 
-        self.log.info('Queuing {0} jobs on {1}'.format(len(jobs), hostname))
-        self._run_jobs(jobs, parallel)
+        self.log.info('Queuing {0} jobs on {1}'.format(len(run_now), hostname))
+        self._run_jobs(run_now, parallel)
 
-    def _run_service(self, servicename, parallel=None):
+        return run_now
+
+    def _run_jobs_for_service(self, servicename, jobs, parallel=None):
         """Run all jobs for the specified service"""
 
         if not parallel:
             parallel = self.config.parallel
 
-        if not self.job_list:
-            self.log.debug('Job queue is empty')
-            return
+        run_now = [x for x in jobs if x._service == servicename]
 
-        jobs = [x for x in self.job_list if x._service == servicename]
-
-        if not jobs:
+        if not run_now:
             self.log.debug('{0} jobs in the queue, but none are for service {1}'.format(
-              len(self.job_list), servicename))
-            return
+              len(jobs), servicename))
+            return []
 
-        self.log.info('Queuing {0} jobs for service {1}'.format(len(jobs), servicename))
-        self._run_jobs(jobs, parallel)
+        self.log.info('Queuing {0} jobs for service {1}'.format(len(run_now), servicename))
+        self._run_jobs(run_now, parallel)
+
+        return run_now
