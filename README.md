@@ -11,7 +11,7 @@ To do
 - ~~Separate Package and Service classes? Or how to implment actions that don't require packages to be provided? (i.e. restarting services)~~
 - Templating or defaults sections in configuration files
 - Database migrations
-- Load balancer control
+- ~~Load balancer control~~
 - ~~Logging is duplicated when creating multiple instances of an object (i.e. FabricHelper)~~
 - ~~Parallelism of steps doesn't make sense yet (i.e. stop all services on all hosts, then activate, etc)~~
 - Set global logging level based on command line options (--debug and --verbose)
