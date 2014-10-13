@@ -35,7 +35,7 @@ class RemoteVersions(object):
         else:
             remote_version = 1
 
-        self.log.debug('{0} current version is {1}'.format(service.servicename, hostname, remote_version))
+        self.log.debug('{0} current version is {1}'.format(service.servicename, remote_version))
 
         self._remote_versions.append((service.servicename, hostname, remote_version))
 
