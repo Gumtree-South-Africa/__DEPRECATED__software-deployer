@@ -8,12 +8,16 @@ from deployerlib.exceptions import DeployerException
 class Unpacker(object):
     """Unpack a packge on a remote host"""
 
-    def __init__(self, config, service, host):
+    def __init__(self, config, service, host, clobber=False):
         self.log = Log(self.__class__.__name__, config=config)
 
         self.config = config
         self.service = service
         self.host = host
+        self.clobber = clobber
+
+        if self.service.unpack_dir != self.service.install_destination:
+            self.clobber = True
 
         self.fabrichelper = FabricHelper(self.config.general.user, self.host, caller=self.__class__.__name__)
 
@@ -21,9 +25,9 @@ class Unpacker(object):
         """Based on the package type, determine the command line to unpack the package"""
 
         if service.filetype == 'tar':
-            command_line = '/bin/tar zxf {0} -C {1}'.format(service.remote_filename, service.install_location)
+            command_line = '/bin/tar zxf {0} -C {1}'.format(service.remote_filename, self.service.unpack_dir)
         elif service.filetype == 'war':
-            command_line = '/bin/cp {0} {1}'.format(service.remote_filename, service.install_location)
+            command_line = '/bin/cp {0} {1}'.format(service.remote_filename, self.service.unpack_dir)
         else:
             raise DeployerException('{0}: Unpacker doesn\'t know how to unpack filetype: {1}'.format(
               service.servicename, service.filetype))
@@ -38,22 +42,29 @@ class Unpacker(object):
 
         unpack_command = self.get_unpack_command(self.service)
 
-        if self.fabrichelper.file_exists(self.service.install_destination):
+        if self.fabrichelper.file_exists(self.service.unpack_destination):
 
-            if self.config.redeploy:
-                # Todo: This should not be done before stopping the service
-                self.log.info('Removing {0} on {1}'.format(self.service.install_destination, self.host))
-                res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(self.service.install_destination))
+            if self.clobber:
+                self.log.info('Removing {0}'.format(self.service.unpack_destination))
+                res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(self.service.unpack_destination))
 
                 if not res.succeeded:
                     self.log.critical('Failed to remove {0}: {1}'.format(
-                      self.service.install_destination, res))
+                      self.service.unpack_destination, res))
                     return res.succeeded
 
             else:
-                self.log.info('{0} is already in place on {1}'.format(self.service.packagename, self.host))
-                return True
+                self.log.info('Unable to unpack to {0}: target directory already exists'.format(self.service.unpack_destination))
+                return False
 
-        self.log.info('Unpacking {0} on {1}'.format(self.service.servicename, self.host))
+        if not self.fabrichelper.file_exists(self.service.unpack_dir):
+            self.log.debug('Creating directory {0}'.format(self.service.unpack_dir))
+            self.fabrichelper.execute_remote('mkdir -p {0}'.format(self.service.unpack_dir))
+
+        self.log.info('Unpacking {0}'.format(self.service.servicename))
         res = self.fabrichelper.execute_remote(unpack_command)
+
+        if not res.succeeded:
+            self.log.critical('Unpack failed: {0}'.format(res))
+
         return res.succeeded

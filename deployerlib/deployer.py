@@ -4,6 +4,7 @@ from fabric.colors import green
 
 from deployerlib.uploader import Uploader
 from deployerlib.unpacker import Unpacker
+from deployerlib.renamefile import RenameFile
 from deployerlib.dbmigration import DBMigration
 from deployerlib.loadbalancer import LoadBalancer
 from deployerlib.restarter import Restarter
@@ -160,6 +161,11 @@ class Deployer(object):
 
     def _step_activate_service(self, service, host):
         """Activate a service using a symbolic link"""
+
+        if service.unpack_destination != service.install_destination:
+            renamefile = RenameFile(self.config, service.unpack_destination,
+              service.install_destination, host)
+            renamefile.rename()
 
         symlink = SymLink(self.config, service, host)
         return symlink.set_target()
