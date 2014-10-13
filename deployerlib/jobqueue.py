@@ -144,9 +144,9 @@ class JobQueue(object):
             self.log.critical(msg)
 
             if len(self._running) > 1:
-                self.log.warning('Allowing {0} jobs to finish'.format(len(self._running) - 1))
+                self.log.warning('Allowing {0} running jobs to finish before aborting'.format(len(self._running) - 1))
 
-            for job in self._completed:
+            for job in self._running:
                 job.join()
 
             self._fill_results(results)
