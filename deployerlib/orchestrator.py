@@ -66,6 +66,21 @@ class Orchestrator(object):
            order: A list of servicename strings by which the services will be ordered
         """
 
+        def _flatten(l):
+            """Return a flat list from a nested list"""
+
+            flat_list = []
+
+            for i in l:
+
+                if type(i) == list:
+                    flat_list += _flatten(i)
+                else:
+                    flat_list.append(i)
+
+            return flat_list
+
+        order = _flatten(order)
         newlist = []
 
         for servicename in order:
@@ -166,18 +181,18 @@ class Orchestrator(object):
                 self.log.debug('No jobs in the queue for {0}, using {1} as the single_host instead'.format(
                   self.config.single_host, single_host))
 
-            completed = self._run_jobs_for_host(single_host, self.deploy_tasks)
+            completed = self._run_jobs_for_host(self.deploy_tasks, single_host)
 
-            # remove queued jobs from the job list
+            # remove completed jobs from the task list
             self.deploy_tasks = [x for x in self.deploy_tasks if not x in completed]
 
         # run services according to the deployment_order
         if self.deploy_tasks and hasattr(self.config, 'deployment_order'):
 
-            for servicename in self.config.deployment_order:
-                completed = self._run_jobs_for_service(servicename, self.deploy_tasks)
+            for servicenames in self.config.deployment_order:
+                completed = self._run_jobs_for_service(self.deploy_tasks, servicenames)
 
-                # remove queued jobs from the job list
+                # remove completed jobs from the task list
                 self.deploy_tasks = [x for x in self.deploy_tasks if not x in completed]
 
         # run remaining jobs
@@ -214,35 +229,38 @@ class Orchestrator(object):
 
         return res
 
-    def _run_jobs_for_host(self, hostname, jobs, parallel=1):
+    def _run_jobs_for_host(self, jobs, hostnames):
         """Run all jobs for the specified hostname"""
 
-        run_now = [x for x in jobs if x._host == hostname]
+        if isinstance(hostnames, basestring):
+            hostnames = [hostnames]
+
+        run_now = [x for x in jobs if x._host in hostnames]
 
         if not run_now:
             self.log.debug('{0} jobs in the queue, none are destined for {1}'.format(
-              len(jobs), hostname))
+              len(jobs), ' or '.join(hostnames)))
             return []
 
-        self.log.info('Queuing {0} jobs on {1}'.format(len(run_now), hostname))
-        self._run_jobs(run_now, parallel)
+        self.log.info('Queuing {0} jobs on {1}'.format(len(run_now), ', '.join(hostnames)))
+        self._run_jobs(run_now, parallel=1)
 
         return run_now
 
-    def _run_jobs_for_service(self, servicename, jobs, parallel=None):
+    def _run_jobs_for_service(self, jobs, servicenames):
         """Run all jobs for the specified service"""
 
-        if not parallel:
-            parallel = self.config.parallel
+        if isinstance(servicenames, basestring):
+            servicenames = [servicenames]
 
-        run_now = [x for x in jobs if x._service == servicename]
+        run_now = [x for x in jobs if x._service in servicenames]
 
         if not run_now:
             self.log.debug('{0} jobs in the queue, but none are for service {1}'.format(
-              len(jobs), servicename))
+              len(jobs), ' or '.join(servicenames)))
             return []
 
-        self.log.info('Queuing {0} jobs for service {1}'.format(len(run_now), servicename))
-        self._run_jobs(run_now, parallel)
+        self.log.info('Queuing {0} jobs for service {1}'.format(len(run_now), ', '.join(servicenames)))
+        self._run_jobs(run_now)
 
         return run_now
