@@ -1,6 +1,16 @@
-import time
+"""Fabric's job_queue.py with some additions"""
 
-from fabric.job_queue import JobQueue as FabricJobQueue
+"""
+Sliding-window-based job/task queue class (& example of use.)
+
+May use ``multiprocessing.Process`` or ``threading.Thread`` objects as queue
+items, though within Fabric itself only ``Process`` objects are used/supported.
+"""
+
+import time
+import Queue
+
+from fabric.state import env
 from fabric.network import ssh
 from fabric.context_managers import settings
 
@@ -8,12 +18,83 @@ from deployerlib.log import Log
 from deployerlib.exceptions import DeployerException
 
 
-class JobQueue(FabricJobQueue):
+class JobQueue(object):
+    """
+    The goal of this class is to make a queue of processes to run, and go
+    through them running X number at any given time. 
 
-    def __init__(self, parallel, queue, remote_results={}, *args, **kwargs):
+    So if the bubble is 5 start with 5 running and move the bubble of running
+    procs along the queue looking something like this:
+
+        Start
+        ...........................
+        [~~~~~]....................
+        ___[~~~~~].................
+        _________[~~~~~]...........
+        __________________[~~~~~]..
+        ____________________[~~~~~]
+        ___________________________
+                                End 
+    """
+    def __init__(self, max_running, comms_queue, remote_results={}):
+        """
+        Setup the class to resonable defaults.
+        """
+
         self.log = Log(self.__class__.__name__)
         self.remote_results = remote_results
-        super(self.__class__, self).__init__(parallel, queue, *args, **kwargs)
+        self._queued = []
+        self._running = []
+        self._completed = []
+        self._num_of_jobs = 0
+        self._max = max_running
+        self._comms_queue = comms_queue
+        self._finished = False
+        self._closed = False
+        self._debug = False
+
+    def _all_alive(self):
+        """
+        Simply states if all procs are alive or not. Needed to determine when
+        to stop looping, and pop dead procs off and add live ones.
+        """
+        if self._running:
+            return all([x.is_alive() for x in self._running])
+        else:
+            return False
+
+    def __len__(self):
+        """
+        Just going to use number of jobs as the JobQueue length.
+        """
+        return self._num_of_jobs
+
+    def close(self):
+        """
+        A sanity check, so that the need to care about new jobs being added in
+        the last throws of the job_queue's run are negated.
+        """
+        if self._debug:
+            print("job queue closed.")
+
+        self._closed = True
+
+    def append(self, process):
+        """
+        Add the Process() to the queue, so that later it can be checked up on.
+        That is if the JobQueue is still open.
+
+        If the queue is closed, this will just silently do nothing.
+
+        To get data back out of this process, give ``process`` access to a
+        ``multiprocessing.Queue`` object, and give it here as ``queue``. Then
+        ``JobQueue.run`` will include the queue's contents in its return value.
+        """
+        if not self._closed:
+            self._queued.append(process)
+            self._num_of_jobs += 1
+            if self._debug:
+                print("job queue appended %s." % process.name)
 
     def run(self):
         """
@@ -133,3 +214,15 @@ class JobQueue(FabricJobQueue):
             results[job.name]['exit_code'] = job.exitcode
 
         return results
+
+    def _fill_results(self, results):
+        """
+        Attempt to pull data off self._comms_queue and add to 'results' dict.
+        If no data is available (i.e. the queue is empty), bail immediately.
+        """
+        while True:
+            try:
+                datum = self._comms_queue.get_nowait()
+                results[datum['name']]['results'] = datum['result']
+            except Queue.Empty:
+                break
