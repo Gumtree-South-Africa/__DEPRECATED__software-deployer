@@ -152,7 +152,7 @@ class JobQueue(object):
             self._fill_results(results)
             time.sleep(ssh.io_sleep)
 
-            return results
+            return
 
         # Prep return value so we can start filling it during main loop
         results = {}
@@ -183,6 +183,8 @@ class JobQueue(object):
 
                         if not self.remote_results[job._name]:
                             _abort_queue(job._name)
+                            return results
+
                         done = self._running.pop(id)
                         self._completed.append(done)
 
