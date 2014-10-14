@@ -18,4 +18,4 @@ args = CommandLine(parents=parser)
 config = Config(args)
 
 orchestrator = Orchestrator(config)
-orchestrator.run()
+orchestrator.deploy_run()

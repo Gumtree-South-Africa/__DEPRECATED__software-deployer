@@ -27,9 +27,6 @@ class Orchestrator(object):
         self.job_results = manager.dict()
         self.migration_executed = manager.dict()
 
-        self.remote_versions = self.get_remote_versions()
-        self.deploy_tasks = self.get_job_list()
-
     def get_services(self):
         """Get the list of services to deploy as specified on the command line"""
 
@@ -161,12 +158,27 @@ class Orchestrator(object):
 
         return job_list
 
-    def run(self):
+    def direct_run(self):
+        """Run jobs directly and in parallel, without ordering or separation"""
+
+        self.deploy_tasks = self.get_job_list()
+
+        if not self.deploy_tasks:
+            self.log.info('No jobs to run')
+            return True
+
+        # run remaining jobs
+        self._run_jobs(self.deploy_tasks)
+
+    def deploy_run(self):
         """Run jobs as a deployment task:
            - Start with a single host
            - Then run in parallel, following deployment_order
            - Finally run all remaining jobs in parallel
         """
+
+        self.remote_versions = self.get_remote_versions()
+        self.deploy_tasks = self.get_job_list()
 
         if not self.deploy_tasks:
             self.log.info('Nothing to deploy')

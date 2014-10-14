@@ -35,4 +35,4 @@ for servicename in servicenames:
     services.append(Service(config, servicename=servicename))
 
 orchestrator = Orchestrator(config, services)
-orchestrator.run()
+orchestrator.direct_run()
