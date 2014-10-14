@@ -9,7 +9,6 @@ class CommandLine(object):
     """Handle the command line of front-end scripts"""
 
     def __init__(self, parents=[], require_host=False):
-        log = Log(self.__class__.__name__)
 
         if type(parents) is not list:
             parents = [parents]
@@ -31,6 +30,7 @@ class CommandLine(object):
 
         parser.parse_args(namespace=self)
 
+        log = Log(self.__class__.__name__, config=self)
         log.debug('Commandline "{0}" resulted in this CommandLine object: {1}'.format(' '.join(sys.argv),self))
 
     def __str__(self):

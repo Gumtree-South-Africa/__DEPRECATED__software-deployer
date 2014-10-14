@@ -9,7 +9,7 @@ class Unpacker(object):
     """Unpack a packge on a remote host"""
 
     def __init__(self, config, service, host):
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(self.__class__.__name__, config=config)
 
         self.config = config
         self.service = service

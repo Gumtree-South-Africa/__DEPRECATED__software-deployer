@@ -36,12 +36,12 @@ class JobQueue(object):
         ___________________________
                                 End 
     """
-    def __init__(self, max_running, comms_queue, remote_results={}):
+    def __init__(self, max_running, comms_queue, remote_results={}, config=None):
         """
         Setup the class to resonable defaults.
         """
 
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(self.__class__.__name__, config=config)
         self.remote_results = remote_results
         self._queued = []
         self._running = []

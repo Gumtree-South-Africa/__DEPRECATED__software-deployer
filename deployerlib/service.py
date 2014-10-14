@@ -8,7 +8,7 @@ class Service(object):
     """Manage information about a package and the service it provides"""
 
     def __init__(self, config, filename=None, servicename=None):
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(self.__class__.__name__, config=config)
 
         self.config = config
 

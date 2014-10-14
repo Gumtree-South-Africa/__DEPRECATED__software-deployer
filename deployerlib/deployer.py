@@ -17,7 +17,7 @@ class Deployer(object):
     """Manage stages of deployment"""
 
     def __init__(self, config, service, host, migration_executed=None):
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(self.__class__.__name__, config=config)
 
         self.config = config
         self.service = service

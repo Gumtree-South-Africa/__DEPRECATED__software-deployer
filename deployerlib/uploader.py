@@ -9,7 +9,7 @@ class Uploader(object):
     """Upload files to a server"""
 
     def __init__(self, config, service, host):
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(self.__class__.__name__, config=config)
 
         self.service = service
         self.host = host

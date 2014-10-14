@@ -11,7 +11,12 @@ from time import gmtime, strftime
 
 class Log(object):
 
-    def __init__(self, instance='DEPLOYER', level=logging.DEBUG):
+    def __init__(self, instance='DEPLOYER', config=None, level=logging.INFO):
+
+        self.config = config
+
+        if self.config and self.config.debug:
+            level = logging.DEBUG
 
         self.logger = self.get_logger(instance, level)
 

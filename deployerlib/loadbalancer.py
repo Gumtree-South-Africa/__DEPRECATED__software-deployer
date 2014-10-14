@@ -9,8 +9,8 @@ from deployerlib.exceptions import DeployerException
 class LoadBalancer(object):
     """Manage connections to a single load balancer"""
 
-    def __init__(self, hostname, username, password):
-        self.log = Log(self.__class__.__name__)
+    def __init__(self, hostname, username, password, config=None):
+        self.log = Log(self.__class__.__name__, config=config)
 
         self.hostname = hostname
         self.username = username
@@ -48,13 +48,13 @@ class LoadBalancer(object):
         except NSNitroError as e:
             raise DeployerException('Unable to connect to {0}: {1}'.format(self.hostname, e))
 
-        self.log.info('Logged in to LB {0}'.format(self.hostname))
+        self.log.debug('Logged in to LB {0}'.format(self.hostname))
 
     def logout(self):
         """Log out of a load balancer"""
 
         self.nitro.logout()
-        self.log.info('Logged out from LB {0}'.format(self.hostname))
+        self.log.debug('Logged out from LB {0}'.format(self.hostname))
 
     def get_service(self, lbservice):
         """Get a loadbalancer service object from a service name"""

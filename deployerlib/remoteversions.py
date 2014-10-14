@@ -11,7 +11,7 @@ class RemoteVersions(object):
     """Manage information about remote versions of services"""
 
     def __init__(self, config):
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(self.__class__.__name__, config=config)
 
         self.fabrichelper = FabricHelper(config.general.user, caller=self.__class__.__name__)
 

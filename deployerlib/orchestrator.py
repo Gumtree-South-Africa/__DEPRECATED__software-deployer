@@ -16,7 +16,7 @@ class Orchestrator(object):
 
     def __init__(self, config, services=[]):
         self.config = config
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(self.__class__.__name__, config=config)
 
         if services:
             self.services = services

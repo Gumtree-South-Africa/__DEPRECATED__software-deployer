@@ -13,7 +13,7 @@ class DBMigration(object):
         self.service = service
         self.host = host
 
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(self.__class__.__name__, config=config)
         self.fabrichelper = FabricHelper(self.config.general.user, host=host, caller=self.__class__.__name__)
 
         if not 'migration_location' in self.config.services[self.service.servicename]:
