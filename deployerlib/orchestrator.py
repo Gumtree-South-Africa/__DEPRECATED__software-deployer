@@ -25,6 +25,7 @@ class Orchestrator(object):
 
         manager = Manager()
         self.job_results = manager.dict()
+        self.migration_executed = manager.dict()
 
         self.remote_versions = self.get_remote_versions()
         self.deploy_tasks = self.get_job_list()
@@ -152,7 +153,7 @@ class Orchestrator(object):
                 self.log.debug('{0} will be deployed to {1}'.format(service.servicename, host))
 
                 procname = '{0}/{1}'.format(host, service.servicename)
-                deployer = Deployer(self.config, service, host)
+                deployer = Deployer(self.config, service, host, self.migration_executed)
                 job = Process(target=deployer.deploy, args=[self.job_results, procname], name=procname)
                 job._host = host
                 job._service = service.servicename

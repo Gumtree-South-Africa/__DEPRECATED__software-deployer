@@ -16,8 +16,7 @@ class SymLink(object):
         self.fabrichelper = FabricHelper(self.config.general.user, self.host, caller=self.__class__.__name__)
 
     def __repr__(self):
-
-        return '{0}(service={1})'.format(self.__class__.__name__, repr(self.service))
+        return '{0}(service={1}, host={2})'.format(self.__class__.__name__, repr(self.service), repr(self.host))
 
     def set_target(self):
         """Set the link target"""

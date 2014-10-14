@@ -4,6 +4,7 @@ from fabric.colors import green
 
 from deployerlib.uploader import Uploader
 from deployerlib.unpacker import Unpacker
+from deployerlib.dbmigration import DBMigration
 from deployerlib.loadbalancer import LoadBalancer
 from deployerlib.restarter import Restarter
 from deployerlib.symlink import SymLink
@@ -15,12 +16,13 @@ from deployerlib.exceptions import DeployerException
 class Deployer(object):
     """Manage stages of deployment"""
 
-    def __init__(self, config, service, host):
+    def __init__(self, config, service, host, migration_executed=None):
         self.log = Log(self.__class__.__name__)
 
         self.config = config
         self.service = service
         self.host = host
+        self.migration_executed = migration_executed
 
         self.steps = self.get_steps(config.steps)
         self.tasks = []
@@ -54,7 +56,7 @@ class Deployer(object):
 
         return newobj
 
-    def deploy(self, remote_results={}, procname=None):
+    def deploy(self, remote_results=None, procname=None):
         """Run the requested deployment steps
            remote_results is a Manager dictionary, and procname is a Process name
            These arguments are optional, and can be used to return deploy results
@@ -64,15 +66,22 @@ class Deployer(object):
         self.log.info(green('Deploying {0} to {1}'.format(self.service, self.host)))
 
         for step in self.steps:
+
             res = step(self.service, self.host)
 
             if not res:
                 self.log.critical('Step "{0}" failed!'.format(step.__name__))
-                remote_results[procname] = res
+
+                if remote_results is not None:
+                    remote_results[procname] = res
+
                 return res
 
         self.log.info(green('Finished deploying {0} to {1}'.format(self.service, self.host)))
-        remote_results[procname] = res
+
+        if remote_results is not None:
+            remote_results[procname] = res
+
         return True
 
     def _step_upload_package(self, service, host):
@@ -86,6 +95,22 @@ class Deployer(object):
 
         unpacker = Unpacker(self.config, service, host)
         return unpacker.unpack()
+
+    def _step_database_migrations(self, service, host):
+        """Execute database migrations for a service"""
+
+        if service.servicename in self.migration_executed:
+            self.log.debug('Skipping database migrations for {0}'.format(
+              service.servicename))
+            return True
+
+        dbmigration = DBMigration(self.config, service, host)
+        res = dbmigration.execute()
+
+        if res:
+            self.migration_executed[service.servicename] = True
+
+        return res
 
     def _step_disable_loadbalancer(self, service, host):
         """Disable a service on a load balancer"""
