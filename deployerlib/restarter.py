@@ -40,7 +40,8 @@ class Restarter(object):
 
         control_command = self.get_service_control(self.service, action)
 
-        self.log.info('{0} {1} on {2}'.format(action, self.service.servicename, self.host))
+        self.log.info('{0} {1} on {2}'.format(action.capitalize(),
+          self.service.servicename, self.host))
 
         res = self.fabrichelper.execute_remote(control_command, use_sudo=True)
 

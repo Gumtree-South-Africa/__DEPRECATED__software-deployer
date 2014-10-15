@@ -23,7 +23,7 @@ class RenameFile(object):
 
         if self.fabrichelper.file_exists(self.new_file):
             if self.clobber:
-                self.log.info('Removing {0}'.format(self.new_file))
+                self.log.debug('Removing {0}'.format(self.new_file))
                 res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(self.new_file))
 
                 if not res.succeeded:

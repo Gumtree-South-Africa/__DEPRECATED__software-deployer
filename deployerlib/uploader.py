@@ -21,13 +21,14 @@ class Uploader(object):
     def upload(self):
         """Upload files to a server"""
 
-        self.log.debug('Uploading {0} to {1} on {2}'.format(
-          self.service.fullpath, self.service.upload_location, self.host))
+        self.log.info('Uploading {0} to {1}'.format(
+          self.service.fullpath, self.host))
 
         res = self.fabrichelper.put_remote(self.service.fullpath, self.service.upload_location)
 
         if res.succeeded:
-            self.log.info('Uploaded {0} to {1}'.format(self.service.servicename, self.host))
+            self.log.debug('Uploaded {0} to {1} on {2}'.format(self.service.servicename,
+              self.service.upload_location, self.host))
 
         else:
             self.log.critical('Failed to upload {0} to {1}'.format(self.service.servicename, self.host))
