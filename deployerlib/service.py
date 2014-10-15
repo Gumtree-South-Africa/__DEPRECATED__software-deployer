@@ -43,18 +43,18 @@ class Service(object):
         if hasattr(self, 'packagename'):
             self.install_destination = os.path.join(self.install_location, self.packagename)
 
-            if hasattr(self.config.general, 'unpack_dir'):
-                self.unpack_dir = self.config.general.unpack_dir
+            if hasattr(self.service_config, 'unpack_dir'):
+                self.unpack_dir = self.service_config.unpack_dir
 
                 if not self.unpack_dir.startswith('/'):
                     self.unpack_dir = os.path.join(self.install_location, self.unpack_dir)
 
             else:
-                self.unpack_dir = self.install_destination
+                self.unpack_dir = self.install_location
 
             self.unpack_destination = os.path.join(self.unpack_dir, self.packagename)
 
-        self.symlink_target = os.path.join(self.install_location, self.servicename)
+        self.symlink = os.path.join(self.install_location, self.servicename)
 
         if 'control' in self.service_config:
             self.control = self.service_config.control

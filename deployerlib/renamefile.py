@@ -16,7 +16,7 @@ class RenameFile(object):
         self.new_file = new_file
         self.clobber = clobber
 
-        self.fabrichelper = FabricHelper(config.general.user, host, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(config.user, host, caller=self.__class__.__name__)
 
     def rename(self, clobber=True):
         """Rename a remote file or directory"""

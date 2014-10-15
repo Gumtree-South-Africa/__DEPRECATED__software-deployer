@@ -3,10 +3,13 @@
 import os
 import sys
 import argparse
+import logging
 
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
 from deployerlib.orchestrator import Orchestrator
+
+#logging.basicConfig(level=logging.WARN)
 
 # Add command line option for components to deploy
 parser = argparse.ArgumentParser()

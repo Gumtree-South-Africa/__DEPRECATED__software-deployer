@@ -14,23 +14,23 @@ class DBMigration(object):
         self.host = host
 
         self.log = Log(self.__class__.__name__, config=config)
-        self.fabrichelper = FabricHelper(self.config.general.user, host=host, caller=self.__class__.__name__)
+        self.fabrichelper = FabricHelper(self.config.user, host=host, caller=self.__class__.__name__)
 
-        if not 'migration_location' in self.config.services[self.service.servicename]:
+        if not 'migration_location' in self.service.service_config:
             self.log.debug('No migration_location is configured for {0}'.format(
               self.service.servicename))
-        elif not 'migration_command' in self.config.services[self.service.servicename]:
+        elif not 'migration_command' in self.service.service_config:
             self.log.debug('No migration_command is configured for {0}'.format(
               self.service.servicename))
         else:
-            self.migration_location = self.config.services[self.service.servicename]['migration_location']
-            self.migration_command = self.config.services[self.service.servicename]['migration_command']
+            self.migration_location = self.service.service_config.migration_location
+            self.migration_command = self.service.service_config.migration_command
 
             if not self.migration_location.startswith('/'):
                 self.migration_location = os.path.join(self.service.install_destination, self.migration_location)
 
-            if 'migration_options' in self.config.services[self.service.servicename]:
-                self.migration_options = self.config.services[self.service.servicename]['migration_options']
+            if 'migration_options' in self.service.service_config:
+                self.migration_options = self.service.service_config.migration_options
             else:
                 self.migration_options = ''
 

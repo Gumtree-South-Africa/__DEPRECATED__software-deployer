@@ -16,7 +16,7 @@ class Unpacker(object):
         self.host = host
         self.clobber = clobber
 
-        if self.service.unpack_dir != self.service.install_destination:
+        if self.service.unpack_dir != self.service.install_location:
             self.clobber = True
 
         self.fabrichelper = FabricHelper(self.config.user, self.host, caller=self.__class__.__name__)
