@@ -1,4 +1,4 @@
-Deployer NG
+Software Deployer
 ==
 
 Goal
