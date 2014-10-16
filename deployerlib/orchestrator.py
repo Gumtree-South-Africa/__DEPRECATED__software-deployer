@@ -105,10 +105,10 @@ class Orchestrator(object):
 
         for service in self.services:
             for host in service.hosts:
-                procname = 'RemoteVersions({0}/{1})'.format(host, service.servicename)
+                procname = 'RemoteVersions({0}/{1})'.format(host.hostname, service.servicename)
                 job = Process(target=remoteversions.get_remote_version, args=[service, host,
                   self.job_results, procname], name=procname)
-                job._host = host
+                job._host = host.hostname
                 job_list.append(job)
 
         self._run_jobs(jobs=job_list, parallel=20)
@@ -131,7 +131,7 @@ class Orchestrator(object):
                 return True
 
             if service.servicename in self.remote_versions and host in self.remote_versions[service.servicename]:
-                if self.remote_versions[service.servicename][host] == service.version:
+                if self.remote_versions[service.servicename][host.hostname] == service.version:
                     return False
 
             return True
@@ -144,15 +144,15 @@ class Orchestrator(object):
 
                 if not _need_deploy(service, host):
                     self.log.debug('{0} is already at version {1} on {2}'.format(
-                      service.servicename, service.version, host))
+                      service.servicename, service.version, host.hostname))
                     continue
 
-                self.log.debug('{0} will be deployed to {1}'.format(service.servicename, host))
+                self.log.debug('{0} will be deployed to {1}'.format(service.servicename, host.hostname))
 
-                procname = '{0}/{1}'.format(host, service.servicename)
+                procname = '{0}/{1}'.format(host.hostname, service.servicename)
                 deployer = Deployer(self.config, service, host, self.migration_executed)
                 job = Process(target=deployer.deploy, args=[self.job_results, procname], name=procname)
-                job._host = host
+                job._host = host.hostname
                 job._service = service.servicename
                 job_list.append(job)
 
@@ -245,7 +245,7 @@ class Orchestrator(object):
     def _run_jobs_for_host(self, jobs, hostnames):
         """Run all jobs for the specified hostname"""
 
-        if isinstance(hostnames, basestring):
+        if not isinstance(hostnames, list):
             hostnames = [hostnames]
 
         run_now = [x for x in jobs if x._host in hostnames]

@@ -1,7 +1,6 @@
 import os
 
 from deployerlib.log import Log
-from deployerlib.fabrichelper import FabricHelper
 from deployerlib.exceptions import DeployerException
 
 
@@ -14,7 +13,6 @@ class DBMigration(object):
         self.host = host
 
         self.log = Log(self.__class__.__name__, config=config)
-        self.fabrichelper = FabricHelper(self.config.user, host=host, caller=self.__class__.__name__)
 
         if not 'migration_location' in self.service.service_config:
             self.log.debug('No migration_location is configured for {0}'.format(
@@ -45,7 +43,7 @@ class DBMigration(object):
               self.service.servicename))
             return True
 
-        if not self.fabrichelper.file_exists(self.migration_location):
+        if not self.host.file_exists(self.migration_location):
             self.log.info('No database migrations for {0}'.format(self.service.servicename))
             return True
 
@@ -56,7 +54,7 @@ class DBMigration(object):
           migration_options=self.migration_options,
         )
 
-        res = self.fabrichelper.execute_remote(command)
+        res = self.host.execute_remote(command)
 
         if not res.succeeded:
             self.log.critical('Database migration for {0} failed: {1}'.format(

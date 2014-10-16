@@ -1,7 +1,6 @@
 import os
 
 from deployerlib.log import Log
-from deployerlib.fabrichelper import FabricHelper
 from deployerlib.exceptions import DeployerException
 
 
@@ -18,8 +17,6 @@ class Unpacker(object):
 
         if self.service.unpack_dir != self.service.install_location:
             self.clobber = True
-
-        self.fabrichelper = FabricHelper(self.config.user, self.host, caller=self.__class__.__name__)
 
     def get_unpack_command(self, service):
         """Based on the package type, determine the command line to unpack the package"""
@@ -42,11 +39,11 @@ class Unpacker(object):
 
         unpack_command = self.get_unpack_command(self.service)
 
-        if self.fabrichelper.file_exists(self.service.unpack_destination):
+        if self.host.file_exists(self.service.unpack_destination):
 
             if self.clobber:
                 self.log.info('Removing {0}'.format(self.service.unpack_destination))
-                res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(self.service.unpack_destination))
+                res = self.host.execute_remote('/bin/rm -rf {0}'.format(self.service.unpack_destination))
 
                 if not res.succeeded:
                     self.log.critical('Failed to remove {0}: {1}'.format(
@@ -57,12 +54,12 @@ class Unpacker(object):
                 self.log.info('Unable to unpack to {0}: target directory already exists'.format(self.service.unpack_destination))
                 return False
 
-        if not self.fabrichelper.file_exists(self.service.unpack_dir):
+        if not self.host.file_exists(self.service.unpack_dir):
             self.log.debug('Creating directory {0}'.format(self.service.unpack_dir))
-            self.fabrichelper.execute_remote('mkdir -p {0}'.format(self.service.unpack_dir))
+            self.host.execute_remote('mkdir -p {0}'.format(self.service.unpack_dir))
 
         self.log.info('Unpacking {0}'.format(self.service.servicename))
-        res = self.fabrichelper.execute_remote(unpack_command)
+        res = self.host.execute_remote(unpack_command)
 
         if not res.succeeded:
             self.log.critical('Unpack failed: {0}'.format(res))

@@ -128,8 +128,8 @@ class Deployer(object):
               service.servicename))
             return True
 
-        lb_service = service.lb_service.format(hostname=host)
-        lb_hostname, lb_username, lb_password = self.config.get_lb(service.servicename, host)
+        lb_service = service.lb_service.format(hostname=host.hostname)
+        lb_hostname, lb_username, lb_password = self.config.get_lb(service.servicename, host.hostname)
 
         if lb_hostname:
             self.log.info('{2} service "{0}" on {1}'.format(lb_service, lb_hostname, action_text))
@@ -138,7 +138,7 @@ class Deployer(object):
                 return lb_action(lb_service)
         else:
             self.log.critical('Failed to get load balancer for {0} on {1}'.format(
-                service.servicename, host))
+                service.servicename, host.hostname))
             return False
 
     def _step_disable_loadbalancer(self, service, host):

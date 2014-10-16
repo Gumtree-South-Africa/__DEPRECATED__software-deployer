@@ -2,7 +2,6 @@ import os
 import time
 
 from deployerlib.log import Log
-from deployerlib.fabrichelper import FabricHelper
 from deployerlib.exceptions import DeployerException
 
 
@@ -15,8 +14,6 @@ class Restarter(object):
         self.service = service
         self.host = host
         self.timeout = timeout
-
-        self.fabrichelper = FabricHelper(config.user, self.host, caller=self.__class__.__name__)
 
     def get_service_control(self, service, command):
         """Get a service control command"""
@@ -41,13 +38,13 @@ class Restarter(object):
         control_command = self.get_service_control(self.service, action)
 
         self.log.info('{0} {1} on {2}'.format(action.capitalize(),
-          self.service.servicename, self.host))
+          self.service.servicename, self.host.hostname))
 
-        res = self.fabrichelper.execute_remote(control_command, use_sudo=True)
+        res = self.host.execute_remote(control_command, use_sudo=True)
 
         if res.failed:
             self.log.critical('Failed to {0} {1} on {2}: {3}'.format(action,
-              self.service.servicename, self.host, res))
+              self.service.servicename, self.host.hostname, res))
             return False
 
         return self.check_service(wanted_state)
@@ -62,7 +59,7 @@ class Restarter(object):
 
         while time.time() < timeout:
             time.sleep(1)
-            res = self.fabrichelper.execute_remote(check_command)
+            res = self.host.execute_remote(check_command)
 
             if res.return_code == wanted_state:
                 success = True
@@ -70,7 +67,7 @@ class Restarter(object):
 
             time.sleep(1)
 
-        msg = 'Service {0} status on {1}: {2}'.format(self.service.servicename, self.host, res)
+        msg = 'Service {0} status on {1}: {2}'.format(self.service.servicename, self.host.hostname, res)
 
         if success:
             self.log.info(msg)

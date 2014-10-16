@@ -2,9 +2,9 @@ import os
 import sys
 import re
 from attrdict import AttrDict
-import json
 
 from deployerlib.log import Log
+from deployerlib.remotehost import RemoteHost
 from deployerlib.exceptions import DeployerException
 
 class Service(object):
@@ -198,4 +198,4 @@ class Service(object):
         else:
             self.log.error('Cannot find any hosts to run {0} on'.format(self.servicename))
 
-        return hosts
+        return [RemoteHost(x, self.config.user) for x in hosts]

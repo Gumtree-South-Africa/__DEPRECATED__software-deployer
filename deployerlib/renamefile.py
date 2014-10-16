@@ -1,5 +1,4 @@
 from deployerlib.log import Log
-from deployerlib.fabrichelper import FabricHelper
 from deployerlib.exceptions import DeployerException
 
 
@@ -14,17 +13,16 @@ class RenameFile(object):
 
         self.old_file = old_file
         self.new_file = new_file
+        self.host = host
         self.clobber = clobber
-
-        self.fabrichelper = FabricHelper(config.user, host, caller=self.__class__.__name__)
 
     def rename(self, clobber=True):
         """Rename a remote file or directory"""
 
-        if self.fabrichelper.file_exists(self.new_file):
+        if self.host.file_exists(self.new_file):
             if self.clobber:
                 self.log.debug('Removing {0}'.format(self.new_file))
-                res = self.fabrichelper.execute_remote('/bin/rm -rf {0}'.format(self.new_file))
+                res = self.host.execute_remote('/bin/rm -rf {0}'.format(self.new_file))
 
                 if not res.succeeded:
                     self.log.critical('Failed to remove {0}: {1}'.format(
@@ -36,5 +34,5 @@ class RenameFile(object):
                 return False
 
         self.log.debug('Renaming {0} to {1}'.format(self.old_file, self.new_file))
-        res = self.fabrichelper.execute_remote('mv {0} {1}'.format(self.old_file, self.new_file))
+        res = self.host.execute_remote('mv {0} {1}'.format(self.old_file, self.new_file))
         return res.succeeded
