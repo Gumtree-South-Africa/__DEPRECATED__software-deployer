@@ -192,10 +192,6 @@ class Service(object):
             if 'hostgroups' in self.service_config:
                 for hg in self.service_config.hostgroups:
                     hosts += self.config.hostgroup[hg]['hosts']
-            elif 'datacenters' in self.config:
-                for datacenter in self.config.datacenters:
-                    if datacenter in self.config and 'hosts' in self.config[datacenter]:
-                        hosts += self.config[datacenter]['hosts']
 
         if hosts:
             self.log.info('{0} is configured to run on: {1}'.format(self.servicename, ', '.join(hosts)))
