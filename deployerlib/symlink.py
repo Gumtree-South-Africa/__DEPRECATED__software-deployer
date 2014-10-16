@@ -24,7 +24,7 @@ class SymLink(object):
         self.log.info('Setting symlink for {0} on {1}'.format(self.service.servicename, self.host))
 
         res = self.fabrichelper.execute_remote('ln -sf {0} {1}'.format(
-          self.service.install_destination, self.service.symlink_target))
+          self.service.install_destination, self.service.symlink))
 
         failed = [host for host in res if res[host].failed]
 
