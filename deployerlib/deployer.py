@@ -2,13 +2,13 @@ import os
 
 from fabric.colors import green
 
-from deployerlib.uploader import Uploader
-from deployerlib.unpacker import Unpacker
-from deployerlib.renamefile import RenameFile
-from deployerlib.dbmigration import DBMigration
+from deployerlib.steps.uploader import Uploader
+from deployerlib.steps.unpacker import Unpacker
+from deployerlib.steps.renamefile import RenameFile
+from deployerlib.steps.dbmigration import DBMigration
 from deployerlib.loadbalancer import LoadBalancer
-from deployerlib.restarter import Restarter
-from deployerlib.symlink import SymLink
+from deployerlib.steps.restarter import Restarter
+from deployerlib.steps.symlink import SymLink
 
 from deployerlib.log import Log
 from deployerlib.exceptions import DeployerException
