@@ -1,0 +1,106 @@
+{
+    "name":"Aurora deployment 2014-10-16 12:34:56",
+    "version": "92839473948abc",
+    "stages": [
+        {
+            "name": "Upload",
+            "parallel": 10,
+            "maxBandwidthMbit": 300,
+            "tasks": [
+                {
+                    "command": "upload",
+                    "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock1-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/tarballs"
+                },
+                {
+                    "command": "upload",
+                    "remote_user": "mpdeploy",
+                    "remote_host": "fe001",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock2-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/tarballs"
+                },
+                {
+                    "command": "upload",
+                    "remote_user": "mpdeploy",
+                    "remote_host": "fe002",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock1-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/tarballs"
+                },
+                {
+                    "command": "upload",
+                    "remote_user": "mpdeploy",
+                    "remote_host": "fe002",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock2-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/tarballs"
+                }
+            ]
+        },
+        {
+            "name": "Create temp directories",
+            "parallel": 10,
+            "tasks": [
+                {
+                    "command": "createdirectory",
+                    "remote_host": "fe001",
+                    "source":  "/opt/webapps/_unpack",
+                    "clobber": true
+                },
+                {
+                    "command": "createdirectory",
+                    "remote_host": "fe002",
+                    "source":  "/opt/webapps/_unpack",
+                    "clobber": true
+                }
+            ]
+        },
+        {
+            "name": "Unpack",
+            "parallel": 10,
+            "concurrencyPerHost": 3,
+            "tasks": [
+                {
+                    "command": "unpack",
+                    "remote_host": "fe001",
+                    "source":  "/opt/tarballs/cas-capimock1-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/webapps/_unpack"
+                },
+                {
+                    "command": "unpack",
+                    "remote_host": "fe001",
+                    "source":  "/opt/tarballs/cas-capimock2-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/webapps/_unpack"
+                },
+                {
+                    "command": "unpack",
+                    "remote_host": "fe002",
+                    "source":  "/opt/tarballs/cas-capimock1-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/webapps/_unpack"
+                },
+                {
+                    "command": "unpack",
+                    "remote_host": "fe002",
+                    "source":  "/opt/tarballs/cas-capimock2-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/webapps/_unpack"
+                }
+            ]
+        },
+        {
+            "name": "Database migrations",
+            "parallel": 1,
+            "tasks": [
+                {
+                    "command": "dbmigration",
+                    "remote_host": "fe001",
+                    "source":  "/opt/scripts/executeMigrations dir=/opt/webapps/_unpack/cas-capimock1-frontend_bd37384eee/db dbsub=db"
+                },
+                {
+                    "command": "dbmigration",
+                    "remote_host": "fe002",
+                    "source":  "/opt/scripts/executeMigrations dir=/opt/webapps/_unpack/cas-capimock2-frontend_bd37384eee/db dbsub=db"
+                }
+            ]
+        }
+    ]
+}

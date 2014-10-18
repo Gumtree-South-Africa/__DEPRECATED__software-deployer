@@ -14,7 +14,7 @@ class Config(AttrDict):
 
         if type(mapping) is CommandLine and hasattr(mapping, 'config'):
 
-            self.__setattr__('log', Log(self.__class__.__name__, config=mapping), force=True)
+            self.__setattr__('log', Log(self.__class__.__name__), force=True)
             self.log.info('Loading configuration from {0}'.format(mapping.config))
 
             mapping = vars(mapping)

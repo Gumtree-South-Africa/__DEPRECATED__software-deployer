@@ -9,7 +9,7 @@ class RenameFile(object):
     def __init__(self, config, old_file, new_file, host, clobber=True):
         """If clobber is True, remove the target file if it exists"""
 
-        self.log = Log(self.__class__.__name__, config=config)
+        self.log = Log(self.__class__.__name__)
 
         self.old_file = old_file
         self.new_file = new_file

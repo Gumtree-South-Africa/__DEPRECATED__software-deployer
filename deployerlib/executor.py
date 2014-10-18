@@ -1,0 +1,182 @@
+import os
+import json
+
+from fabric.colors import green
+from multiprocessing import Process, Manager
+
+from deployerlib.steps import *
+
+from deployerlib.log import Log
+from deployerlib.remotehost import RemoteHost
+from deployerlib.jobqueue import JobQueue
+from deployerlib.exceptions import DeployerException
+
+
+class Executor(object):
+    """Build deployer objects for each component to be deployed"""
+
+    def __init__(self, tasklist):
+        self.log = Log(self.__class__.__name__)
+
+        # translate external command names into class names
+        self.callables = {
+          'upload': upload.Upload,
+          'unpack': unpack.Unpack,
+          'dbmigration': dbmigration.DBMigration,
+          'createdirectory': createdirectory.CreateDirectory,
+          'removefile': removefile.RemoveFile,
+          'renamefile': renamefile.RenameFile,
+          'deploy': deploy.Deploy,
+        }
+
+        manager = Manager()
+
+        self.remote_hosts = []
+        self.remote_results = manager.dict()
+
+        parsed_tasklist = self.read_tasklist(tasklist)
+        self.stages = self.parse_stages(parsed_tasklist)
+
+    def read_tasklist(self, filename):
+        """Read in a task list and generate a list of jobs"""
+
+        j = None
+        self.log.info('Reading task list from {0}'.format(filename))
+
+        with open(filename, 'r') as f:
+
+            try:
+                j = json.load(f)
+            except ValueError as e:
+                raise DeployerException('Error parsing task list {0}: {1}'.format(
+                    filename, e))
+
+        if not j:
+            raise DeployerException('No task list found in file {0}'.format(filename))
+
+        return j
+
+    def parse_stages(self, tasklist):
+        """Parse each stage and create a list of runnable jobs
+           A stage is a dictionary in the form:
+           {
+               'name': '<Arbitrary name for this stage>',
+               'parallel': '<Number of jobs to run in parallel>',
+               'tasks': [<list of task dicts>]
+           }
+        """
+
+        stages = []
+
+        for ext_stage in tasklist['stages']:
+            stage = {}
+
+            try:
+                stage['name'] = ext_stage.pop('name')
+            except KeyError:
+                raise DeployerException('Found stage with no name: {0}'.format(ext_stage))
+
+            self.log.debug('Parsing stage {0}'.format(stage['name']))
+
+            try:
+                stage['parallel'] = ext_stage['parallel']
+            except KeyError as e:
+                raise DeployerException('Stage {0} missing key: {1}'.format(stage['name'], e))
+
+            stage['tasks'] = self.parse_tasks(ext_stage['tasks'])
+            stages.append(stage)
+
+            self.log.debug('Added {0} jobs for stage {1}'.format(len(stage['tasks']), stage['name']))
+
+        self.log.debug('Parsed {0} stages'.format(len(stages)))
+
+        return stages
+
+    def parse_tasks(self, tasks):
+        """Build executable jobs from a list of tasks
+           A task is a dictionary in the form:
+           {
+               'command':     '<pre-defined internal command>'
+               'remote_host': '<remote host on which to run the command>',
+               'remote_user': '<username as which to log in to the remote host>',
+               'arg1':        '<argument to internal command>',
+               ...
+           }
+           'command' is required, and must be defined in the Orchestrator
+           'remote_host' is optional, and will be replaced by a RemoteHost object
+           'remote_user' is optional, and will be passed to the RemoteHost object (and not to the internal command)
+        """
+
+        job_list = []
+
+        for task in tasks:
+
+            try:
+                callable = self.callables[task.pop('command')]
+            except KeyError:
+                raise DeployerException('No command specified in stage {0} task {1}'.format(
+                  stage, task))
+
+            if 'remote_host' in task:
+
+                if 'remote_user' in task:
+                    username = task.pop('remote_user')
+                else:
+                    username = None
+
+                task['remote_host'] = self.get_remote_host(task['remote_host'], username)
+                job_id = task['remote_host'].hostname
+            else:
+                job_id = 'local'
+
+            remote_task = callable(**task)
+            procname = repr(remote_task)
+
+            job = Process(target=remote_task.execute, name=procname, args=[procname, self.remote_results])
+            job._host = job_id
+
+            job_list.append(job)
+
+        return job_list
+
+    def get_remote_host(self, hostname, username=''):
+        """Return a host object from a hostname"""
+
+        match = [x for x in self.remote_hosts if x.hostname == hostname]
+
+        if len(match) == 1:
+            return match[0]
+        elif len(match) > 1:
+            raise DeployerException('More than one host found with hostname{0}'.format(hostname))
+        else:
+            host = RemoteHost(hostname, username)
+            self.remote_hosts.append(host)
+            return host
+
+    def run(self):
+        """Run each stage"""
+
+        for stage in self.stages:
+
+            self.remote_results.clear()
+
+            if not stage['tasks']:
+                self.log.info('No tasks for stage: {0}'.format(stage['name']))
+
+            self.log.info(green('Starting stage: {0}'.format(stage['name'])))
+            job_queue = JobQueue(stage['parallel'], remote_results=self.remote_results)
+
+            for task in stage['tasks']:
+                job_queue.append(task)
+
+            job_queue.close()
+            res = job_queue.run()
+            self.log.info(green('Finished stage: {0}'.format(stage['name'])))
+
+            failed = [x for x in self.remote_results.keys() if not self.remote_results[x]]
+
+            for failed_job in failed:
+                self.log.error('Failed job: {0}'.format(failed_job))
+
+            if failed or not res:
+                raise DeployerException('Failed jobs')

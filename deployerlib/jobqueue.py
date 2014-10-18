@@ -36,19 +36,19 @@ class JobQueue(object):
         ___________________________
                                 End 
     """
-    def __init__(self, max_running, comms_queue, remote_results={}, config=None):
+    def __init__(self, max_running, remote_results={}, config=None):
         """
         Setup the class to resonable defaults.
         """
 
-        self.log = Log(self.__class__.__name__, config=config)
+        self.log = Log(self.__class__.__name__)
         self.remote_results = remote_results
         self._queued = []
         self._running = []
         self._completed = []
         self._num_of_jobs = 0
         self._max = max_running
-        self._comms_queue = comms_queue
+        self._comms_queue = Queue.Queue()
         self._finished = False
         self._closed = False
         self._debug = False
@@ -79,7 +79,7 @@ class JobQueue(object):
 
         self._closed = True
 
-    def append(self, process):
+    def append(self, processlist):
         """
         Add the Process() to the queue, so that later it can be checked up on.
         That is if the JobQueue is still open.
@@ -90,9 +90,19 @@ class JobQueue(object):
         ``multiprocessing.Queue`` object, and give it here as ``queue``. Then
         ``JobQueue.run`` will include the queue's contents in its return value.
         """
-        if not self._closed:
+
+        if self._closed:
+            return
+
+        if not hasattr(processlist, '__iter__'):
+            processlist = [processlist]
+
+        for process in processlist:
             self._queued.append(process)
             self._num_of_jobs += 1
+            # prime with failed result in case no results are returned
+            self.remote_results[process.name] = False
+
             if self._debug:
                 print("job queue appended %s." % process.name)
 
@@ -177,10 +187,6 @@ class JobQueue(object):
                     if not job.is_alive():
                         self.log.debug('Found finished job: {0}'.format(job._name))
 
-                        if not job._name in self.remote_results:
-                            # populate this so the orchestrator will know a job failed
-                            self.remote_results[job._name] = False
-
                         if not self.remote_results[job._name]:
                             _abort_queue(job._name)
                             return results
@@ -225,6 +231,8 @@ class JobQueue(object):
         while True:
             try:
                 datum = self._comms_queue.get_nowait()
+                # debug
+                print 'YYYYY datum:', datum
                 results[datum['name']]['results'] = datum['result']
             except Queue.Empty:
                 break

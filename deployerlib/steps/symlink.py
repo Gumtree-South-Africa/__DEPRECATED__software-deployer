@@ -6,7 +6,7 @@ class SymLink(object):
     """Manage a remote symlink"""
 
     def __init__(self, config, service, host):
-        self.log = Log(self.__class__.__name__, config=config)
+        self.log = Log(self.__class__.__name__)
 
         self.config = config
         self.service = service
