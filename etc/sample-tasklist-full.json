@@ -1,0 +1,145 @@
+{
+    "name":"Aurora deployment 2014-10-16 12:34:56",
+    "version": "92839473948abc",
+    "stages": [
+        {
+            "name": "Upload",
+            "parallel": 10,
+            "maxBandwidthMbit": 300,
+            "tasks": [
+                {
+                    "command": "upload",
+                    "host": "fe001",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock1-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/tarballs"
+                },
+                {
+                    "command": "upload",
+                    "host": "fe001",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock2-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/tarballs"
+                },
+                {
+                    "command": "upload",
+                    "host": "fe002",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock1-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/tarballs"
+                },
+                {
+                    "command": "upload",
+                    "host": "fe002",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock2-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/tarballs"
+                }
+            ]
+        },
+        {
+            "name": "Create temp directories",
+            "parallel": 10,
+            "tasks": [
+                {
+                    "command": "createdirectory",
+                    "host": "fe001",
+                    "source":  "/opt/webapps/_unpack",
+                    "clobber": true
+                },
+                {
+                    "command": "createdirectory",
+                    "host": "fe002",
+                    "source":  "/opt/webapps/_unpack",
+                    "clobber": true
+                }
+            ]
+        },
+        {
+            "name": "Unpack",
+            "concurrency": 10,
+            "concurrencyPerHost": 3,
+            "tasks": [
+                {
+                    "command": "unpack",
+                    "host": "fe001",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock1-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/webapps/_unpack"
+                },
+                {
+                    "command": "unpack",
+                    "host": "fe001",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock2-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/webapps/_unpack"
+                },
+                {
+                    "command": "unpack",
+                    "host": "fe002",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock1-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/webapps/_unpack"
+                },
+                {
+                    "command": "unpack",
+                    "host": "fe002",
+                    "source":  "/media/home/pmcconnell/release/icas/cas-capimock2-frontend_bd37384eee.tar.gz",
+                    "destination":  "/opt/webapps/_unpack"
+                }
+            ]
+        },
+        {
+            "name": "Database migrations",
+            "parallel": 1,
+            "tasks": [
+                {
+                    "command": "dbmigration",
+                    "host": "fe001",
+                    "source":  "/opt/webapps/_unpack/cas-capimock1-frontend_bd37384eee"
+                },
+                {
+                    "command": "dbmigration",
+                    "host": "fe001",
+                    "source":  "/opt/webapps/_unpack/cas-capimock2-frontend_bd37384eee"
+                }
+            ]
+        },
+        {
+            "name": "Deployment and activation",
+            "parallel": 10,
+            "concurrencyPerHost": 3,
+            "tasks": [
+                {
+                    "command": "deploy",
+                    "host": "fe001",
+                    "source":  "/opt/webapps/_unpack/cas-capimock1-frontend_bd37384eee",
+                    "destination":  "/opt/webapps/cas-capimock1-frontend_bd37384eee",
+                    "lb_hostname": "belb001",
+                    "lb_username": "nsroot",
+                    "lb_password": "nsroot"
+                },
+                {
+                    "command": "deploy",
+                    "host": "fe001",
+                    "source":  "/opt/webapps/_unpack/cas-capimock2-frontend_bd37384eee",
+                    "destination":  "/opt/webapps/cas-capimock2-frontend_bd37384eee",
+                    "lb_hostname": "belb001",
+                    "lb_username": "nsroot",
+                    "lb_password": "nsroot"
+                },
+                {
+                    "command": "deploy",
+                    "host": "fe002",
+                    "source":  "/opt/webapps/_unpack/cas-capimock1-frontend_bd37384eee",
+                    "destination":  "/opt/webapps/cas-capimock1-frontend_bd37384eee",
+                    "lb_hostname": "belb001",
+                    "lb_username": "nsroot",
+                    "lb_password": "nsroot"
+                },
+                {
+                    "command": "deploy",
+                    "host": "fe002",
+                    "source":  "/opt/webapps/_unpack/cas-capimock2-frontend_bd37384eee",
+                    "destination":  "/opt/webapps/cas-capimock2-frontend_bd37384eee",
+                    "lb_hostname": "belb001",
+                    "lb_username": "nsroot",
+                    "lb_password": "nsroot"
+                }
+            ]
+        }
+    ]
+}

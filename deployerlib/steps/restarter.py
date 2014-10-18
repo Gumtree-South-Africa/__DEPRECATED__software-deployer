@@ -1,4 +1,3 @@
-import os
 import time
 
 from deployerlib.log import Log

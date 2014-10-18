@@ -8,7 +8,7 @@ import deployerlib.log
 class CommandLine(object):
     """Handle the command line of front-end scripts"""
 
-    def __init__(self, parents=[], require_host=False):
+    def __init__(self, parents=[], require_config=True, require_host=False):
 
         if type(parents) is not list:
             parents = [parents]
@@ -19,7 +19,7 @@ class CommandLine(object):
         output_group.add_argument('-v', '--verbose', action='store_true', help='Show more information')
         output_group.add_argument('-d', '--debug', action='store_true', help='Show a lot more information')
 
-        parser.add_argument('-c', '--config', required=True, help='Specify a platform config file')
+        parser.add_argument('-c', '--config', required=require_config, help='Specify a platform config file')
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
         host_group.add_argument('--cluster', help='Specify a cluster of hosts to deploy to')
