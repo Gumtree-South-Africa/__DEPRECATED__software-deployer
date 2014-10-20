@@ -1,1 +1,12 @@
-__all__ = ['upload', 'unpack', 'dbmigration', 'restarter', 'renamefile', 'removefile', 'createdirectory', 'deploy']
+__all__ = [
+  'upload',
+  'unpack',
+  'dbmigration',
+  'movefile',
+  'removefile',
+  'createdirectory',
+  'deployandrestart',
+  'controlservice',
+  'disableloadbalancer',
+  'enableloadbalancer',
+]

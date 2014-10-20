@@ -5,7 +5,6 @@
         {
             "name": "Upload",
             "parallel": 10,
-            "maxBandwidthMbit": 300,
             "tasks": [
                 {
                     "command": "upload",
@@ -44,12 +43,14 @@
                 {
                     "command": "createdirectory",
                     "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
                     "source":  "/opt/webapps/_unpack",
                     "clobber": true
                 },
                 {
                     "command": "createdirectory",
                     "remote_host": "fe002",
+                    "remote_user": "mpdeploy",
                     "source":  "/opt/webapps/_unpack",
                     "clobber": true
                 }
@@ -63,24 +64,28 @@
                 {
                     "command": "unpack",
                     "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
                     "source":  "/opt/tarballs/cas-capimock1-frontend_bd37384eee.tar.gz",
                     "destination":  "/opt/webapps/_unpack"
                 },
                 {
                     "command": "unpack",
                     "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
                     "source":  "/opt/tarballs/cas-capimock2-frontend_bd37384eee.tar.gz",
                     "destination":  "/opt/webapps/_unpack"
                 },
                 {
                     "command": "unpack",
                     "remote_host": "fe002",
+                    "remote_user": "mpdeploy",
                     "source":  "/opt/tarballs/cas-capimock1-frontend_bd37384eee.tar.gz",
                     "destination":  "/opt/webapps/_unpack"
                 },
                 {
                     "command": "unpack",
                     "remote_host": "fe002",
+                    "remote_user": "mpdeploy",
                     "source":  "/opt/tarballs/cas-capimock2-frontend_bd37384eee.tar.gz",
                     "destination":  "/opt/webapps/_unpack"
                 }
@@ -93,12 +98,98 @@
                 {
                     "command": "dbmigration",
                     "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
                     "source":  "/opt/scripts/executeMigrations dir=/opt/webapps/_unpack/cas-capimock1-frontend_bd37384eee/db dbsub=db"
                 },
                 {
                     "command": "dbmigration",
-                    "remote_host": "fe002",
+                    "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
                     "source":  "/opt/scripts/executeMigrations dir=/opt/webapps/_unpack/cas-capimock2-frontend_bd37384eee/db dbsub=db"
+                }
+            ]
+        },
+        {
+            "name": "Deploy and restart",
+            "parallel": 3,
+            "tasks": [
+                {
+                    "command": "deploy_and_restart",
+                    "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
+                    "source": "/opt/webapps/_unpack/cas-capimock1-frontend_bd37384eee",
+                    "destination": "/opt/webapps/cas-capimock1-frontend_bd37384eee",
+                    "link_target": "/opt/webapps/cas-capimock1-frontend",
+                    "stop_command": "/usr/bin/svc -d /etc/service/cas-capimock1-frontend",
+                    "start_command": "/usr/bin/svc -u /etc/service/cas-capimock1-frontend",
+                    "check_command": "/usr/lib/nagios/plugins/check_http -I localhost -u http://localhost:9091/ -p 9091 -e '200,301,302,303,307,403,404'",
+                    "lb_hostname": "belb001",
+                    "lb_service": "fe_capimock1_fe001",
+                    "lb_username": "nsroot",
+                    "lb_password": "nsroot"
+                },
+                {
+                    "command": "deploy_and_restart",
+                    "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
+                    "source": "/opt/webapps/_unpack/cas-capimock2-frontend_bd37384eee",
+                    "destination": "/opt/webapps/cas-capimock2-frontend_bd37384eee",
+                    "link_target": "/opt/webapps/cas-capimock2-frontend",
+                    "stop_command": "/usr/bin/svc -d /etc/service/cas-capimock2-frontend",
+                    "start_command": "/usr/bin/svc -u /etc/service/cas-capimock2-frontend",
+                    "check_command": "/usr/lib/nagios/plugins/check_http -I localhost -u http://localhost:9092/ -p 9092 -e '200,301,302,303,307,403,404'",
+                    "lb_hostname": "belb001",
+                    "lb_service": "fe_capimock2_fe001",
+                    "lb_username": "nsroot",
+                    "lb_password": "nsroot"
+                },
+                {
+                    "command": "deploy_and_restart",
+                    "remote_host": "fe002",
+                    "remote_user": "mpdeploy",
+                    "source": "/opt/webapps/_unpack/cas-capimock1-frontend_bd37384eee",
+                    "destination": "/opt/webapps/cas-capimock1-frontend_bd37384eee",
+                    "link_target": "/opt/webapps/cas-capimock1-frontend",
+                    "stop_command": "/usr/bin/svc -d /etc/service/cas-capimock1-frontend",
+                    "start_command": "/usr/bin/svc -u /etc/service/cas-capimock1-frontend",
+                    "check_command": "/usr/lib/nagios/plugins/check_http -I localhost -u http://localhost:9091/ -p 9091 -e '200,301,302,303,307,403,404'",
+                    "lb_hostname": "belb001",
+                    "lb_service": "fe_capimock1_fe002",
+                    "lb_username": "nsroot",
+                    "lb_password": "nsroot"
+                },
+                {
+                    "command": "deploy_and_restart",
+                    "remote_host": "fe002",
+                    "remote_user": "mpdeploy",
+                    "source": "/opt/webapps/_unpack/cas-capimock2-frontend_bd37384eee",
+                    "destination": "/opt/webapps/cas-capimock2-frontend_bd37384eee",
+                    "link_target": "/opt/webapps/cas-capimock2-frontend",
+                    "stop_command": "/usr/bin/svc -d /etc/service/cas-capimock2-frontend",
+                    "start_command": "/usr/bin/svc -u /etc/service/cas-capimock2-frontend",
+                    "check_command": "/usr/lib/nagios/plugins/check_http -I localhost -u http://localhost:9092/ -p 9092 -e '200,301,302,303,307,403,404'",
+                    "lb_hostname": "belb001",
+                    "lb_service": "fe_capimock1_fe002",
+                    "lb_username": "nsroot",
+                    "lb_password": "nsroot"
+                }
+            ]
+        },
+        {
+            "name": "Remove temp directories",
+            "parallel": 10,
+            "tasks": [
+                {
+                    "command": "removefile",
+                    "remote_host": "fe001",
+                    "remote_user": "mpdeploy",
+                    "source": "/opt/webapps/_unpack"
+                },
+                {
+                    "command": "removefile",
+                    "remote_host": "fe002",
+                    "remote_user": "mpdeploy",
+                    "source": "/opt/webapps/_unpack"
                 }
             ]
         }

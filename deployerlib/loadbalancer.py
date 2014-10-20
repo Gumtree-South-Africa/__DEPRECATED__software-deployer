@@ -84,6 +84,7 @@ class LoadBalancer(object):
         cur_state, service = self.get_service_state(lbservice)
 
         if not service:
+            self.log.warning('Service {0} does not exist on {1}'.format(lbservice, self.hostname))
             return True
 
         if cur_state == 'UP':
@@ -109,6 +110,7 @@ class LoadBalancer(object):
         cur_state, service = self.get_service_state(lbservice)
 
         if not service:
+            self.log.warning('Service {0} does not exist on {1}'.format(lbservice, self.hostname))
             return True
 
         if cur_state != 'UP':

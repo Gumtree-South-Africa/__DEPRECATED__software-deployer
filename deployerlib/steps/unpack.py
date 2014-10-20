@@ -29,7 +29,7 @@ class Unpack(object):
             raise DeployerException('{0} class doesn\'t know how to unpack file: {1}'.format(
               self.__class__.__name__, self.source))
 
-        self.log.debug('Usuing unpack command: {0}'.format(command))
+        self.log.debug('Using unpack command: {0}'.format(command))
 
         return command
 

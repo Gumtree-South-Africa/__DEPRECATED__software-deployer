@@ -1,5 +1,4 @@
 from deployerlib.log import Log
-from deployerlib.exceptions import DeployerException
 
 
 class CreateDirectory(object):

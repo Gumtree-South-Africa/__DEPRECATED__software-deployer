@@ -25,8 +25,11 @@ class Executor(object):
           'dbmigration': dbmigration.DBMigration,
           'createdirectory': createdirectory.CreateDirectory,
           'removefile': removefile.RemoveFile,
-          'renamefile': renamefile.RenameFile,
-          'deploy': deploy.Deploy,
+          'movefile': movefile.MoveFile,
+          'deploy_and_restart': deployandrestart.DeployAndRestart,
+          'control_service': controlservice.ControlService,
+          'disable_loadbalancer': disableloadbalancer.DisableLoadbalancer,
+          'enable_loadbalancer': enableloadbalancer.EnableLoadbalancer,
         }
 
         manager = Manager()
@@ -111,11 +114,13 @@ class Executor(object):
 
         for task in tasks:
 
-            try:
-                callable = self.callables[task.pop('command')]
-            except KeyError:
-                raise DeployerException('No command specified in stage {0} task {1}'.format(
-                  stage, task))
+            if not 'command' in task:
+                raise DeployerException('No command specified in task: {0}'.format(task))
+
+            if not task['command'] in self.callables:
+                raise DeployerException('Step "{0}" is not implemented'.format(task['command']))
+
+            callable = self.callables[task.pop('command')]
 
             if 'remote_host' in task:
 
