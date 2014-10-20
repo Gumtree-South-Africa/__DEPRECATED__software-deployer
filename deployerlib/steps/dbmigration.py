@@ -1,7 +1,6 @@
 import os
 
 from deployerlib.log import Log
-from deployerlib.exceptions import DeployerException
 
 
 class DBMigration(object):
@@ -21,8 +20,6 @@ class DBMigration(object):
         """Execute the migration for a service"""
 
         self.log.info('Executing database migrations')
-        self.log.debug('Executing {0}'.format(self.source))
-
         res = self.remote_host.execute_remote(self.source)
 
         if res.succeeded:
