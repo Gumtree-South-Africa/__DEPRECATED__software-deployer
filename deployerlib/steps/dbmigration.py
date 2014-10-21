@@ -12,7 +12,7 @@ class DBMigration(object):
         self.service = service
         self.host = host
 
-        self.log = Log(self.__class__.__name__, config=config)
+        self.log = Log(self.__class__.__name__)
 
         if not 'migration_location' in self.service.service_config:
             self.log.debug('No migration_location is configured for {0}'.format(

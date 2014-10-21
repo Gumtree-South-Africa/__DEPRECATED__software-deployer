@@ -1,23 +1,20 @@
-from fabric.colors import red, green, yellow, cyan
-from fabric.api import env
-from time import strftime
-#import getpass
 import sys
 import logging
 import logging.handlers
-#import deployerlib
+
 from time import gmtime, strftime
-#from deployerlib.exceptions import *
+from fabric.colors import red, green, yellow, cyan
+from fabric.api import env
+
+
+level = logging.INFO
+
 
 class Log(object):
 
-    def __init__(self, instance='DEPLOYER', config=None, level=logging.INFO):
+    def __init__(self, instance='DEPLOYER'):
 
-        self.config = config
-
-        if self.config and self.config.debug:
-            level = logging.DEBUG
-
+        global level
         self.logger = self.get_logger(instance, level)
 
     def get_logger(self, instance, level):
@@ -91,3 +88,12 @@ class Log(object):
     def critical(self, message):
         self.log(red(message), logging.CRITICAL)
 
+
+def set_debug(debug=True):
+
+    global level
+
+    if debug:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO

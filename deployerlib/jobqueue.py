@@ -41,7 +41,7 @@ class JobQueue(object):
         Setup the class to resonable defaults.
         """
 
-        self.log = Log(self.__class__.__name__, config=config)
+        self.log = Log(self.__class__.__name__)
         self.remote_results = remote_results
         self._queued = []
         self._running = []

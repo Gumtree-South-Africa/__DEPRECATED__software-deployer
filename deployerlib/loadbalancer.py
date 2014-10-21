@@ -10,7 +10,7 @@ class LoadBalancer(object):
     """Manage connections to a single load balancer"""
 
     def __init__(self, hostname, username, password, config=None):
-        self.log = Log(self.__class__.__name__, config=config)
+        self.log = Log(self.__class__.__name__)
 
         self.hostname = hostname
         self.username = username

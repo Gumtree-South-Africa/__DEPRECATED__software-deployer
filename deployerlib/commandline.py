@@ -2,7 +2,7 @@ import sys
 import logging
 import argparse
 
-from deployerlib.log import Log
+import deployerlib.log
 
 
 class CommandLine(object):
@@ -30,7 +30,8 @@ class CommandLine(object):
 
         parser.parse_args(namespace=self)
 
-        log = Log(self.__class__.__name__, config=self)
+        deployerlib.log.set_debug(self.debug)
+        log = deployerlib.log.Log(self.__class__.__name__)
         log.debug('Commandline "{0}" resulted in this CommandLine object: {1}'.format(' '.join(sys.argv),self))
 
     def __str__(self):
