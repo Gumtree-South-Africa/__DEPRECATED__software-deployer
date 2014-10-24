@@ -2,10 +2,12 @@
 
 import argparse
 
+from deployerlib.platforms import restart_services
+
+from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
-from deployerlib.service import Service
-from deployerlib.orchestrator import Orchestrator
+from deployerlib.executor import Executor
 
 parser = argparse.ArgumentParser()
 action_group = parser.add_mutually_exclusive_group(required=True)
@@ -13,8 +15,6 @@ action_group.add_argument('--restartservice', nargs='+', metavar='SERVICE', help
 action_group.add_argument('--disableservice', nargs='+', metavar='SERVICE', help='Single service to disable')
 action_group.add_argument('--enableservice', nargs='+', metavar='SERVICE', help='Single service to enable')
 action_group.add_argument('--listservices', nargs='+', metavar='SERVICE', help='List services on a host or cluster')
-#parser.add_argument('--steps', nargs='*', default=[disable_loadbalancer, stop_service, start_service, enable_loadbalancer],
-#  help='List of deployment steps to perform')
 
 args = CommandLine(parents=parser, require_host=True)
 config = Config(args)

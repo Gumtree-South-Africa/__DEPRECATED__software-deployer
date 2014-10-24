@@ -196,6 +196,6 @@ class Service(object):
         if hosts:
             self.log.info('{0} is configured to run on: {1}'.format(self.servicename, ', '.join(hosts)))
         else:
-            self.log.error('Cannot find any hosts to run {0} on'.format(self.servicename))
+            raise DeployerException('Cannot find any hosts to run {0} on'.format(self.servicename))
 
         return [RemoteHost(x, self.config.user) for x in hosts]

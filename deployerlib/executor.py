@@ -15,7 +15,7 @@ from deployerlib.exceptions import DeployerException
 class Executor(object):
     """Build deployer objects for each component to be deployed"""
 
-    def __init__(self, tasklist):
+    def __init__(self, filename=None, tasklist=None):
         self.log = Log(self.__class__.__name__)
 
         # translate external command names into class names
@@ -30,6 +30,7 @@ class Executor(object):
           'control_service': controlservice.ControlService,
           'disable_loadbalancer': disableloadbalancer.DisableLoadbalancer,
           'enable_loadbalancer': enableloadbalancer.EnableLoadbalancer,
+          'execute_command': executecommand.ExecuteCommand,
         }
 
         manager = Manager()
@@ -37,8 +38,10 @@ class Executor(object):
         self.remote_hosts = []
         self.remote_results = manager.dict()
 
-        parsed_tasklist = self.read_tasklist(tasklist)
-        self.stages = self.parse_stages(parsed_tasklist)
+        if not tasklist:
+            tasklist = self.read_tasklist(filename)
+
+        self.stages = self.parse_stages(tasklist)
 
     def read_tasklist(self, filename):
         """Read in a task list and generate a list of jobs"""
@@ -51,7 +54,7 @@ class Executor(object):
             try:
                 j = json.load(f)
             except ValueError as e:
-                raise DeployerException('Error parsing task list {0}: {1}'.format(
+                raise DeployerException('Error parsing task list {0} as json: {1}'.format(
                     filename, e))
 
         if not j:
@@ -71,7 +74,8 @@ class Executor(object):
 
         stages = []
 
-        for ext_stage in tasklist['stages']:
+        for i in tasklist['stages']:
+            ext_stage = i.copy()
             stage = {}
 
             try:
@@ -112,7 +116,8 @@ class Executor(object):
 
         job_list = []
 
-        for task in tasks:
+        for i in tasks:
+            task = i.copy()
 
             if not 'command' in task:
                 raise DeployerException('No command specified in task: {0}'.format(task))
@@ -134,7 +139,12 @@ class Executor(object):
             else:
                 job_id = 'local'
 
-            remote_task = callable(**task)
+            try:
+                remote_task = callable(**task)
+            except TypeError as e:
+                raise DeployerException('Invalid arguments passed to {0}: {1}'.format(
+                  callable.__name__, e))
+
             procname = repr(remote_task)
 
             job = Process(target=remote_task.execute, name=procname, args=[procname, self.remote_results])

@@ -9,7 +9,7 @@ from deployerlib.exceptions import DeployerException
 class RemoteVersions(object):
     """Manage information about remote versions of services"""
 
-    def __init__(self, config):
+    def __init__(self):
         self.log = Log(self.__class__.__name__)
 
         manager = Manager()
@@ -17,14 +17,12 @@ class RemoteVersions(object):
 
     def __repr__(self):
 
-        return '{0}(services={1})'.format(self.__class__.__name__,
-          repr([x.servicename for x in self.services]))
+        return '{0}()'.format(self.__class__.__name__)
 
-    def get_remote_version(self, service, host, remote_results={}, procname=None):
+    def get_remote_version(self, service, host, procname=None, remote_results={}):
         """Get the version of a remote service"""
 
-        remote_symlink = os.path.join(service.install_location, service.servicename)
-        res = host.execute_remote('/bin/readlink {0}'.format(remote_symlink))
+        res = host.execute_remote('/bin/readlink {0}'.format(service.symlink))
 
         if res:
             installed_package = os.path.basename(res)

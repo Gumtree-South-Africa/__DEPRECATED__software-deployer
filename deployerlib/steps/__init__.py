@@ -9,4 +9,5 @@ __all__ = [
   'controlservice',
   'disableloadbalancer',
   'enableloadbalancer',
+  'executecommand',
 ]
