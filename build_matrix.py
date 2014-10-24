@@ -4,6 +4,7 @@ import os
 import json
 import argparse
 
+from deployerlib.exceptions import DeployerException
 from deployerlib.platforms import *
 
 from deployerlib.log import Log
