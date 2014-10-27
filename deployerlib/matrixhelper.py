@@ -57,7 +57,7 @@ class MatrixHelper(object):
 
         for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
-            hosts = [self._get_remote_host(x) for x in self.config.get_service_hosts(package.servicename)]
+            hosts = [self._get_remote_host(x, self.config.user) for x in self.config.get_service_hosts(package.servicename)]
 
             for host in hosts:
                 procname = 'RemoteVersions({0}/{1})'.format(host.hostname, package.servicename)
