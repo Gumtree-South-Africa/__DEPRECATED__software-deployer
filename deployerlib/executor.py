@@ -4,7 +4,7 @@ import json
 from fabric.colors import green
 from multiprocessing import Process, Manager
 
-from deployerlib.steps import *
+from deployerlib.commands import *
 
 from deployerlib.log import Log
 from deployerlib.remotehost import RemoteHost
@@ -123,7 +123,7 @@ class Executor(object):
                 raise DeployerException('No command specified in task: {0}'.format(task))
 
             if not task['command'] in self.callables:
-                raise DeployerException('Step "{0}" is not implemented'.format(task['command']))
+                raise DeployerException('Command "{0}" is not implemented'.format(task['command']))
 
             callable = self.callables[task.pop('command')]
 
