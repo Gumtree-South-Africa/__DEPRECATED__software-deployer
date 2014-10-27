@@ -8,7 +8,7 @@ from deployerlib.executor import Executor
 
 # Add command line option for components to deploy
 parser = argparse.ArgumentParser()
-parser.add_argument('--tasklist', help='A list of pre-generated tasks')
+parser.add_argument('--tasklist', help='A list of pre-generated tasks', required=True)
 
 args = CommandLine(parents=parser, require_config=False)
 
