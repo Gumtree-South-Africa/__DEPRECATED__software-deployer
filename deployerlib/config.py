@@ -78,3 +78,18 @@ class Config(AttrDict):
         lb_password = lb_config.api_password
 
         return lb_hostname, lb_username, lb_password
+
+    def get_service_hosts(self, servicename):
+        """Get the list of hosts this service should be deployed to"""
+
+        service_config = self.get_with_defaults('service', servicename)
+        hosts = []
+
+        if 'hostgroups' in service_config:
+            for hg in service_config.hostgroups:
+                hosts += self.hostgroup[hg]['hosts']
+
+        if hosts:
+            self.log.info('{0} is configured to run on: {1}'.format(servicename, ', '.join(hosts)))
+
+        return hosts

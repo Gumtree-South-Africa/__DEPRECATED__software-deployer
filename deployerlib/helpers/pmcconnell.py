@@ -1,3 +1,5 @@
+import os
+
 from deployerlib.log import Log
 from deployerlib.matrixhelper import MatrixHelper
 from deployerlib.exceptions import DeployerException
@@ -10,8 +12,8 @@ class DemoMatrix(object):
         self.log = Log(self.__class__.__name__)
         self.config = config
         self.matrixhelper = MatrixHelper(config)
-        self.services = self.matrixhelper.get_services()
-        self.remote_versions = self.matrixhelper.get_remote_versions(self.services)
+        self.packages = self.matrixhelper.get_packages()
+        self.remote_versions = self.matrixhelper.get_remote_versions(self.packages)
 
     def build_matrix(self):
 
@@ -27,61 +29,64 @@ class DemoMatrix(object):
         deploy_tasks = []
         remove_temp_tasks = []
 
-        for service in self.services:
+        for package in self.packages:
 
-            for host in service.hosts:
+            service_config = self.config.get_with_defaults('service', package.servicename)
+            hosts = self.config.get_service_hosts(package.servicename)
 
-                if not self.config.redeploy and self.remote_versions.get(service.servicename).get(host.hostname) \
-                  == service.version:
+            for hostname in hosts:
+
+                if not self.config.redeploy and self.remote_versions.get(package.servicename).get(hostname) \
+                  == package.version:
                     self.log.debug('Service {0} is up to date on {1}, skipping'.format(
-                      service.servicename, host.hostname))
+                      package.servicename, hostname))
                     continue
 
                 upload_tasks.append({
                   'command': 'upload',
-                  'remote_host': host.hostname,
+                  'remote_host': hostname,
                   'remote_user': self.config.user,
-                  'source': service.fullpath,
-                  'destination': service.upload_location,
+                  'source': package.fullpath,
+                  'destination': service_config.destination,
                 })
 
                 unpack_tasks.append({
                   'command': 'unpack',
-                  'remote_host': host.hostname,
+                  'remote_host': hostname,
                   'remote_user': self.config.user,
-                  'source': service.remote_filename,
-                  'destination': service.unpack_dir,
+                  'source': os.path.join(service_config.destination, package.filename),
+                  'destination': os.path.join(service_config.install_location, self.config.unpack_dir),
                 })
 
                 deploy_task = {
-                  '_servicename': service.servicename,
+                  '_servicename': package.servicename,
                   'command': 'deploy_and_restart',
-                  'remote_host': host.hostname,
+                  'remote_host': hostname,
                   'remote_user': self.config.user,
-                  'source': service.unpack_destination,
-                  'destination': service.install_destination,
-                  'link_target': service.symlink,
+                  'source': os.path.join(service_config.install_location, self.config.unpack_dir, package.packagename),
+                  'destination': os.path.join(service_config.install_location, package.packagename),
+                  'link_target': os.path.join(service_config.install_location, package.servicename),
                 }
 
-                if hasattr(service.service_config, 'migration_command') and not [x for x in dbmig_tasks \
-                  if x['_servicename'] == service.servicename]:
+                if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
+                  if x['_servicename'] == package.servicename]:
 
-                    self.log.info('Adding DB migrations for {0} on {1}'.format(service.servicename, host.hostname))
+                    self.log.info('Adding DB migrations for {0} on {1}'.format(package.servicename, hostname))
 
                     dbmig_tasks.append({
-                      '_servicename': service.servicename,
+                      '_servicename': package.servicename,
                       'command': 'dbmigration',
-                      'remote_host': host.hostname,
+                      'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': service.service_config.migration_command.format(
-                        migration_location=service.service_config.migration_location, migration_options=''),
+                      'source': service_config.migration_command.format(
+                        migration_location=service_config.migration_location, migration_options=''),
                     })
 
-                lb_hostname, lb_username, lb_password = self.config.get_lb(service.servicename, host.hostname)
+                lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
                 if lb_hostname and lb_username and lb_password:
-                    if hasattr(service, 'lb_service'):
-                        deploy_task['lb_service'] = service.lb_service.format(hostname=host.hostname)
+                    if hasattr(service_config, 'lb_service'):
+                        deploy_task['lb_service'] = service_config.lb_service.format(hostname=hostname)
 
                         deploy_task.update({
                           'lb_hostname': lb_hostname,
@@ -90,33 +95,38 @@ class DemoMatrix(object):
                         })
 
                     else:
-                        self.log.warning('No lb_service defined for service {0}'.format(service.servicename))
+                        self.log.warning('No lb_service defined for service {0}'.format(package.servicename))
                 else:
-                    self.log.warning('No load balancer found for {0} on {1}'.format(service.servicename, host.hostname))
+                    self.log.warning('No load balancer found for {0} on {1}'.format(package.servicename, hostname))
 
-                if hasattr(service, 'control_commands'):
+                for cmd in ['stop_command', 'start_command', 'check_command']:
 
-                    for cmd in ['stop', 'start', 'check']:
-                        if cmd in service.control_commands:
-                            deploy_task['{0}_command'.format(cmd)] = service.control_commands[cmd]
+                    if hasattr(service_config, cmd):
+                        deploy_task[cmd] = service_config[cmd].format(
+                          servicename=package.servicename,
+                          port=service_config['port'],
+                        )
+                    else:
+                        self.log.warning('No {0} configured for service {1}'.format(
+                            cmd, package.servicename))
 
                 deploy_tasks.append(deploy_task)
 
-                if not [x for x in create_temp_tasks if x['remote_host'] == host.hostname and \
-                  x['source'] == service.unpack_dir]:
+                if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
+                  x['source'] == os.path.join(service_config.install_location, self.config.unpack_dir)]:
                     create_temp_tasks.append({
                       'command': 'createdirectory',
-                      'remote_host': host.hostname,
+                      'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': service.unpack_dir,
+                      'source': os.path.join(service_config.install_location, self.config.unpack_dir),
                       'clobber': True,
                     })
 
                     remove_temp_tasks.append({
                       'command': 'removefile',
-                      'remote_host': host.hostname,
+                      'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': service.unpack_dir,
+                      'source': os.path.join(service_config.install_location, self.config.unpack_dir),
                     })
 
         if not upload_tasks and not unpack_tasks and not deploy_tasks:
