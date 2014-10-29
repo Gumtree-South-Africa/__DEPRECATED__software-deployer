@@ -2,7 +2,7 @@
 
 import argparse
 
-from deployerlib.helpers import restart_services
+from deployerlib.generators import restart_services
 
 from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
