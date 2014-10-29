@@ -19,6 +19,7 @@ json_opts = {'indent': 4, 'sort_keys': True}
 
 callables = {
     'pmcconnell': pmcconnell.DemoMatrix,
+    'icas': icas.IcasGenerator
 }
 
 log = Log(os.path.basename(__file__))
@@ -39,7 +40,7 @@ if not callable:
     raise DeployerException('No callable matrix defined for platform {0}'.format(config.platform))
 
 platform_config = callable(config=config)
-tasklist = platform_config.build_matrix()
+tasklist = platform_config.generate()
 
 if config.dump:
     print json.dumps(tasklist, **json_opts)

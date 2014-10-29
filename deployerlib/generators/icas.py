@@ -1,24 +1,25 @@
 import os
+import sys
 
 from deployerlib.log import Log
 from deployerlib.matrixhelper import MatrixHelper
 from deployerlib.exceptions import DeployerException
 
 
-class DemoMatrix(object):
-    """Build a deployment matrix"""
+class IcasGenerator(object):
+    """iCAS task list generator"""
 
     def __init__(self, config):
         self.log = Log(self.__class__.__name__)
         self.config = config
         self.matrixhelper = MatrixHelper(config)
         self.packages = self.matrixhelper.get_packages()
-        self.remote_versions = self.matrixhelper.get_remote_versions(self.packages)
 
     def generate(self):
+        """Build the task list"""
 
         task_list = {
-          'name': 'Aurora deployment',
+          'name': 'iCAS deployment',
           'stages': [],
         }
 
@@ -29,18 +30,17 @@ class DemoMatrix(object):
         deploy_tasks = []
         remove_temp_tasks = []
 
+        packages = self.packages
+        tempdir_done = []
+        migration_done = []
+
         for package in self.packages:
-
             service_config = self.config.get_with_defaults('service', package.servicename)
-            hosts = self.config.get_service_hosts(package.servicename)
 
-            for hostname in hosts:
+            if not service_config:
+                raise DeployerException('Unknown service: {0}'.format(package.servicename))
 
-                if not self.config.redeploy and self.remote_versions.get(package.servicename).get(hostname) \
-                  == package.version:
-                    self.log.debug('Service {0} is up to date on {1}, skipping'.format(
-                      package.servicename, hostname))
-                    continue
+            for hostname in self.config.get_service_hosts(package.servicename):
 
                 upload_tasks.append({
                   'command': 'upload',
@@ -59,7 +59,6 @@ class DemoMatrix(object):
                 })
 
                 deploy_task = {
-                  '_servicename': package.servicename,
                   'command': 'deploy_and_restart',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
@@ -67,20 +66,6 @@ class DemoMatrix(object):
                   'destination': os.path.join(service_config.install_location, package.packagename),
                   'link_target': os.path.join(service_config.install_location, package.servicename),
                 }
-
-                if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
-                  if x['_servicename'] == package.servicename]:
-
-                    self.log.info('Adding DB migrations for {0} on {1}'.format(package.servicename, hostname))
-
-                    dbmig_tasks.append({
-                      '_servicename': package.servicename,
-                      'command': 'dbmigration',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'source': service_config.migration_command.format(
-                        migration_location=service_config.migration_location, migration_options=''),
-                    })
 
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
@@ -112,8 +97,9 @@ class DemoMatrix(object):
 
                 deploy_tasks.append(deploy_task)
 
-                if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
-                  x['source'] == os.path.join(service_config.install_location, service_config.unpack_dir)]:
+                if not hostname in tempdir_done:
+                    tempdir_done.append(hostname)
+
                     create_temp_tasks.append({
                       'command': 'createdirectory',
                       'remote_host': hostname,
@@ -129,9 +115,18 @@ class DemoMatrix(object):
                       'source': os.path.join(service_config.install_location, service_config.unpack_dir),
                     })
 
-        if not upload_tasks and not unpack_tasks and not deploy_tasks:
-            self.log.info('No services require deployment')
-            return
+                if hasattr(service_config, 'migration_command') and not package.servicename in migration_done:
+                    migration_done(package.servicename)
+
+                    dbmig_tasks.append({
+                      'command': 'dbmigration',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'source': service_config.migration_command.format(
+                        migration_location=service_config.migration_location,
+                        migration_options=''
+                      ),
+                    })
 
         if upload_tasks:
             task_list['stages'].append({
@@ -153,13 +148,11 @@ class DemoMatrix(object):
             task_list['stages'].append({
               'name': 'Unpack',
               'concurrency': 10,
-              'concurrency_per_host': 3,
+              'concurrency_per_host': 5,
               'tasks': unpack_tasks,
             })
 
         if dbmig_tasks:
-            for task in dbmig_tasks:
-                del task['_servicename']
 
             task_list['stages'].append({
               'name': 'Database migrations',
@@ -167,27 +160,32 @@ class DemoMatrix(object):
               'tasks': dbmig_tasks,
             })
 
-        for servicenames in self.config.deployment_order:
 
-            if isinstance(servicenames, basestring):
-                servicenames = [servicenames]
+        for hostlist in self.config.deployment_order:
+            this_stage_tasks = [x for x in deploy_tasks if x['remote_host'] in hostlist]
+            this_stage_hosts = ', '.join(hostlist)
 
-            this_stage = [x for x in deploy_tasks if x['_servicename'] in servicenames]
-
-            if not this_stage:
-                self.log.debug('No deployment tasks for service {0}'.format(', '.join(servicenames)))
+            if not this_stage_tasks:
+                self.log.warning('No tasks found for deployment_order group {0}'.format(this_stage_hosts))
                 continue
 
-            deploy_tasks = [x for x in deploy_tasks if not x in this_stage]
+            deploy_tasks = [x for x in deploy_tasks if not x in this_stage_tasks]
 
-            for task in this_stage:
-                del task['_servicename']
+            self.log.info('Found {0} tasks for deployment_order group {1}'.format(len(this_stage_tasks), this_stage_hosts))
 
             task_list['stages'].append({
-              'name': 'Deploy {0}'.format(', '.join(servicenames)),
-              'concurrency': 3,
-              'tasks': this_stage,
+              'name': 'Deploy to hosts {0}'.format(this_stage_hosts),
+              'concurrency': 10,
+              'concurrency_per_host': 3,
+              'tasks': this_stage_tasks,
             })
+
+        if deploy_tasks:
+
+            for deploy_task in deploy_tasks:
+                self.log.critical('Leftover task: {0}'.format(deploy_task))
+
+            sys.exit(1)
 
         if remove_temp_tasks:
             task_list['stages'].append({
@@ -195,10 +193,5 @@ class DemoMatrix(object):
               'concurrency': 10,
               'tasks': remove_temp_tasks,
             })
-
-        if deploy_tasks:
-            leftovers = set([x['_servicename'] for x in deploy_tasks])
-            raise DeployerException('Leftover tasks - services not specified in deployment order? {0}'.format(
-              ', '.join(leftovers)))
 
         return task_list
