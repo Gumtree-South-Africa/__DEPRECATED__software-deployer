@@ -179,6 +179,7 @@ class Config(AttrDict):
         hostgroup_re = '^[a-z0-9]+_[a-z0-9_]+$'
         command_re = '^[^;]+$'
         username_re = '^[a-z0-9_]+$'
+        lb_service_re = '^[a-zA-Z0-9_{}-]+$'
 
         service_params_struct = {
                 'protocol': {
@@ -213,6 +214,14 @@ class Config(AttrDict):
                     'type': list,
                     'allowed_types': [str],
                     'allowed_re': hostgroup_re,
+                    },
+                'lb_service': {
+                    'type': str,
+                    'allowed_re': lb_service_re,
+                    },
+                'migration_location': {
+                    'type': str,
+                    'allowed_re': path_re,
                     },
                 }
 
