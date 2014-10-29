@@ -44,7 +44,7 @@ class MatrixHelper(object):
 
         return packages
 
-    def get_remote_versions(self, packages):
+    def get_remote_versions(self, packages, concurrency=10, concurrency_per_host=5):
         """Get the versions of services running on remote hosts"""
 
         self.log.info(green('Starting stage: Check remote service versions'))
@@ -66,7 +66,7 @@ class MatrixHelper(object):
                 job._host = host.hostname
                 job_list.append(job)
 
-        job_queue = JobQueue(10, remote_results=remote_results)
+        job_queue = JobQueue(concurrency, concurrency_per_host, remote_results=remote_results)
         job_queue.append(job_list)
 
         job_queue.close()

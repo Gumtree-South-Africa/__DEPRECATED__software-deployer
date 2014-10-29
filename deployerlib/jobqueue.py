@@ -36,7 +36,7 @@ class JobQueue(object):
         ___________________________
                                 End 
     """
-    def __init__(self, max_running, remote_results={}, config=None):
+    def __init__(self, max_running, max_per_host=None, remote_results={}, config=None):
         """
         Setup the class to resonable defaults.
         """
@@ -48,6 +48,7 @@ class JobQueue(object):
         self._completed = []
         self._num_of_jobs = 0
         self._max = max_running
+        self._max_per_host = max_per_host
         self._comms_queue = Queue.Queue()
         self._finished = False
         self._closed = False
@@ -130,14 +131,37 @@ class JobQueue(object):
 
             It also sets the env.host_string from the job.name, so that fabric
             knows that this is the host to be making connections on.
+
+            Returns True if a job was started, False if not job was able to be
+            started.
             """
-            job = self._queued.pop(0)
-            self.log.debug('Starting job: {0}'.format(job._name))
 
-            with settings(clean_revert=True, host_string=job._host, host=job._host):
-                job.start()
+            if not self._queued:
+                self.log.debug('Job queue is empty')
+                return False
 
-            self._running.append(job)
+            for idx, job_candidate in enumerate(self._queued):
+
+                if self._max_per_host:
+                    if len([x for x in self._running if x._host == job_candidate._host]) >= self._max_per_host:
+                        self.log.debug('Skipping job {0}, already {1} jobs running on {2}'.format(
+                          job_candidate, self._max_per_host, job_candidate._host))
+                        continue
+
+                job = self._queued.pop(idx)
+                self.log.debug('Starting job: {0}'.format(job._name))
+
+                with settings(clean_revert=True, host_string=job._host, host=job._host):
+                    job.start()
+
+                self._running.append(job)
+
+                return True
+
+            self.log.debug('No jobs available to be started')
+            time.sleep(1)
+
+            return False
 
         def _abort_queue(jobs):
             """Helper function to abort the queue cleanly"""
@@ -175,12 +199,14 @@ class JobQueue(object):
         self.log.debug('Starting job queue')
 
         while len(self._running) < self._max and len(self._running) > 0:
-            _advance_the_queue()
+            if not _advance_the_queue():
+                break
 
         # Main loop!
         while not self._finished:
             while len(self._running) < self._max and self._queued:
-                _advance_the_queue()
+                if not _advance_the_queue():
+                    break
 
             if not self._all_alive():
                 for id, job in enumerate(self._running):

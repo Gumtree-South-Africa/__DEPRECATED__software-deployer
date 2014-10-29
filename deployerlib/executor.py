@@ -67,7 +67,8 @@ class Executor(object):
            A stage is a dictionary in the form:
            {
                'name': '<Arbitrary name for this stage>',
-               'parallel': '<Number of jobs to run in parallel>',
+               'concurrency': '<Number of jobs to run in parallel>',
+               'concurrency_per_host': '<Maximum number of jobs per host to run in parallel>',
                'tasks': [<list of task dicts>]
            }
         """
@@ -78,19 +79,31 @@ class Executor(object):
             ext_stage = i.copy()
             stage = {}
 
-            try:
-                stage['name'] = ext_stage.pop('name')
-            except KeyError:
-                raise DeployerException('Found stage with no name: {0}'.format(ext_stage))
+            for required_key in ['name', 'concurrency', 'tasks']:
+
+                try:
+                    stage[required_key] = ext_stage.pop(required_key)
+                except KeyError as e:
+
+                    if 'name' in stage:
+                        msg = 'Stage {0} missing required key: {1}'.format(stage['name'], e)
+                    else:
+                        msg = 'Found stage with no name: {0}'.format(ext_stage)
+
+            for optional_key in ['concurrency_per_host']:
+
+                try:
+                    stage[optional_key] = ext_stage.pop(optional_key)
+                except KeyError:
+                    stage[optional_key] = None
+
+            if ext_stage:
+                raise DeployerException('Unknown keys found in stage {0}: {1}'.format(
+                  stage['name'], ', '.join(ext_stage.keys())))
 
             self.log.debug('Parsing stage {0}'.format(stage['name']))
 
-            try:
-                stage['parallel'] = ext_stage['parallel']
-            except KeyError as e:
-                raise DeployerException('Stage {0} missing key: {1}'.format(stage['name'], e))
-
-            stage['tasks'] = self.parse_tasks(ext_stage['tasks'])
+            stage['tasks'] = self.parse_tasks(stage['tasks'])
             stages.append(stage)
 
             self.log.debug('Added {0} jobs for stage {1}'.format(len(stage['tasks']), stage['name']))
@@ -179,7 +192,7 @@ class Executor(object):
                 self.log.info('No tasks for stage: {0}'.format(stage['name']))
 
             self.log.info(green('Starting stage: {0}'.format(stage['name'])))
-            job_queue = JobQueue(stage['parallel'], remote_results=self.remote_results)
+            job_queue = JobQueue(stage['concurrency'], stage['concurrency_per_host'], remote_results=self.remote_results)
 
             for task in stage['tasks']:
                 job_queue.append(task)

@@ -136,21 +136,24 @@ class DemoMatrix(object):
         if upload_tasks:
             task_list['stages'].append({
               'name': 'Upload',
-              'parallel': 10,
+              'concurrency': 10,
+              'concurrency_per_host': 5,
               'tasks': upload_tasks,
             })
 
         if create_temp_tasks:
             task_list['stages'].append({
               'name': 'Create temp directories',
-              'parallel': 10,
+              'concurrency': 10,
+              'concurrency_per_host': 5,
               'tasks': create_temp_tasks,
             })
 
         if unpack_tasks:
             task_list['stages'].append({
               'name': 'Unpack',
-              'parallel': 10,
+              'concurrency': 10,
+              'concurrency_per_host': 3,
               'tasks': unpack_tasks,
             })
 
@@ -160,7 +163,7 @@ class DemoMatrix(object):
 
             task_list['stages'].append({
               'name': 'Database migrations',
-              'parallel': 1,
+              'concurrency': 1,
               'tasks': dbmig_tasks,
             })
 
@@ -182,14 +185,14 @@ class DemoMatrix(object):
 
             task_list['stages'].append({
               'name': 'Deploy {0}'.format(', '.join(servicenames)),
-              'parallel': 3,
+              'concurrency': 3,
               'tasks': this_stage,
             })
 
         if remove_temp_tasks:
             task_list['stages'].append({
               'name': 'Remove temp directories',
-              'parallel': 10,
+              'concurrency': 10,
               'tasks': remove_temp_tasks,
             })
 
