@@ -98,7 +98,7 @@ class Executor(object):
                     stage[optional_key] = None
 
             if ext_stage:
-                raise DeployerException('Unknown keys found in stage {0}: {1}'.format(
+                raise DeployerException('Unknown key found in stage {0}: {1}'.format(
                   stage['name'], ', '.join(ext_stage.keys())))
 
             self.log.debug('Parsing stage {0}'.format(stage['name']))

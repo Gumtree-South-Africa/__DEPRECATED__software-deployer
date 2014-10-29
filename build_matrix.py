@@ -1,8 +1,11 @@
 #! /usr/bin/python
 
 import os
+import sys
 import json
 import argparse
+
+from fabric.colors import green
 
 from deployerlib.exceptions import DeployerException
 from deployerlib.generators import *
@@ -38,13 +41,6 @@ if not callable:
 platform_config = callable(config=config)
 tasklist = platform_config.build_matrix()
 
-if tasklist:
-    log.info('Verifying syntax of task list')
-    executor = Executor(tasklist=tasklist)
-    del executor
-else:
-    log.warning('Task list is empty')
-
 if config.dump:
     print json.dumps(tasklist, **json_opts)
 
@@ -52,3 +48,17 @@ if config.save:
     with open(config.save, 'w') as f:
         json.dump(tasklist, f, **json_opts)
         log.info('Saved task list to {0}'.format(config.save))
+
+if tasklist:
+    log.info('Verifying syntax of task list')
+
+    try:
+        executor = Executor(tasklist=tasklist)
+    except DeployerException as e:
+        log.critical('Syntax is not ok: {0}'.format(e))
+        sys.exit(1)
+
+    del executor
+    log.info(green('Syntax is ok'))
+else:
+    log.warning('Task list is empty')
