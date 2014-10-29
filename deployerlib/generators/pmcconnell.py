@@ -55,7 +55,7 @@ class DemoMatrix(object):
                   'remote_host': hostname,
                   'remote_user': self.config.user,
                   'source': os.path.join(service_config.destination, package.filename),
-                  'destination': os.path.join(service_config.install_location, self.config.unpack_dir),
+                  'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
                 })
 
                 deploy_task = {
@@ -63,7 +63,7 @@ class DemoMatrix(object):
                   'command': 'deploy_and_restart',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
-                  'source': os.path.join(service_config.install_location, self.config.unpack_dir, package.packagename),
+                  'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
                   'destination': os.path.join(service_config.install_location, package.packagename),
                   'link_target': os.path.join(service_config.install_location, package.servicename),
                 }
@@ -113,12 +113,12 @@ class DemoMatrix(object):
                 deploy_tasks.append(deploy_task)
 
                 if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
-                  x['source'] == os.path.join(service_config.install_location, self.config.unpack_dir)]:
+                  x['source'] == os.path.join(service_config.install_location, service_config.unpack_dir)]:
                     create_temp_tasks.append({
                       'command': 'createdirectory',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, self.config.unpack_dir),
+                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
                       'clobber': True,
                     })
 
@@ -126,7 +126,7 @@ class DemoMatrix(object):
                       'command': 'removefile',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, self.config.unpack_dir),
+                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
                     })
 
         if not upload_tasks and not unpack_tasks and not deploy_tasks:
