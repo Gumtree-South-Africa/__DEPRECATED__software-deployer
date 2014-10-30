@@ -3,6 +3,7 @@ import sys
 
 from deployerlib.log import Log
 from deployerlib.matrixhelper import MatrixHelper
+from deployerlib.remotehost import RemoteHost
 from deployerlib.exceptions import DeployerException
 
 
@@ -67,11 +68,17 @@ class IcasGenerator(object):
                   'link_target': os.path.join(service_config.install_location, package.servicename),
                 }
 
+                if hasattr(service_config, 'control_timeout'):
+                    deploy_task['timeout'] = service_config.control_timeout
+
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
                 if lb_hostname and lb_username and lb_password:
                     if hasattr(service_config, 'lb_service'):
-                        deploy_task['lb_service'] = service_config.lb_service.format(hostname=hostname)
+                        deploy_task['lb_service'] = service_config.lb_service.format(
+                          hostname=hostname.split('.', 1)[0],
+                          servicename=package.servicename,
+                        )
 
                         deploy_task.update({
                           'lb_hostname': lb_hostname,
@@ -116,15 +123,15 @@ class IcasGenerator(object):
                     })
 
                 if hasattr(service_config, 'migration_command') and not package.servicename in migration_done:
-                    migration_done(package.servicename)
+                    migration_done.append(package.servicename)
 
                     dbmig_tasks.append({
                       'command': 'dbmigration',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
                       'source': service_config.migration_command.format(
-                        migration_location=service_config.migration_location,
-                        migration_options=''
+                        unpack_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
+                        migration_options='',
                       ),
                     })
 
@@ -160,8 +167,21 @@ class IcasGenerator(object):
               'tasks': dbmig_tasks,
             })
 
+        active_cfp = self.get_active_cfp(self.config.get_service_hosts('cas-cfp-service'))
+        self.log.info('Active cfp server is {0}'.format(active_cfp))
 
-        for hostlist in self.config.deployment_order:
+        try:
+            active_be_pool = [x for x in self.config.deployment_order['backends'] \
+              if active_cfp in x][0]
+        except IndexError:
+            raise DeployerException('Unable to find active cfp server {0} in deployment_order'.format(
+              active_cfp))
+
+        self.log.info('Active cfp server is in hostgroup {0}'.format(active_be_pool))
+        deployment_order = [x for x in self.config.deployment_order['backends'] if x is not active_be_pool] + \
+          [active_be_pool] + self.config.deployment_order['frontends']
+
+        for hostlist in deployment_order:
             this_stage_tasks = [x for x in deploy_tasks if x['remote_host'] in hostlist]
             this_stage_hosts = ', '.join(hostlist)
 
@@ -195,3 +215,10 @@ class IcasGenerator(object):
             })
 
         return task_list
+
+    def get_active_cfp(self, hostlist):
+        """Find the active cfp server"""
+
+        # placeholder
+        import random
+        return random.choice(hostlist)

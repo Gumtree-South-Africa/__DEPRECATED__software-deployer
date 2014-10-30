@@ -79,7 +79,9 @@ class DemoMatrix(object):
                       'remote_host': hostname,
                       'remote_user': self.config.user,
                       'source': service_config.migration_command.format(
-                        migration_location=service_config.migration_location, migration_options=''),
+                        migration_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
+                        migration_options='',
+                      ),
                     })
 
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
