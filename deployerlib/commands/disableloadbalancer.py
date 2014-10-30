@@ -4,7 +4,7 @@ from deployerlib.loadbalancer import LoadBalancer
 class DisableLoadbalancer(object):
     """Disable a service on a load balancer"""
 
-    def __init__(self, lb_hostname, lb_username, lb_password, lb_service):
+    def __init__(self, lb_hostname, lb_username, lb_password, lb_service, timeout=60):
         self.lb_hostname = lb_hostname
         self.lb_username = lb_username
         self.lb_password = lb_password

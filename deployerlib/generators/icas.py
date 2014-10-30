@@ -59,6 +59,9 @@ class IcasGenerator(object):
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
                 })
 
+                if package.servicename == 'cas_properties':
+                    continue
+
                 deploy_task = {
                   'command': 'deploy_and_restart',
                   'remote_host': hostname,
@@ -67,9 +70,6 @@ class IcasGenerator(object):
                   'destination': os.path.join(service_config.install_location, package.packagename),
                   'link_target': os.path.join(service_config.install_location, package.servicename),
                 }
-
-                if hasattr(service_config, 'control_timeout'):
-                    deploy_task['timeout'] = service_config.control_timeout
 
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
@@ -90,6 +90,10 @@ class IcasGenerator(object):
                         self.log.warning('No lb_service defined for service {0}'.format(package.servicename))
                 else:
                     self.log.warning('No load balancer found for {0} on {1}'.format(package.servicename, hostname))
+
+                for option in ('control_timeout', 'lb_timeout'):
+                    if hasattr(service_config, option):
+                        deploy_task[option] = getattr(service_config, option)
 
                 for cmd in ['stop_command', 'start_command', 'check_command']:
 

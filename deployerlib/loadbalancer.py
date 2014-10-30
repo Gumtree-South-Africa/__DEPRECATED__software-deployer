@@ -78,7 +78,7 @@ class LoadBalancer(object):
         else:
             return service.get_svrstate(), service
 
-    def enable_service(self, lbservice):
+    def enable_service(self, lbservice, timeout=60):
         """Get the state of a load balancer service"""
 
         cur_state, service = self.get_service_state(lbservice)
@@ -92,19 +92,25 @@ class LoadBalancer(object):
             return True
 
         NSService.enable(self.nitro, service)
-        time.sleep(2)
 
-        new_state, service = self.get_service_state(lbservice)
+        maxtime = time.time() + timeout
 
-        if new_state != 'UP':
-            self.log.critical('Failed to enable service {0} on {1} (state is {2}'.format(
-              lbservice, self.hostname, new_state))
-            return False
+        while time.time() < maxtime:
+            time.sleep(1)
 
-        self.log.info('{0} is now {1} on {2}'.format(lbservice, new_state, self.hostname))
-        return True
+            new_state, service = self.get_service_state(lbservice)
 
-    def disable_service(self, lbservice):
+            if new_state == 'UP':
+                self.log.info('{0} is now {1} on {2}'.format(lbservice, new_state, self.hostname))
+                return True
+
+            self.log.debug('{0} is still {1} on {2}'.format(lbservice, new_state, self.hostname))
+
+        self.log.critical('Failed to enable service {0} on {1} (state is {2}'.format(
+          lbservice, self.hostname, new_state))
+        return False
+
+    def disable_service(self, lbservice, timeout=60):
         """Disable a service on the load balancer"""
 
         cur_state, service = self.get_service_state(lbservice)
@@ -118,15 +124,22 @@ class LoadBalancer(object):
             return True
 
         NSService.disable(self.nitro, service)
-        time.sleep(2)
 
-        service = self.get_service(lbservice)
-        new_state = service.get_svrstate()
+        maxtime = time.time() + timeout
 
-        if new_state == 'UP':
-            self.log.critical('Failed to disable service {0} on {1} (state is {2})'.format(
-              lbservice, self.hostname, new_state))
-            return False
+        while time.time() < maxtime:
+            time.sleep(1)
 
-        self.log.info('{0} is now {1} on {2}'.format(lbservice, new_state, self.hostname))
-        return True
+            service = self.get_service(lbservice)
+            new_state = service.get_svrstate()
+
+            if new_state != 'UP':
+
+                self.log.info('{0} is now {1} on {2}'.format(lbservice, new_state, self.hostname))
+                return True
+
+            self.log.debug('{0} is still {1} on {2}'.format(lbservice, new_state, self.hostname))
+
+        self.log.critical('Failed to disable service {0} on {1} (state is {2})'.format(
+          lbservice, self.hostname, new_state))
+        return False

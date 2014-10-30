@@ -59,7 +59,7 @@ class RemoteHost(object):
 
         with settings(**fabric_settings):
             if use_sudo:
-                return sudo(command)
+                return sudo(command, shell=False)
             else:
                 return run(command)
 
