@@ -160,6 +160,11 @@ class Config(AttrDict):
                             if 'allowed_struct' in c:
                                 if parent:
                                     item = parent + '[{0}]'.format(item)
+                                if 'options' in c and 'skip_mandatory' in c['options']:
+                                    for (as_key,as_val) in c['allowed_struct'].items():
+                                        if 'options' in as_val and 'mandatory' in as_val['options']:
+                                            c['allowed_struct'][as_key]['options'].remove('mandatory')
+                                            c['allowed_struct'][as_key]['options'].append('skip_mandatory')
                                 self.vrfy_w_recurse(v,c['allowed_struct'],item)
                     else:
                         if type(v) is type(None) and 'options' in c and 'allow_none' in c['options']:
@@ -168,6 +173,9 @@ class Config(AttrDict):
                             self.log.error('Unexpected type "{0}" of item "{1}"'.format(type(v),item_display))
             else:
                 self.log.warning('Item "{0}" NOT found in struct'.format(item_display))
+        for (item,c) in struct.items():
+            if 'options' in c and 'mandatory' in c['options'] and item not in config:
+                self.log.error('Missing mandatory item "{0}" in config {1}'.format(item,parent))
 
     def _get_config_struct(self):
         domain_re = '^[a-zA-Z0-9]+(?:[.-]?[a-zA-Z0-9]+)+$'
@@ -185,14 +193,17 @@ class Config(AttrDict):
                 'protocol': {
                     'type': str,
                     'allowed_re': '^(http|thrift)$',
+                    'options': ['mandatory'],
                     },
                 'destination': {
                     'type': str,
                     'allowed_re': path_re,
+                    'options': ['mandatory'],
                     },
                 'install_location': {
                     'type': str,
                     'allowed_re': path_re,
+                    'options': ['mandatory'],
                     },
                 'unpack_dir': {
                     'type': str,
@@ -201,6 +212,7 @@ class Config(AttrDict):
                 'control_type': {
                     'type': str,
                     'allowed_re': control_type_re,
+                    'options': ['mandatory'],
                     },
                 're/^[a-zA-Z_]+_command/': {
                     'type': str,
@@ -214,6 +226,7 @@ class Config(AttrDict):
                     'type': list,
                     'allowed_types': [str],
                     'allowed_re': hostgroup_re,
+                    'options': ['mandatory'],
                     },
                 'lb_service': {
                     'type': str,
@@ -229,9 +242,12 @@ class Config(AttrDict):
             'api_user': {
                     'type': str,
                     'allowed_re': username_re,
+                    'options': ['mandatory'],
                 },
             'api_password': {
                 'type': str,
+                'allowed_re': '^..+$',
+                'options': ['mandatory'],
                 },
             }
 
@@ -240,6 +256,7 @@ class Config(AttrDict):
                     'type': list,
                     'allowed_types': [str],
                     'allowed_re': domain_re,
+                    'options': ['mandatory'],
                     },
                 'lb': {
                     'type': str,
@@ -293,36 +310,39 @@ class Config(AttrDict):
                 'environment': {
                     'type': str,
                     'allowed_re': alnum_re,
+                    'options': ['mandatory'],
                     },
                 'keepversions': {
                     'type': int,
                     'allowed_range': (0,100),
+                    'options': ['mandatory'],
                     },
                 'logs': {
                     'type': str,
                     'allowed_re': path_re,
                     },
                 'tarballs': {
-                    'type': str,
-                    'allowed_re': path_re,
-                    },
+                        'type': str,
+                        'allowed_re': path_re,
+                        'options': ['mandatory'],
+                        },
                 'graphite': {
-                    'type': dict,
-                    'allowed_struct': {
-                        'carbon_host': {
-                            'type': str,
-                            'allowed_re': domain_re,
-                            },
-                        'carbon_port': {
-                            'type': int,
-                            'allowed_range': (1,65535),
-                            },
-                        'metric_prefix': {
-                            'type': str,
-                            'allowed_re': domain_re,
+                        'type': dict,
+                        'allowed_struct': {
+                            'carbon_host': {
+                                'type': str,
+                                'allowed_re': domain_re,
+                                },
+                            'carbon_port': {
+                                'type': int,
+                                'allowed_range': (1,65535),
+                                },
+                            'metric_prefix': {
+                                'type': str,
+                                'allowed_re': domain_re,
+                                },
                             },
                         },
-                    },
                 'history': {
                         'type': dict,
                         'allowed_struct': {
@@ -339,11 +359,13 @@ class Config(AttrDict):
                 'user': {
                         'type': str,
                         'allowed_re': simple_re,
+                        'options': ['mandatory'],
                         },
                 'deployment_order': {
                         'type': list,
                         'allowed_types': [str,list],
                         'allowed_re': service_re,
+                        'options': ['mandatory'],
                         },
                 'datacenters': {
                         'type': list,
@@ -352,6 +374,7 @@ class Config(AttrDict):
                         },
                 'hostgroup': {
                         'type': dict,
+                        'options': ['mandatory'],
                         'allowed_struct': {
                             're/'+hostgroup_re+'/': {
                                 'type': dict,
@@ -362,23 +385,31 @@ class Config(AttrDict):
                 're/^[a-zA-Z][a-zA-Z0-9_]*_defaults$/': {
                         'type': dict,
                         'allowed_struct': dict(service_params_struct.items() + lb_params_struct.items()),
+                        'options': ['skip_mandatory']
                         },
                 'service': {
                         'type': dict,
+                        'options': ['mandatory'],
                         'allowed_struct': {
                             're/'+service_re+'/': {
                                 'type': dict,
-                                'allowed_struct': dict(service_params_struct.items() + lb_params_struct.items() + [
-                                        ('re/^j?port$/', {
-                                            'type': int,
-                                            'allowed_range': (1,65535),
-                                            'options': ['allow_none'],
-                                            }),
-                                        ('service_type', {
-                                            'type': str,
-                                            'allowed_re': '^[a-z_]+$'
-                                            }),
-                                        ]),
+                                'allowed_struct': dict(service_params_struct.items() + [
+                                    ('port', {
+                                        'type': int,
+                                        'allowed_range': (1,65535),
+                                        'options': ['mandatory'],
+                                        }),
+                                    ('jport', {
+                                        'type': int,
+                                        'allowed_range': (1,65535),
+                                        'options': ['allow_none'],
+                                        }),
+                                    ('service_type', {
+                                        'type': str,
+                                        'allowed_re': '^[a-z_]+$',
+                                        'options': ['mandatory'],
+                                        }),
+                                    ]),
                                 },
                             },
                         },
