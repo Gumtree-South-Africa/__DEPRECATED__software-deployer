@@ -10,8 +10,8 @@ from deployerlib.remotehost import RemoteHost
 from deployerlib.exceptions import DeployerException
 
 
-class MatrixHelper(object):
-    """Build a deployment matrix"""
+class GeneratorHelper(object):
+    """Provide access to elements a generator might require"""
 
     def __init__(self, config):
         self.log = Log(self.__class__.__name__)

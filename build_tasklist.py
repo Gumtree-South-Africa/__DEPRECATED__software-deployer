@@ -18,8 +18,8 @@ from deployerlib.executor import Executor
 json_opts = {'indent': 4, 'sort_keys': True}
 
 callables = {
-    'pmcconnell': pmcconnell.DemoMatrix,
-    'icas': icas.IcasGenerator
+    'pmcconnell': pmcconnell.DemoGenerator,
+    'icas': icas.IcasGenerator,
 }
 
 log = Log(os.path.basename(__file__))

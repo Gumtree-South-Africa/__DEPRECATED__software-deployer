@@ -1,19 +1,19 @@
 import os
 
 from deployerlib.log import Log
-from deployerlib.matrixhelper import MatrixHelper
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.exceptions import DeployerException
 
 
-class DemoMatrix(object):
+class DemoGenerator(object):
     """Build a deployment matrix"""
 
     def __init__(self, config):
         self.log = Log(self.__class__.__name__)
         self.config = config
-        self.matrixhelper = MatrixHelper(config)
-        self.packages = self.matrixhelper.get_packages()
-        self.remote_versions = self.matrixhelper.get_remote_versions(self.packages)
+        self.generatorhelper = GeneratorHelper(config)
+        self.packages = self.generatorhelper.get_packages()
+        self.remote_versions = self.generatorhelper.get_remote_versions(self.packages)
 
     def generate(self):
 

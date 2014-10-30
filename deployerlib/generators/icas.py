@@ -2,7 +2,7 @@ import os
 import sys
 
 from deployerlib.log import Log
-from deployerlib.matrixhelper import MatrixHelper
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.remotehost import RemoteHost
 from deployerlib.exceptions import DeployerException
 
@@ -13,8 +13,8 @@ class IcasGenerator(object):
     def __init__(self, config):
         self.log = Log(self.__class__.__name__)
         self.config = config
-        self.matrixhelper = MatrixHelper(config)
-        self.packages = self.matrixhelper.get_packages()
+        self.generatorhelper = GeneratorHelper(config)
+        self.packages = self.generatorhelper.get_packages()
 
     def generate(self):
         """Build the task list"""
