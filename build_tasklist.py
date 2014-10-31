@@ -20,6 +20,7 @@ json_opts = {'indent': 4, 'sort_keys': True}
 callables = {
     'pmcconnell': pmcconnell.DemoGenerator,
     'icas': icas.IcasGenerator,
+    'aurora': aurora.AuroraGenerator,
 }
 
 log = Log(os.path.basename(__file__))

@@ -96,7 +96,7 @@ class Config(AttrDict):
 
         return hosts
 
-    def vrfy_w_recurse(self, config, struct, parent=''):
+    def vrfy_w_recurse(self, config, struct, parent='', errors=0):
         for item in config.keys():
             if parent:
                 item_display = parent + '[{0}]'.format(item)
@@ -122,6 +122,7 @@ class Config(AttrDict):
                     v = dict(self.get_with_defaults(parent,item).items())
                 if 'type' not in c:
                     self.log.error('Struct for item "{0}" does not contain a type specification'.format(item_display))
+                    errors += 1
                 else:
                     if type(v) == c['type']:
                         self.log.debug('Type "{1}" of item "{0}" is correct'.format(item_display,str(c['type'])))
@@ -132,12 +133,14 @@ class Config(AttrDict):
                                     self.log.debug('Value "{1}" of item "{0}" lies within allowed range {2}'.format(item_display,v,str(c['allowed_range'])))
                                 else:
                                     self.log.error('Value "{1}" of item "{0}" lies outside allowed range {2}'.format(item_display,v,str(c['allowed_range'])))
+                                    errors += 1
                         if type(v) is str:
                             if 'allowed_re' in c:
                                 if re.match(c['allowed_re'],v):
                                     self.log.debug('Value "{1}" of item "{0}" matches RE "{2}"'.format(item_display,v,c['allowed_re']))
                                 else:
                                     self.log.error('Value "{1}" of item "{0}" does NOT match RE "{2}"'.format(item_display,v,c['allowed_re']))
+                                    errors += 1
                         if type(v) is list:
                             if 'allowed_values' in c:
                                 for va in v:
@@ -145,6 +148,7 @@ class Config(AttrDict):
                                         self.log.debug('Member value "{1}" of list item "{0}" is allowed'.format(item_display,va))
                                     else:
                                         self.log.error('Member value "{1}" of list item "{0}" is NOT allowed'.format(item_display,va))
+                                        errors += 1
                             elif 'allowed_types' in c:
                                 i = 0
                                 for va in v:
@@ -152,9 +156,11 @@ class Config(AttrDict):
                                         allowed_struct = dict(c.items())
                                         if type(va) is not list:
                                             allowed_struct['type'] = type(va)
-                                        self.vrfy_w_recurse({ '{0}[{1}]'.format(item,i): va }, { '{0}[{1}]'.format(item,i): allowed_struct })
+                                        self.vrfy_w_recurse({ '{0}[{1}]'.format(item,i): va }, { '{0}[{1}]'.format(item,i): allowed_struct }, '',
+                                                errors)
                                     else:
                                         self.log.error('Type {0} of list member {1} of item {2} is not allowed'.format(type(va),str(va),item_display))
+                                        errors += 1
                                     i += 1
                         if type(v) is dict:
                             if 'allowed_struct' in c:
@@ -165,17 +171,20 @@ class Config(AttrDict):
                                         if 'options' in as_val and 'mandatory' in as_val['options']:
                                             c['allowed_struct'][as_key]['options'].remove('mandatory')
                                             c['allowed_struct'][as_key]['options'].append('skip_mandatory')
-                                self.vrfy_w_recurse(v,c['allowed_struct'],item)
+                                self.vrfy_w_recurse(v,c['allowed_struct'],item,errors)
                     else:
                         if type(v) is type(None) and 'options' in c and 'allow_none' in c['options']:
                             self.log.debug('Empty value for {0} is allowed'.format(item_display))
                         else:
                             self.log.error('Unexpected type "{0}" of item "{1}"'.format(type(v),item_display))
+                            errors += 1
             else:
                 self.log.warning('Item "{0}" NOT found in struct'.format(item_display))
         for (item,c) in struct.items():
             if 'options' in c and 'mandatory' in c['options'] and item not in config:
                 self.log.error('Missing mandatory item "{0}" in config {1}'.format(item,parent))
+                errors += 1
+        return errors == 0
 
     def _get_config_struct(self):
         domain_re = '^[a-zA-Z0-9]+(?:[.-]?[a-zA-Z0-9]+)+$'
@@ -397,7 +406,7 @@ class Config(AttrDict):
                                     ('port', {
                                         'type': int,
                                         'allowed_range': (1,65535),
-                                        'options': ['mandatory'],
+                                        'options': ['allow_none'],
                                         }),
                                     ('jport', {
                                         'type': int,
