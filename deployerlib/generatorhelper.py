@@ -83,6 +83,8 @@ class GeneratorHelper(object):
     def _get_remote_version(self, package, service_config, host, procname=None, remote_results={}):
         """Method passed to JobQueue to get a remote service version"""
 
+        log = Log('{0}:{1}'.format(self.__class__.__name__,package.servicename))
+
         res = host.execute_remote('/bin/readlink {0}'.format(os.path.join(
           service_config.install_location, package.servicename)))
 
@@ -92,7 +94,7 @@ class GeneratorHelper(object):
         else:
             remote_version = 1
 
-        self.log.debug('{0} current version is {1}'.format(package.servicename, remote_version))
+        log.info('current version is {0}'.format(remote_version))
 
         self._remote_versions.append((package.servicename, host.hostname, remote_version))
 

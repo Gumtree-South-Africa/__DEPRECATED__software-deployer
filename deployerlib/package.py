@@ -86,13 +86,16 @@ class Package(object):
     def get_version_from_packagename(self, packagename):
         """Extract the service version string from the package name"""
 
+        servicename = self.get_servicename_from_packagename(packagename)
+        log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
+
         try:
             version = packagename.split('_', 1)[-1]
         except:
             raise DeployerException('Unable to extract service version from package name: {0}'.format(
               packagename))
 
-        self.log.debug('Package version is {0}'.format(version))
+        log.info('Package version is {0}'.format(version))
         return version
 
     def split_version(self, version):

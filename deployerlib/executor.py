@@ -152,6 +152,10 @@ class Executor(object):
             else:
                 job_id = 'local'
 
+            kwargs = {}
+            if 'servicename' in task:
+                kwargs['servicename'] = task.pop('servicename')
+
             try:
                 remote_task = callable(**task)
             except TypeError as e:
@@ -160,7 +164,7 @@ class Executor(object):
 
             procname = repr(remote_task)
 
-            job = Process(target=remote_task.execute, name=procname, args=[procname, self.remote_results])
+            job = Process(target=remote_task.execute, name=procname, args=[procname, self.remote_results], kwargs=kwargs)
             job._host = job_id
 
             job_list.append(job)
