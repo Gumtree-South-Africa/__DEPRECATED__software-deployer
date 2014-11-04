@@ -2,6 +2,7 @@ __all__ = [
   'upload',
   'unpack',
   'dbmigration',
+  'copyfile',
   'movefile',
   'removefile',
   'createdirectory',

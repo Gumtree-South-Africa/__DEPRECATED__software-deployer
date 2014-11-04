@@ -71,12 +71,13 @@ class IcasGenerator(object):
                         properties_done.append(hostname)
 
                         properties_tasks.append({
-                          'command': 'movefile',
+                          'command': 'copyfile',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
                           'source': os.path.join(service_config.install_location, service_config.unpack_dir,
                           package.packagename, self.config.environment),
-                          'destination': service_config.properties_location,
+                          'destination': '{0}/'.format(service_config.properties_location),
+                          'continue_if_exists': True,
                         })
 
                     continue
@@ -257,7 +258,7 @@ class IcasGenerator(object):
 
         if not this_stage_tasks:
             self.log.warning('No tasks found for deployment_order group {0}'.format(this_stage_hosts))
-            return None
+            return None, None
 
         tasklist = [x for x in tasklist if not x in this_stage_tasks]
 
