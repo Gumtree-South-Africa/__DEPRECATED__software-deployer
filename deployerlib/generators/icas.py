@@ -28,12 +28,18 @@ class IcasGenerator(object):
         create_temp_tasks = []
         unpack_tasks = []
         dbmig_tasks = []
+        properties_tasks = []
         deploy_tasks = []
+        cfp_tasks = []
         remove_temp_tasks = []
 
         packages = self.packages
         tempdir_done = []
         migration_done = []
+        properties_done = []
+
+        active_cfp_host = self.get_active_cfp(self.config.get_service_hosts('cas-cfp-service'))
+        self.log.info('Active cfp server is {0}'.format(active_cfp_host))
 
         for package in self.packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
@@ -59,7 +65,20 @@ class IcasGenerator(object):
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
                 })
 
-                if package.servicename == 'cas_properties':
+                if package.servicename == 'cas-properties':
+
+                    if not hostname in properties_done:
+                        properties_done.append(hostname)
+
+                        properties_tasks.append({
+                          'command': 'movefile',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'source': os.path.join(service_config.install_location, service_config.unpack_dir,
+                          package.packagename, self.config.environment),
+                          'destination': service_config.properties_location,
+                        })
+
                     continue
 
                 deploy_task = {
@@ -106,7 +125,10 @@ class IcasGenerator(object):
                         self.log.warning('No {0} configured for service {1}'.format(
                             cmd, package.servicename))
 
-                deploy_tasks.append(deploy_task)
+                if package.servicename == 'cas-cfp-service' and hostname == active_cfp_host:
+                    cfp_tasks.append(deploy_task)
+                else:
+                    deploy_tasks.append(deploy_task)
 
                 if not hostname in tempdir_done:
                     tempdir_done.append(hostname)
@@ -163,6 +185,14 @@ class IcasGenerator(object):
               'tasks': unpack_tasks,
             })
 
+        if properties_tasks:
+
+            task_list['stages'].append({
+              'name': 'Properties',
+              'concurrency': 10,
+              'tasks': properties_tasks,
+            })
+
         if dbmig_tasks:
 
             task_list['stages'].append({
@@ -171,38 +201,30 @@ class IcasGenerator(object):
               'tasks': dbmig_tasks,
             })
 
-        active_cfp = self.get_active_cfp(self.config.get_service_hosts('cas-cfp-service'))
-        self.log.info('Active cfp server is {0}'.format(active_cfp))
+        # deploy backend services except for cfp on the active host
+        for hostlist in self.config.deployment_order['backend']:
+            this_stage, this_stage_tasks = self.get_stage(deploy_tasks, hostlist)
 
-        try:
-            active_be_pool = [x for x in self.config.deployment_order['backends'] \
-              if active_cfp in x][0]
-        except IndexError:
-            raise DeployerException('Unable to find active cfp server {0} in deployment_order'.format(
-              active_cfp))
+            if this_stage:
+                task_list['stages'].append(this_stage)
+                deploy_tasks = [x for x in deploy_tasks if not x in this_stage_tasks]
 
-        self.log.info('Active cfp server is in hostgroup {0}'.format(active_be_pool))
-        deployment_order = [x for x in self.config.deployment_order['backends'] if x is not active_be_pool] + \
-          [active_be_pool] + self.config.deployment_order['frontends']
-
-        for hostlist in deployment_order:
-            this_stage_tasks = [x for x in deploy_tasks if x['remote_host'] in hostlist]
-            this_stage_hosts = ', '.join(hostlist)
-
-            if not this_stage_tasks:
-                self.log.warning('No tasks found for deployment_order group {0}'.format(this_stage_hosts))
-                continue
-
-            deploy_tasks = [x for x in deploy_tasks if not x in this_stage_tasks]
-
-            self.log.info('Found {0} tasks for deployment_order group {1}'.format(len(this_stage_tasks), this_stage_hosts))
+        # deploy cfp on the active host
+        if cfp_tasks:
 
             task_list['stages'].append({
-              'name': 'Deploy to hosts {0}'.format(this_stage_hosts),
-              'concurrency': 10,
-              'concurrency_per_host': 3,
-              'tasks': this_stage_tasks,
+              'name': 'Deploy cfp service to active host {0}'.format(active_cfp_host),
+              'concurrency': 1,
+              'tasks': cfp_tasks,
             })
+
+        # deploy frontend services
+        for hostlist in self.config.deployment_order['frontend']:
+            this_stage, this_stage_tasks = self.get_stage(deploy_tasks, hostlist)
+
+            if this_stage:
+                task_list['stages'].append(this_stage)
+                deploy_tasks = [x for x in deploy_tasks if not x in this_stage_tasks]
 
         if deploy_tasks:
 
@@ -226,3 +248,26 @@ class IcasGenerator(object):
         # placeholder
         import random
         return random.choice(hostlist)
+
+    def get_stage(self, tasklist, hostlist):
+        """Return a stage based on a list of tasks and a list of hosts"""
+
+        this_stage_tasks = [x for x in tasklist if x['remote_host'] in hostlist]
+        this_stage_hosts = ', '.join(hostlist)
+
+        if not this_stage_tasks:
+            self.log.warning('No tasks found for deployment_order group {0}'.format(this_stage_hosts))
+            return None
+
+        tasklist = [x for x in tasklist if not x in this_stage_tasks]
+
+        self.log.info('Found {0} tasks for deployment_order group {1}'.format(len(this_stage_tasks), this_stage_hosts))
+
+        this_task = {
+          'name': 'Deploy to hosts {0}'.format(this_stage_hosts),
+          'concurrency': 10,
+          'concurrency_per_host': 3,
+          'tasks': this_stage_tasks,
+        }
+
+        return this_task, this_stage_tasks
