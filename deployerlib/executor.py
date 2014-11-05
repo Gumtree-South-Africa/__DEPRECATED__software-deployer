@@ -29,6 +29,7 @@ class Executor(object):
           'removefile': removefile.RemoveFile,
           'deploy_and_restart': deployandrestart.DeployAndRestart,
           'control_service': controlservice.ControlService,
+          'restart_service': restartservice.RestartService,
           'disable_loadbalancer': disableloadbalancer.DisableLoadbalancer,
           'enable_loadbalancer': enableloadbalancer.EnableLoadbalancer,
           'execute_command': executecommand.ExecuteCommand,

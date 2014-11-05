@@ -19,6 +19,7 @@ class CommandLine(object):
         output_group.add_argument('-v', '--verbose', action='store_true', help='Show more information')
         output_group.add_argument('-d', '--debug', action='store_true', help='Show a lot more information')
 
+        parser.add_argument('--dry-run', action='store_true', help='Do a dry run without executing any tasks')
         parser.add_argument('-c', '--config', required=require_config, help='Specify a platform config file')
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
