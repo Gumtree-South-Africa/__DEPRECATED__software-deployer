@@ -34,13 +34,13 @@ class ControlService(object):
 
             time.sleep(1)
 
-        msg = 'Service status: {0}'.format(res)
+        msg = str(res).split('|', 1)[0].rstrip()
 
         if success:
-            self.log.info(msg)
+            self.log.info('Service is in the correct state: {0}'.format(msg))
             return True
         else:
-            self.log.critical(msg)
+            self.log.critical('Service is not in the correct state: {0}'.format(msg))
             return False
 
     def execute(self, procname=None, remote_results={}):
