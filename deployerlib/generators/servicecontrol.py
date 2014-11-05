@@ -36,13 +36,13 @@ class ServiceControl(object):
             stage_name = '{0} service {1}'.format(self.action.capitalize(), service)
             stage_tasks = []
 
-            for host in hosts:
+            for hostname in hosts:
 
                 self.log.debug('Adding command to {0} service {1} on {2}'.format(
-                  self.action, service, host))
+                  self.action, service, hostname))
 
                 this_task = {
-                  'remote_host': host,
+                  'remote_host': hostname,
                   'remote_user': self.config.user,
                 }
 
@@ -70,6 +70,27 @@ class ServiceControl(object):
                     this_task['source'] = control_commands['start_command']
 
                 this_task['check_command'] = control_commands['check_command']
+
+
+                lb_hostname, lb_username, lb_password = self.config.get_lb(service, hostname)
+
+                if not self.config.skip_lb and lb_hostname and lb_username and lb_password:
+                    if hasattr(service_config, 'lb_service'):
+                        this_task['lb_service'] = service_config.lb_service.format(
+                          hostname=hostname.split('.', 1)[0],
+                          servicename=service,
+                        )
+
+                        this_task.update({
+                          'lb_hostname': lb_hostname,
+                          'lb_username': lb_username,
+                          'lb_password': lb_password,
+                        })
+
+                    else:
+                        self.log.warning('No lb_service defined for service {0}'.format(service))
+                else:
+                    self.log.warning('No load balancer found for {0} on {1}'.format(service, hostname))
 
                 for key in this_task.keys():
 
