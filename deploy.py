@@ -30,7 +30,7 @@ elif args.config:
     tasklist = tasklist_builder.build()
 
     if not tasklist:
-        log.warning('Task list is empty')
+        log.warning('Nothing to deploy')
         sys.exit(1)
 
     executor = Executor(tasklist=tasklist)
