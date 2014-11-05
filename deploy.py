@@ -1,20 +1,42 @@
 #! /usr/bin/python
 
 import os
+import sys
 import argparse
 
 from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
+from deployerlib.tasklist import Tasklist
 from deployerlib.executor import Executor
 from deployerlib.exceptions import DeployerException
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--tasklist', help='A list of pre-generated tasks', required=True)
+component_group = parser.add_mutually_exclusive_group(required=True)
+component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
+component_group.add_argument('--directory', help='Specify a directory of components to deploy')
+component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
 
 log = Log(os.path.basename(__file__))
 args = CommandLine(parents=parser, require_config=False)
-executor = Executor(args.tasklist)
+
+if args.tasklist:
+    log.debug('Executing based on tasklist: {0}'.format(args.tasklist))
+    executor = Executor(filename=args.tasklist)
+elif args.config:
+    log.debug('Executing based on config file: {0}'.format(args.config))
+    config = Config(args)
+    tasklist_builder = Tasklist(config, config.platform)
+    tasklist = tasklist_builder.build()
+
+    if not tasklist:
+        log.warning('Task list is empty')
+        sys.exit(1)
+
+    executor = Executor(tasklist=tasklist)
+else:
+    log.critical('Do what?')
+    sys.exit(1)
 
 try:
     executor.run()
