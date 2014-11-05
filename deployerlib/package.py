@@ -95,7 +95,7 @@ class Package(object):
             raise DeployerException('Unable to extract service version from package name: {0}'.format(
               packagename))
 
-        log.info('Package version is {0}'.format(version))
+        log.debug('Package version is {0}'.format(version))
         return version
 
     def split_version(self, version):
