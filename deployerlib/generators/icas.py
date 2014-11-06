@@ -2,22 +2,17 @@ import os
 import sys
 
 from deployerlib.log import Log
-from deployerlib.generatorhelper import GeneratorHelper
-from deployerlib.remotehost import RemoteHost
+from deployerlib.generator import Generator
 from deployerlib.exceptions import DeployerException
 
 
-class IcasGenerator(object):
+class IcasGenerator(Generator):
     """iCAS task list generator"""
-
-    def __init__(self, config):
-        self.log = Log(self.__class__.__name__)
-        self.config = config
-        self.generatorhelper = GeneratorHelper(config)
-        self.packages = self.generatorhelper.get_packages()
 
     def generate(self):
         """Build the task list"""
+
+        packages = self.get_packages()
 
         task_list = {
           'name': 'iCAS deployment',
@@ -33,7 +28,6 @@ class IcasGenerator(object):
         cfp_tasks = []
         remove_temp_tasks = []
 
-        packages = self.packages
         tempdir_done = []
         migration_done = []
         properties_done = []
@@ -41,7 +35,7 @@ class IcasGenerator(object):
         active_cfp_host = self.get_active_cfp(self.config.get_service_hosts('cas-cfp-service'))
         self.log.info('Active cfp server is {0}'.format(active_cfp_host))
 
-        for package in self.packages:
+        for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
 
             if not service_config:

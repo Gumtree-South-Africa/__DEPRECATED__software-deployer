@@ -1,21 +1,16 @@
 import os
 
 from deployerlib.log import Log
-from deployerlib.generatorhelper import GeneratorHelper
-from deployerlib.exceptions import DeployerException
+from deployerlib.generator import Generator
 
 
-class DemoGenerator(object):
+class DemoGenerator(Generator):
     """Build a deployment matrix"""
 
-    def __init__(self, config):
-        self.log = Log(self.__class__.__name__)
-        self.config = config
-        self.generatorhelper = GeneratorHelper(config)
-        self.packages = self.generatorhelper.get_packages()
-        self.remote_versions = self.generatorhelper.get_remote_versions(self.packages)
-
     def generate(self):
+
+        packages = self.get_packages()
+        remote_versions = self.get_remote_versions(packages)
 
         task_list = {
           'name': 'Aurora deployment',
@@ -29,14 +24,14 @@ class DemoGenerator(object):
         deploy_tasks = []
         remove_temp_tasks = []
 
-        for package in self.packages:
+        for package in packages:
 
             service_config = self.config.get_with_defaults('service', package.servicename)
             hosts = self.config.get_service_hosts(package.servicename)
 
             for hostname in hosts:
 
-                if not self.config.redeploy and self.remote_versions.get(package.servicename).get(hostname) \
+                if not self.config.redeploy and remote_versions.get(package.servicename).get(hostname) \
                   == package.version:
                     self.log.debug('Service {0} is up to date on {1}, skipping'.format(
                       package.servicename, hostname))
