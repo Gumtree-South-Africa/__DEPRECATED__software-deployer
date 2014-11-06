@@ -59,6 +59,40 @@ class IcasGenerator(Generator):
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
                 })
 
+                # handle unpack directories
+                if not hostname in tempdir_done:
+                    tempdir_done.append(hostname)
+
+                    create_temp_tasks.append({
+                      'command': 'createdirectory',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
+                      'clobber': True,
+                    })
+
+                    remove_temp_tasks.append({
+                      'command': 'removefile',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
+                    })
+
+                # handle database migrations
+                if hasattr(service_config, 'migration_command') and not package.servicename in migration_done:
+                    migration_done.append(package.servicename)
+
+                    dbmig_tasks.append({
+                      'command': 'dbmigration',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'source': service_config.migration_command.format(
+                        unpack_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
+                        migration_options='',
+                      ),
+                    })
+
+                # handle properties package
                 if package.servicename == 'cas-properties':
 
                     if not hostname in properties_done:
@@ -68,14 +102,16 @@ class IcasGenerator(Generator):
                           'command': 'copyfile',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
-                          'source': os.path.join(service_config.install_location, service_config.unpack_dir,
-                          package.packagename, self.config.environment),
+                          'source': '{0}/*'.format(os.path.join(service_config.install_location,
+                          service_config.unpack_dir, package.packagename, self.config.environment)),
                           'destination': '{0}/'.format(service_config.properties_location),
                           'continue_if_exists': True,
                         })
 
+                    # no further work required for deploying properties
                     continue
 
+                # build a deploy task
                 deploy_task = {
                   'command': 'deploy_and_restart',
                   'remote_host': hostname,
@@ -85,6 +121,7 @@ class IcasGenerator(Generator):
                   'link_target': os.path.join(service_config.install_location, package.servicename),
                 }
 
+                # add LB tasks if configured for this service
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
                 if lb_hostname and lb_username and lb_password:
@@ -105,10 +142,12 @@ class IcasGenerator(Generator):
                 else:
                     self.log.warning('No load balancer found for {0} on {1}'.format(package.servicename, hostname))
 
+                # add timeout options to deploy task
                 for option in ('control_timeout', 'lb_timeout'):
                     if hasattr(service_config, option):
                         deploy_task[option] = getattr(service_config, option)
 
+                # add service control options
                 for cmd in ['stop_command', 'start_command', 'check_command']:
 
                     if hasattr(service_config, cmd):
@@ -120,41 +159,11 @@ class IcasGenerator(Generator):
                         self.log.warning('No {0} configured for service {1}'.format(
                             cmd, package.servicename))
 
+                # cfp service on active cfp host gets deployed separatedly
                 if package.servicename == 'cas-cfp-service' and hostname == active_cfp_host:
                     cfp_tasks.append(deploy_task)
                 else:
                     deploy_tasks.append(deploy_task)
-
-                if not hostname in tempdir_done:
-                    tempdir_done.append(hostname)
-
-                    create_temp_tasks.append({
-                      'command': 'createdirectory',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
-                      'clobber': True,
-                    })
-
-                    remove_temp_tasks.append({
-                      'command': 'removefile',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
-                    })
-
-                if hasattr(service_config, 'migration_command') and not package.servicename in migration_done:
-                    migration_done.append(package.servicename)
-
-                    dbmig_tasks.append({
-                      'command': 'dbmigration',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'source': service_config.migration_command.format(
-                        unpack_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
-                        migration_options='',
-                      ),
-                    })
 
         if upload_tasks:
             task_list['stages'].append({
