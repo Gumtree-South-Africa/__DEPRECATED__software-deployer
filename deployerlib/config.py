@@ -216,6 +216,11 @@ class Config(AttrDict):
                     'allowed_re': path_re,
                     'options': ['mandatory'],
                     },
+                'properties_location': {
+                    'type': str,
+                    'allowed_re': path_re,
+                    'options': ['mandatory'],
+                    },
                 'unpack_dir': {
                     'type': str,
                     'allowed_re': path_re,
@@ -228,6 +233,10 @@ class Config(AttrDict):
                 're/^[a-zA-Z_]+_command/': {
                     'type': str,
                     'allowed_re': command_re,
+                    },
+                'control_timeout': {
+                    'type': int,
+                    'allowed_range': (1,600),
                     },
                 'startup_try_count': {
                     'type': int,

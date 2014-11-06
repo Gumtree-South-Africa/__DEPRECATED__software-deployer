@@ -4,14 +4,19 @@ from deployerlib.log import Log
 class RemoveFile(object):
     """Remove a file or directory"""
 
-    def __init__(self, remote_host, source):
-        self.log = Log(self.__class__.__name__)
+    def __init__(self, remote_host, source, servicename=''):
+        if servicename:
+            log_instance = '{0}:{1}'.format(self.__class__.__name__,servicename)
+        else:
+            log_instance = self.__class__.__name__
+        self.servicename = servicename
+        self.log = Log(log_instance)
         self.remote_host = remote_host
         self.source = source
 
     def __repr__(self):
-        return '{0}(remote_host={1}, source={2})'.format(self.__class__.__name__,
-          repr(self.remote_host.hostname), repr(self.source))
+        return '{0}(remote_host={1}, source={2}), servicename={3}'.format(self.__class__.__name__,
+          repr(self.remote_host.hostname), repr(self.source), repr(self.servicename))
 
     def execute(self, procname=None, remote_results={}):
         """Remove the file or directory"""

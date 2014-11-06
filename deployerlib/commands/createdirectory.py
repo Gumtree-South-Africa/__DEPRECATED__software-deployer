@@ -4,15 +4,20 @@ from deployerlib.log import Log
 class CreateDirectory(object):
     """Create a directory on a remote host"""
 
-    def __init__(self, remote_host, source, clobber=False, config=None):
-        self.log = Log(self.__class__.__name__)
+    def __init__(self, remote_host, source, clobber=False, servicename=''):
+        if servicename:
+            log_instance = '{0}:{1}'.format(self.__class__.__name__,servicename)
+        else:
+            log_instance = self.__class__.__name__
+        self.servicename = servicename
+        self.log = Log(log_instance)
         self.remote_host = remote_host
         self.source = source
         self.clobber = clobber
 
     def __repr__(self):
-        return '{0}(remote_host={1}, source={2}, clobber={3})'.format(self.__class__.__name__,
-          repr(self.remote_host.hostname), repr(self.source), repr(self.clobber))
+        return '{0}(remote_host={1}, source={2}, clobber={3}, servicename={4})'.format(self.__class__.__name__,
+          repr(self.remote_host.hostname), repr(self.source), repr(self.clobber), repr(self.servicename))
 
     def execute(self, procname=None, remote_results={}):
         """Create the directory"""
