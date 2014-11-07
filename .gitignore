@@ -1,1 +1,8 @@
 *.pyc
+*.egg-info
+build/
+debian/software-deployer/
+debian/files
+debian/*.substvars
+debian/*.debhelper
+debian/*.debhelper.log
