@@ -7,6 +7,8 @@ from deployerlib.generators import *
 from deployerlib.log import Log
 from deployerlib.executor import Executor
 
+from deployerlib.exceptions import DeployerException
+
 
 class Tasklist(object):
     """Tasklist builder"""
