@@ -93,17 +93,17 @@ class IcasGenerator(Generator):
                     })
 
                 # handle properties package
-                if package.servicename == 'cas-properties':
+                if package.servicename == 'cas-properties' or package.servicename == 'dba-cas-properties':
 
-                    if not hostname in properties_done:
-                        properties_done.append(hostname)
+                    if not (hostname, package.servicename) in properties_done:
+                        properties_done.append((hostname, package.servicename))
 
                         properties_tasks.append({
                           'command': 'copyfile',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
                           'source': '{0}/*'.format(os.path.join(service_config.install_location,
-                          service_config.unpack_dir, package.packagename, self.config.environment)),
+                          service_config.unpack_dir, package.packagename, service_config.environment)),
                           'destination': '{0}/'.format(service_config.properties_location),
                           'continue_if_exists': True,
                         })
