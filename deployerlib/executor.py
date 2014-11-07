@@ -33,6 +33,7 @@ class Executor(object):
           'disable_loadbalancer': disableloadbalancer.DisableLoadbalancer,
           'enable_loadbalancer': enableloadbalancer.EnableLoadbalancer,
           'execute_command': executecommand.ExecuteCommand,
+          'send_graphite': sendgraphite.SendGraphite,
         }
 
         manager = Manager()

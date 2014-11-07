@@ -12,7 +12,7 @@ class Command(object):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
-        res = self.verify()
+        res = self.verify(**kwargs)
 
         if not res:
             raise DeployerException('Failed to initialize command: {0}'.format(repr(self)))
@@ -37,7 +37,7 @@ class Command(object):
         return True
 
     def thread_execute(self, procname=None, remote_results={}):
-        """Execute the remote command"""
+        """Executor runs this method, which calls self.execute and returns the results"""
 
         res = self.execute()
 
