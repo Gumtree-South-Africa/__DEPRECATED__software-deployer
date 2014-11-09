@@ -1,8 +1,14 @@
+software-deployer (0.9.5) precise; urgency=low
+
+  * Bugfix
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Sun, 09 Nov 2014 15:06:51 +0100
+
 software-deployer (0.9.4) precise; urgency=low
 
   * Bugfixes and functionality
 
- -- Patrick McConnell <pmcconnell@ebay.com>  Thu, 17 Nov 2014 17:21:29 +0100
+ -- Patrick McConnell <pmcconnell@ebay.com>  Thu, 17 Nov 2014 15:00:00 +0100
 
 software-deployer (0.9.3) precise; urgency=low
 
