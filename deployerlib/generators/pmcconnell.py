@@ -43,6 +43,7 @@ class DemoGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': package.fullpath,
                   'destination': service_config.destination,
+                  'servicename': package.servicename,
                 })
 
                 unpack_tasks.append({
@@ -51,6 +52,7 @@ class DemoGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': os.path.join(service_config.destination, package.filename),
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
+                  'servicename': package.servicename,
                 })
 
                 deploy_task = {
@@ -61,6 +63,7 @@ class DemoGenerator(Generator):
                   'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
                   'destination': os.path.join(service_config.install_location, package.packagename),
                   'link_target': os.path.join(service_config.install_location, package.servicename),
+                  'servicename': package.servicename,
                 }
 
                 if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
@@ -77,6 +80,7 @@ class DemoGenerator(Generator):
                         migration_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
                         migration_options='',
                       ),
+                      'servicename': package.servicename,
                     })
 
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
@@ -156,11 +160,11 @@ class DemoGenerator(Generator):
               'tasks': unpack_tasks,
             })
 
-        if dbmig_tasks:
-
-            if not sent_graphite:
-                sent_graphite = True
-                task_list['stages'].append(self.get_graphite_stage('start'))
+#        if dbmig_tasks:
+#
+#            if not sent_graphite:
+#                sent_graphite = True
+#                task_list['stages'].append(self.get_graphite_stage('start'))
 
             for task in dbmig_tasks:
                 del task['_servicename']
@@ -187,9 +191,9 @@ class DemoGenerator(Generator):
             for task in this_stage:
                 del task['_servicename']
 
-            if not sent_graphite:
-                sent_graphite = True
-                task_list['stages'].append(self.get_graphite_stage('start'))
+#            if not sent_graphite:
+#                sent_graphite = True
+#                task_list['stages'].append(self.get_graphite_stage('start'))
 
             task_list['stages'].append({
               'name': 'Deploy {0}'.format(', '.join(servicenames)),
@@ -197,8 +201,8 @@ class DemoGenerator(Generator):
               'tasks': this_stage,
             })
 
-        if sent_graphite:
-            task_list['stages'].append(self.get_graphite_stage('end'))
+#        if sent_graphite:
+#            task_list['stages'].append(self.get_graphite_stage('end'))
 
         if remove_temp_tasks:
             task_list['stages'].append({
