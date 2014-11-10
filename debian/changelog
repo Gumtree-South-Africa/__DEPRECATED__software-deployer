@@ -1,3 +1,9 @@
+software-deployer (0.10) precise; urgency=low
+
+  * Release after merging logging and AuroraGenerator changes
+
+ -- Arnoud Witt <awitt@ebay.com>  Mon, 10 Nov 2014 08:01:21 +0100
+
 software-deployer (0.9) precise; urgency=low
 
   * Initial test release
