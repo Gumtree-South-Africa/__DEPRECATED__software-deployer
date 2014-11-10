@@ -16,6 +16,7 @@ class Log(object):
 
         global level
         self.logger = self.get_logger(instance, level)
+        self.instance = instance
 
     def get_logger(self, instance, level):
         """If a logger exists for this instance, return it; otherwise create a new logger"""
@@ -36,7 +37,7 @@ class Log(object):
         console = logging.StreamHandler(sys.stdout)
         console.setLevel(level)
 
-        formatter = logging.Formatter('%(asctime)s [%(name)-15s] [%(levelname)-7s] %(deployuser)s@%(deployhost)s: %(message)s')
+        formatter = logging.Formatter('%(asctime)s [%(levelname)-8s] [%(class)-15s] [%(remote)s] [%(service)s] %(message)s')
 
         console.setFormatter(formatter)
         logger.addHandler(console)
@@ -68,10 +69,25 @@ class Log(object):
         Gives: formatted message to the console
         """
 
+        host = '*'
+        user = '*'
         if env.host:
-            self.logger.log(level, message, extra={'deployhost':env.host, 'deployuser':env.user})
+            host = env.host
+            if env.user:
+                user = env.user
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            remote = '{0}@{1}'.format(user,host)
         else:
-            self.logger.log(level, message, extra={'deployhost':'*', 'deployuser':'*'})
+            remote = host
+
+        items = self.instance.split(':',1)
+        if len(items) == 2:
+            (classname,servicename) = tuple(items)
+        else:
+            (classname,servicename) = (items[0],'*')
+
+        self.logger.log(level, message, extra={'class': classname, 'service': servicename, 'remote': remote})
 
     def debug(self, message):
         self.log(message, logging.DEBUG)

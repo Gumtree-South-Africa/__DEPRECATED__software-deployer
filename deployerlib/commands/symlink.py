@@ -4,15 +4,16 @@ from deployerlib.log import Log
 class SymLink(object):
     """Manage a remote symlink"""
 
-    def __init__(self, remote_host, source, destination):
-        self.log = Log(self.__class__.__name__)
+    def __init__(self, remote_host, servicename, source, destination):
+        self.log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
+        self.servicename = servicename
         self.remote_host = remote_host
         self.source = source
         self.destination = destination
 
     def __repr__(self):
-        return '{0}(remote_host={1}, source={2}, destination={3})'.format(self.__class__.__name__,
-          repr(self.remote_host.hostname), repr(self.source), repr(self.destination))
+        return '{0}(remote_host={1}, servicename={2}, source={3}, destination={4})'.format(self.__class__.__name__,
+          repr(self.remote_host.hostname), repr(self.servicename), repr(self.source), repr(self.destination))
 
     def execute(self, procname=None, remote_results={}):
         """Set the link target"""

@@ -30,24 +30,30 @@ class AuroraGenerator(object):
         upload_tasks = []
         create_temp_tasks = []
         unpack_tasks = []
+        props_tasks = []
         dbmig_tasks = []
         deploy_tasks = []
         remove_temp_tasks = []
 
         for package in self.packages:
 
+            log = Log('{0}:{1}'.format(self.__class__.__name__,package.servicename))
             service_config = self.config.get_with_defaults('service', package.servicename)
             hosts = self.config.get_service_hosts(package.servicename)
+            lb_service =  hasattr(service_config, 'lb_service')
+
+            if not lb_service:
+                log.warning('No lb_service defined')
 
             for hostname in hosts:
 
                 if not self.config.redeploy and self.remote_versions.get(package.servicename).get(hostname) \
                   == package.version:
-                    self.log.debug('Service {0} is up to date on {1}, skipping'.format(
-                      package.servicename, hostname))
+                    log.debug('is up to date on {0}, skipping'.format(hostname))
                     continue
 
                 upload_tasks.append({
+                  'servicename': package.servicename,
                   'command': 'upload',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
@@ -56,6 +62,7 @@ class AuroraGenerator(object):
                 })
 
                 unpack_tasks.append({
+                  'servicename': package.servicename,
                   'command': 'unpack',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
@@ -63,61 +70,78 @@ class AuroraGenerator(object):
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
                 })
 
-                deploy_task = {
-                  '_servicename': package.servicename,
-                  'command': 'deploy_and_restart',
-                  'remote_host': hostname,
-                  'remote_user': self.config.user,
-                  'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
-                  'destination': os.path.join(service_config.install_location, package.packagename),
-                  'link_target': os.path.join(service_config.install_location, package.servicename),
-                }
-
-                if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
-                  if x['_servicename'] == package.servicename]:
-
-                    self.log.info('Adding DB migrations for {0} on {1}'.format(package.servicename, hostname))
-
-                    dbmig_tasks.append({
-                      '_servicename': package.servicename,
-                      'command': 'dbmigration',
+                if service_config.control_type == 'props':
+                    props_tasks.append({
+                      'servicename': package.servicename,
+                      'command': 'copyfile',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': service_config.migration_command.format(
-                        migration_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
-                        migration_options='',
-                      ),
+                      'source': '{0}/*'.format(os.path.join(service_config.install_location,
+                          service_config.unpack_dir, package.packagename, self.config.environment)),
+                      'destination': '{0}/'.format(service_config.properties_location),
+                      'continue_if_exists': True,
                     })
 
-                lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
+                if service_config.control_type == 'daemontools':
+                    deploy_task = {
+                      'servicename': package.servicename,
+                      'command': 'deploy_and_restart',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
+                      'destination': os.path.join(service_config.install_location, package.packagename),
+                      'link_target': os.path.join(service_config.install_location, package.servicename),
+                    }
 
-                if lb_hostname and lb_username and lb_password:
-                    if hasattr(service_config, 'lb_service'):
-                        deploy_task['lb_service'] = service_config.lb_service.format(hostname=hostname)
+                    if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
+                      if x['servicename'] == package.servicename]:
 
-                        deploy_task.update({
-                          'lb_hostname': lb_hostname,
-                          'lb_username': lb_username,
-                          'lb_password': lb_password,
-                        })
+                        log.info('Adding DB migrations to be run on {0}'.format(hostname))
 
-                    else:
-                        self.log.warning('No lb_service defined for service {0}'.format(package.servicename))
-                else:
-                    self.log.warning('No load balancer found for {0} on {1}'.format(package.servicename, hostname))
+                        dbmig_tasks.append({
+                          'servicename': package.servicename,
+                          'command': 'dbmigration',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'source': service_config.migration_command.format(
+                              migration_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename,
+                                  'db/migrations'),
+                              migration_options='',
+                              properties_location=service_config.properties_location,
+                              ),
+                          })
 
-                for cmd in ['stop_command', 'start_command', 'check_command']:
+                    if lb_service:
+                        lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
-                    if hasattr(service_config, cmd):
-                        deploy_task[cmd] = service_config[cmd].format(
-                          servicename=package.servicename,
-                          port=service_config['port'],
-                        )
-                    else:
-                        self.log.warning('No {0} configured for service {1}'.format(
-                            cmd, package.servicename))
+                        if lb_hostname and lb_username and lb_password:
+                            if hasattr(service_config, 'lb_service'):
+                                deploy_task['lb_service'] = service_config.lb_service.format(hostname=hostname)
 
-                deploy_tasks.append(deploy_task)
+                                deploy_task.update({
+                                  'lb_hostname': lb_hostname,
+                                  'lb_username': lb_username,
+                                  'lb_password': lb_password,
+                                })
+
+                        else:
+                            log.warning('No load balancer found for service on {0}'.format(hostname))
+
+                    for option in ('control_timeout', 'lb_timeout'):
+                        if hasattr(service_config, option):
+                            deploy_task[option] = getattr(service_config, option)
+
+                    for cmd in ['stop_command', 'start_command', 'check_command']:
+
+                        if hasattr(service_config, cmd):
+                            deploy_task[cmd] = service_config[cmd].format(
+                              servicename=package.servicename,
+                              port=service_config['port'],
+                            )
+                        else:
+                            log.warning('No {0} configured'.format(cmd))
+
+                    deploy_tasks.append(deploy_task)
 
                 if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
                   x['source'] == os.path.join(service_config.install_location, service_config.unpack_dir)]:
@@ -135,6 +159,7 @@ class AuroraGenerator(object):
                       'remote_user': self.config.user,
                       'source': os.path.join(service_config.install_location, service_config.unpack_dir),
                     })
+            # end for hostname in hosts:
 
         if not upload_tasks and not unpack_tasks and not deploy_tasks:
             self.log.info('No services require deployment')
@@ -164,10 +189,14 @@ class AuroraGenerator(object):
               'tasks': unpack_tasks,
             })
 
-        if dbmig_tasks:
-            for task in dbmig_tasks:
-                del task['_servicename']
+        if props_tasks:
+            task_list['stages'].append({
+              'name': 'Deploy properties for environment {0}'.format(self.config.environment),
+              'concurrency': 10,
+              'tasks': props_tasks,
+            })
 
+        if dbmig_tasks:
             task_list['stages'].append({
               'name': 'Database migrations',
               'concurrency': 1,
@@ -179,19 +208,21 @@ class AuroraGenerator(object):
             if isinstance(servicenames, basestring):
                 servicenames = [servicenames]
 
-            this_stage = [x for x in deploy_tasks if x['_servicename'] in servicenames]
+            this_stage = [x for x in deploy_tasks if x['servicename'] in servicenames]
 
             if not this_stage:
-                self.log.debug('No deployment tasks for service {0}'.format(', '.join(servicenames)))
+                self.log.debug('No deployment tasks for service(s) {0}'.format(', '.join(servicenames)))
                 continue
 
             deploy_tasks = [x for x in deploy_tasks if not x in this_stage]
 
-            for task in this_stage:
-                del task['_servicename']
+            to_deploy = []
+            for x in this_stage:
+                if x['servicename'] not in to_deploy:
+                    to_deploy.append(x['servicename'])
 
             task_list['stages'].append({
-              'name': 'Deploy {0}'.format(', '.join(servicenames)),
+              'name': 'Deploy {0}'.format(', '.join(to_deploy)),
               'concurrency': 3,
               'tasks': this_stage,
             })
@@ -204,7 +235,7 @@ class AuroraGenerator(object):
             })
 
         if deploy_tasks:
-            leftovers = set([x['_servicename'] for x in deploy_tasks])
+            leftovers = set([x['servicename'] for x in deploy_tasks])
             raise DeployerException('Leftover tasks - services not specified in deployment order? {0}'.format(
               ', '.join(leftovers)))
 

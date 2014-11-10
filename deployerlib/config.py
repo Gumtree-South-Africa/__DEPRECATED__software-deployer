@@ -55,6 +55,7 @@ class Config(AttrDict):
     def get_lb(self, servicename, hostname):
         """Return the load balancer that controls supplied service on supplied host"""
 
+        log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
         host_hg = None
 
         hostgroups =  self.get_with_defaults('service', servicename)['hostgroups']
@@ -65,11 +66,11 @@ class Config(AttrDict):
                 break
 
         if not host_hg:
-            self.log.warning('Host {0} not found in any hostgroups associated to {1}'.format(hostname, servicename))
+            log.warning('Host {0} not found in any associated hostgroups'.format(hostname))
             return None, None, None
 
         if not 'lb' in self.hostgroup[host_hg]:
-            self.log.warning('Host {0} is in hostgroup {1}, but there are no loadbalancers defined for it'.format(
+            log.warning('Host {0} is in hostgroup {1}, but there are no loadbalancers defined for it'.format(
               hostname, host_hg))
             return None, None, None
 
@@ -78,12 +79,13 @@ class Config(AttrDict):
         lb_username = lb_config.api_user
         lb_password = lb_config.api_password
 
-        self.log.debug('Returning {0} with username {1} and password'.format(lb_hostname, lb_username))
+        log.debug('Returning {0} with username {1} and password'.format(lb_hostname, lb_username))
         return lb_hostname, lb_username, lb_password
 
     def get_service_hosts(self, servicename):
         """Get the list of hosts this service should be deployed to"""
 
+        log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
         service_config = self.get_with_defaults('service', servicename)
         hosts = []
 
@@ -92,7 +94,7 @@ class Config(AttrDict):
                 hosts += self.hostgroup[hg]['hosts']
 
         if hosts:
-            self.log.info('{0} is configured to run on: {1}'.format(servicename, ', '.join(hosts)))
+            log.info('configured to run on: {0}'.format(', '.join(hosts)))
 
         return hosts
 
@@ -214,6 +216,11 @@ class Config(AttrDict):
                     'allowed_re': path_re,
                     'options': ['mandatory'],
                     },
+                'properties_location': {
+                    'type': str,
+                    'allowed_re': path_re,
+                    'options': ['mandatory'],
+                    },
                 'unpack_dir': {
                     'type': str,
                     'allowed_re': path_re,
@@ -226,6 +233,10 @@ class Config(AttrDict):
                 're/^[a-zA-Z_]+_command/': {
                     'type': str,
                     'allowed_re': command_re,
+                    },
+                'control_timeout': {
+                    'type': int,
+                    'allowed_range': (1,600),
                     },
                 'startup_try_count': {
                     'type': int,

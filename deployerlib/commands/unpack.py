@@ -5,16 +5,17 @@ from deployerlib.exceptions import DeployerException
 class Unpack(object):
     """Unpack a packge on a remote host"""
 
-    def __init__(self, remote_host, source, destination, config=None):
-        self.log = Log(self.__class__.__name__)
+    def __init__(self, remote_host, source, destination, servicename):
+        self.log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
+        self.servicename = servicename
         self.remote_host = remote_host
         self.source = source
         self.destination = destination
         self.command = self.get_unpack_command()
 
     def __repr__(self):
-        return '{0}(remote_host={1}, source={2}, destination={3})'.format(self.__class__.__name__,
-          repr(self.remote_host.hostname), repr(self.source), repr(self.destination))
+        return '{0}(remote_host={1}, source={2}, destination={3}, servicename={4})'.format(self.__class__.__name__,
+          repr(self.remote_host.hostname), repr(self.source), repr(self.destination), repr(self.servicename))
 
     def get_unpack_command(self):
         """Based on the file extension, determine the command line to unpack the package"""
