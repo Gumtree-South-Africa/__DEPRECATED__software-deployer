@@ -8,9 +8,7 @@ class SendGraphite(Command):
     """Send a metric to a carbon relay"""
 
     def verify(self, carbon_host, metric_name, metric_value='1.0', carbon_port=2003, continue_on_fail=True):
-        self.carbon_host = carbon_host
         self.carbon_port = carbon_port
-        self.metric_name = metric_name
         self.metric_value = metric_value
         self.continue_on_fail = continue_on_fail
         return True

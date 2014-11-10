@@ -47,3 +47,4 @@ try:
     executor.run()
 except DeployerException as e:
     log.critical('Execution failed: {0}'.format(e))
+    sys.exit(1)

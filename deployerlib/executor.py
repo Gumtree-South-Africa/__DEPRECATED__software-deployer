@@ -155,6 +155,9 @@ class Executor(object):
             else:
                 job_id = 'local'
 
+            self.log.debug('Instantiating {0} with args: {1}'.format(
+              callable.__name__, task))
+
             try:
                 remote_task = callable(**task)
             except TypeError as e:
@@ -163,7 +166,7 @@ class Executor(object):
 
             procname = repr(remote_task)
 
-            job = Process(target=remote_task.execute, name=procname, args=[procname, self.remote_results])
+            job = Process(target=remote_task.thread_execute, name=procname, args=[procname, self.remote_results])
             job._host = job_id
 
             job_list.append(job)

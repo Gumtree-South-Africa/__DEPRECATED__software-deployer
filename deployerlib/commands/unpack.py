@@ -1,21 +1,18 @@
-from deployerlib.log import Log
-from deployerlib.exceptions import DeployerException
+from deployerlib.command import Command
 
 
-class Unpack(object):
+class Unpack(Command):
     """Unpack a packge on a remote host"""
 
-    def __init__(self, remote_host, source, destination, servicename):
-        self.log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
-        self.servicename = servicename
-        self.remote_host = remote_host
-        self.source = source
-        self.destination = destination
+    def verify(self, remote_host, source, destination):
         self.command = self.get_unpack_command()
 
-    def __repr__(self):
-        return '{0}(remote_host={1}, source={2}, destination={3}, servicename={4})'.format(self.__class__.__name__,
-          repr(self.remote_host.hostname), repr(self.source), repr(self.destination), repr(self.servicename))
+        if not self.command:
+            self.log.critical('{0} class doesn\'t know how to unpack file: {1}'.format(
+              self.__class__.__name__, self.source))
+            return False
+
+        return True
 
     def get_unpack_command(self):
         """Based on the file extension, determine the command line to unpack the package"""
@@ -27,14 +24,13 @@ class Unpack(object):
         elif self.source.endswith('.war'):
             command = '/bin/cp {0} {1}'.format(self.source, self.destination)
         else:
-            raise DeployerException('{0} class doesn\'t know how to unpack file: {1}'.format(
-              self.__class__.__name__, self.source))
+            return False
 
         self.log.debug('Using unpack command: {0}'.format(command))
 
         return command
 
-    def execute(self, procname=None, remote_results={}):
+    def execute(self):
         """Unpack the remote package"""
 
         if not self.remote_host.file_exists(self.destination):
@@ -46,5 +42,4 @@ class Unpack(object):
         if not res.succeeded:
             self.log.critical('Unpack failed: {0}'.format(res))
 
-        remote_results[procname] = res.succeeded
         return res.succeeded

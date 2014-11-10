@@ -7,7 +7,13 @@ class Command(object):
     """Framework for a remote command to be run with JobQueue"""
 
     def __init__(self, **kwargs):
-        self.log = Log(self.__class__.__name__)
+
+        if 'servicename' in kwargs:
+            self.servicename = kwargs.pop('servicename')
+        else:
+            self.servicename = None
+
+        self.log = Log('{0}:{1}'.format(self.__class__.__name__, self.servicename))
 
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
@@ -15,7 +21,8 @@ class Command(object):
         res = self.verify(**kwargs)
 
         if not res:
-            raise DeployerException('Failed to initialize command: {0}'.format(repr(self)))
+            raise DeployerException('Failed to initialize {0}: verify() returned {1}'.format(
+              repr(self), repr(res)))
 
         self.log.debug('Command initialized successfully: {0}'.format(repr(self)))
 

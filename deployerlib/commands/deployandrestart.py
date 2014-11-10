@@ -1,36 +1,71 @@
-from deployerlib.log import Log
-from deployerlib.commands import disableloadbalancer, enableloadbalancer, controlservice, movefile, symlink
+from deployerlib.command import Command
+from deployerlib.commands import disableloadbalancer, enableloadbalancer, stopservice, startservice, movefile, symlink
 
 
-class DeployAndRestart(object):
+class DeployAndRestart(Command):
     """Meta-command that includes load balancer control, service control and service activation"""
 
-    def __init__(self, servicename, remote_host, source, link_target, stop_command, start_command,
+    def verify(self, remote_host, source, stop_command, start_command, link_target=None,
       lb_hostname=None, lb_username=None, lb_password=None, lb_service=None, destination=None,
       check_command=None, control_timeout=60, lb_timeout=60):
-        self.log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
-        self.servicename = servicename
-        self.remote_host = remote_host
 
         if not destination:
             destination = source
 
         self.subcommands = [
-          controlservice.ControlService(remote_host, servicename, stop_command, check_command, want_state=2, timeout=control_timeout, control_type='stop'),
-          movefile.MoveFile(remote_host, servicename, source, destination, clobber=True),
-          symlink.SymLink(remote_host, servicename, destination, link_target),
-          controlservice.ControlService(remote_host, servicename, start_command, check_command, want_state=0, timeout=control_timeout, control_type='start'),
+
+          stopservice.StopService(
+            remote_host=remote_host,
+            stop_command=stop_command,
+            check_command=check_command,
+            timeout=control_timeout,
+            servicename=self.servicename,
+          ),
+
+          movefile.MoveFile(
+            remote_host=remote_host,
+            source=source,
+            destination=destination,
+            clobber=True,
+            servicename=self.servicename,
+          ),
+
+          symlink.SymLink(
+            remote_host=remote_host,
+            source=destination,
+            destination=link_target,
+            servicename=self.servicename,
+          ),
+
+          startservice.StartService(
+            remote_host=remote_host,
+            servicename=self.servicename,
+            start_command=start_command,
+            check_command=check_command,
+            timeout=control_timeout,
+          ),
         ]
 
         if lb_service:
-            self.subcommands.insert(0, disableloadbalancer.DisableLoadbalancer(lb_hostname, lb_username, lb_password, lb_service, timeout=lb_timeout))
-            self.subcommands.append(enableloadbalancer.EnableLoadbalancer(lb_hostname, lb_username, lb_password, lb_service, timeout=lb_timeout))
+            lb_args = {
+              'lb_hostname': lb_hostname,
+              'lb_username': lb_username,
+              'lb_password': lb_password,
+              'lb_service': lb_service,
+              'timeout': lb_timeout,
+              'servicename': self.servicename,
+            }
+
+            self.subcommands.insert(0, disableloadbalancer.DisableLoadbalancer(**lb_args))
+            self.subcommands.append(enableloadbalancer.EnableLoadbalancer(**lb_args))
+
+        return True
 
     def __repr__(self):
         return '{0}(remote_host={1} servicename={2})'.format(self.__class__.__name__,
           repr(self.remote_host.hostname), repr(self.servicename))
 
-    def execute(self, procname=None, remote_results={}):
+    def execute(self):
         """Execute the sub-commands"""
 
         for subcommand in self.subcommands:
@@ -39,8 +74,6 @@ class DeployAndRestart(object):
             if not res:
                 self.log.critical('{0} subcommand {1} failed'.format(
                   self.__class__.__name__, subcommand.__class__.__name__))
-                remote_results[procname] = False
                 return False
 
-        remote_results[procname] = True
         return True
