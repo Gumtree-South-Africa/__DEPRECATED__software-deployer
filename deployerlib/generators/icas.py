@@ -49,6 +49,7 @@ class IcasGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': package.fullpath,
                   'destination': service_config.destination,
+                  'servicename': package.servicename,
                 })
 
                 unpack_tasks.append({
@@ -57,6 +58,7 @@ class IcasGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': os.path.join(service_config.destination, package.filename),
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
+                  'servicename': package.servicename,
                 })
 
                 # handle unpack directories
@@ -79,17 +81,32 @@ class IcasGenerator(Generator):
                     })
 
                 # handle database migrations
-                if hasattr(service_config, 'migration_command') and not package.servicename in migration_done:
+                if service_config.get('migration_command') and not package.servicename in migration_done:
                     migration_done.append(package.servicename)
+
+                    if package.servicename.startswith('cas-') or package.servicename.startswith('shared-'):
+                        properties_config = self.config.get_with_defaults('service', 'cas-properties')
+                    elif package.servicename.startswith('dba-'):
+                        properties_config = self.config.get_with_defaults('service', 'dba-cas-properties')
+                    else:
+                        raise DeployerException('Unable to determine properties path for service: {0}'.format(
+                          package.servicename))
+
+                    properties_path = properties_config.properties_path
+
+                    unpack_location = os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename)
+                    dbmig_location = os.path.join(unpack_location, 'db')
 
                     dbmig_tasks.append({
                       'command': 'dbmigration',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
                       'source': service_config.migration_command.format(
-                        unpack_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
-                        migration_options='',
+                        unpack_location=unpack_location,
+                        properties_path=properties_path,
                       ),
+                      'servicename': package.servicename,
+                      'if_exists': dbmig_location,
                     })
 
                 # handle properties package
@@ -104,8 +121,9 @@ class IcasGenerator(Generator):
                           'remote_user': self.config.user,
                           'source': '{0}/*'.format(os.path.join(service_config.install_location,
                           service_config.unpack_dir, package.packagename, service_config.environment)),
-                          'destination': '{0}/'.format(service_config.properties_location),
+                          'destination': '{0}/'.format(service_config.properties_path),
                           'continue_if_exists': True,
+                          'servicename': package.servicename,
                         })
 
                     # no further work required for deploying properties
@@ -119,6 +137,7 @@ class IcasGenerator(Generator):
                   'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
                   'destination': os.path.join(service_config.install_location, package.packagename),
                   'link_target': os.path.join(service_config.install_location, package.servicename),
+                  'servicename': package.servicename,
                 }
 
                 # add LB tasks if configured for this service
@@ -168,24 +187,24 @@ class IcasGenerator(Generator):
         if upload_tasks:
             task_list['stages'].append({
               'name': 'Upload',
-              'concurrency': 10,
-              'concurrency_per_host': 5,
+              'concurrency': self.config.prep_concurrency,
+              'concurrency_per_host': self.config.prep_concurrency_per_host,
               'tasks': upload_tasks,
             })
 
         if create_temp_tasks:
             task_list['stages'].append({
               'name': 'Create temp directories',
-              'concurrency': 10,
-              'concurrency_per_host': 5,
+              'concurrency': self.config.prep_concurrency,
+              'concurrency_per_host': self.config.prep_concurrency_per_host,
               'tasks': create_temp_tasks,
             })
 
         if unpack_tasks:
             task_list['stages'].append({
               'name': 'Unpack',
-              'concurrency': 10,
-              'concurrency_per_host': 5,
+              'concurrency': self.config.prep_concurrency,
+              'concurrency_per_host': self.config.prep_concurrency_per_host,
               'tasks': unpack_tasks,
             })
 
@@ -193,7 +212,7 @@ class IcasGenerator(Generator):
 
             task_list['stages'].append({
               'name': 'Properties',
-              'concurrency': 10,
+              'concurrency': self.config.prep_concurrency,
               'tasks': properties_tasks,
             })
 
@@ -240,7 +259,8 @@ class IcasGenerator(Generator):
         if remove_temp_tasks:
             task_list['stages'].append({
               'name': 'Remove temp directories',
-              'concurrency': 10,
+              'concurrency': self.config.prep_concurrency,
+              'concurrency_per_host': self.config.prep_concurrency_per_host,
               'tasks': remove_temp_tasks,
             })
 
@@ -269,8 +289,8 @@ class IcasGenerator(Generator):
 
         this_task = {
           'name': 'Deploy to hosts {0}'.format(this_stage_hosts),
-          'concurrency': 10,
-          'concurrency_per_host': 3,
+          'concurrency': self.config.deploy_concurrency,
+          'concurrency_per_host': self.config.deploy_concurrency_per_host,
           'tasks': this_stage_tasks,
         }
 
