@@ -20,17 +20,16 @@ parser.add_argument('--dump', action='store_true', help='Dump the resulting task
 parser.add_argument('--save', help='Save the resulting task list to a file')
 component_group = parser.add_mutually_exclusive_group(required=True)
 component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
-component_group.add_argument('--directory', help='Specify a directory of components to deploy')
+component_group.add_argument('--directory', nargs='+', help='Specify a directory of components to deploy')
 
 args = CommandLine(parents=parser)
 config = Config(args)
 tasklist_builder = Tasklist(config, config.platform)
-tasklist = tasklist_builder.build()
 
 if config.dump:
-    print json.dumps(tasklist, **json_opts)
+    print json.dumps(tasklist_builder.tasklist, **json_opts)
 
-if config.save:
+if tasklist_builder.verify_tasklist() and config.save:
     with open(config.save, 'w') as f:
-        json.dump(tasklist, f, **json_opts)
+        json.dump(tasklist_builder.tasklist, f, **json_opts)
         log.info('Saved task list to {0}'.format(config.save))

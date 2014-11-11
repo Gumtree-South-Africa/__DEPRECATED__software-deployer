@@ -9,8 +9,8 @@ from deployerlib.exceptions import DeployerException
 class LoadBalancer(object):
     """Manage connections to a single load balancer"""
 
-    def __init__(self, hostname, username, password, config=None):
-        self.log = Log(self.__class__.__name__)
+    def __init__(self, hostname, username, password, servicename=None):
+        self.log = Log('{0}:{1}'.format(self.__class__.__name__, servicename))
 
         self.hostname = hostname
         self.username = username

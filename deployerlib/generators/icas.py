@@ -226,7 +226,7 @@ class IcasGenerator(Generator):
 
         # deploy backend services except for cfp on the active host
         for hostlist in self.config.deployment_order['backend']:
-            this_stage, this_stage_tasks = self.get_stage(deploy_tasks, hostlist)
+            this_stage, this_stage_tasks = self.get_deploy_stage(deploy_tasks, hostlist)
 
             if this_stage:
                 task_list['stages'].append(this_stage)
@@ -243,7 +243,7 @@ class IcasGenerator(Generator):
 
         # deploy frontend services
         for hostlist in self.config.deployment_order['frontend']:
-            this_stage, this_stage_tasks = self.get_stage(deploy_tasks, hostlist)
+            this_stage, this_stage_tasks = self.get_deploy_stage(deploy_tasks, hostlist)
 
             if this_stage:
                 task_list['stages'].append(this_stage)
@@ -273,11 +273,11 @@ class IcasGenerator(Generator):
         import random
         return random.choice(hostlist)
 
-    def get_stage(self, tasklist, hostlist):
+    def get_deploy_stage(self, tasklist, hostlist):
         """Return a stage based on a list of tasks and a list of hosts"""
 
         this_stage_tasks = [x for x in tasklist if x['remote_host'] in hostlist]
-        this_stage_hosts = ', '.join(hostlist)
+        this_stage_hosts = ', '.join(set([x['remote_host'] for x in tasklist]))
 
         if not this_stage_tasks:
             self.log.warning('No tasks found for deployment_order group {0}'.format(this_stage_hosts))

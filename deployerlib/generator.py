@@ -35,13 +35,15 @@ class Generator(object):
 
         elif self.config.directory:
 
-            if not os.path.isdir(self.config.directory):
-                raise DeployerException('Not a directory: {0}'.format(self.config.directory))
+            for directory in self.config.directory:
 
-            for filename in os.listdir(self.config.directory):
-                fullpath = os.path.join(self.config.directory, filename)
-                self.log.info('Adding package: {0}'.format(fullpath))
-                packages.append(Package(fullpath))
+                if not os.path.isdir(directory):
+                    raise DeployerException('Not a directory: {0}'.format(directory))
+
+                for filename in os.listdir(directory):
+                    fullpath = os.path.join(directory, filename)
+                    self.log.info('Adding package: {0}'.format(fullpath))
+                    packages.append(Package(fullpath))
 
         else:
             raise DeployerException('Invalid configuration: no components to deploy')

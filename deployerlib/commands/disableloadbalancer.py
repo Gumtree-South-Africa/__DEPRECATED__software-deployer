@@ -12,7 +12,7 @@ class DisableLoadbalancer(Command):
     def execute(self):
         res = None
 
-        with LoadBalancer(self.lb_hostname, self.lb_username, self.lb_password) as lb:
+        with LoadBalancer(self.lb_hostname, self.lb_username, self.lb_password, self.servicename) as lb:
             res = lb.disable_service(self.lb_service, self.timeout)
 
         return res

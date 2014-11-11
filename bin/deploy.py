@@ -14,7 +14,7 @@ from deployerlib.exceptions import DeployerException
 parser = argparse.ArgumentParser()
 component_group = parser.add_mutually_exclusive_group(required=True)
 component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
-component_group.add_argument('--directory', help='Specify a directory of components to deploy')
+component_group.add_argument('--directory', nargs='+', help='Specify a directory of components to deploy')
 component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
 
 log = Log(os.path.basename(__file__))
@@ -27,13 +27,12 @@ elif args.config:
     log.debug('Executing based on config file: {0}'.format(args.config))
     config = Config(args)
     tasklist_builder = Tasklist(config, config.platform)
-    tasklist = tasklist_builder.build()
 
-    if not tasklist:
+    if not tasklist_builder.tasklist:
         log.warning('Nothing to deploy')
         sys.exit(1)
 
-    executor = Executor(tasklist=tasklist)
+    executor = Executor(tasklist=tasklist_builder.tasklist)
 
     if config.dry_run:
         log.info('Dry run, not executing any tasks')

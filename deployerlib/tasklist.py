@@ -30,27 +30,25 @@ class Tasklist(object):
         self.log.debug('Using generator: {0}'.format(generator.__name__))
 
         self.generator_obj = generator(config)
+        self.log.debug('Calling generator: {0}'.format(self.generator_obj.__class__.__name__))
+        self.tasklist = self.generator_obj.generate()
 
-    def build(self):
+    def verify_tasklist(self, ok_if_empty=True):
         """Build and return the tasklist"""
 
-        self.log.debug('Calling generator: {0}'.format(self.generator_obj.__class__.__name__))
-
-        tasklist = self.generator_obj.generate()
-
-        if tasklist:
-
-            self.log.info('Verifying task list syntax')
-
-            try:
-                executor = Executor(tasklist=tasklist)
-            except DeployerException as e:
-                self.log.critical('Syntax is not ok: {0}'.format(e))
-                sys.exit(1)
-
-            del executor
-            self.log.info(green('Syntax is ok'))
-        else:
+        if not self.tasklist:
             self.log.warning('Task list is empty')
+            return ok_if_empty
 
-        return tasklist
+        self.log.info('Verifying task list syntax')
+
+        try:
+            executor = Executor(tasklist=self.tasklist)
+        except DeployerException as e:
+            self.log.critical('Syntax is not ok: {0}'.format(e))
+            return False
+
+        del executor
+        self.log.info(green('Syntax is ok'))
+
+        return True
