@@ -55,7 +55,6 @@ class Config(AttrDict):
     def get_lb(self, servicename, hostname):
         """Return the load balancer that controls supplied service on supplied host"""
 
-        log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
         host_hg = None
 
         hostgroups =  self.get_with_defaults('service', servicename)['hostgroups']
@@ -66,12 +65,12 @@ class Config(AttrDict):
                 break
 
         if not host_hg:
-            log.warning('Host {0} not found in any associated hostgroups'.format(hostname))
+            self.log.warning('Host {0} not found in any associated hostgroups'.format(hostname), tag=servicename)
             return None, None, None
 
         if not 'lb' in self.hostgroup[host_hg]:
-            log.warning('Host {0} is in hostgroup {1}, but there are no loadbalancers defined for it'.format(
-              hostname, host_hg))
+            self.log.warning('Host {0} is in hostgroup {1}, but there are no loadbalancers defined for it'.format(
+              hostname, host_hg), tag=servicename)
             return None, None, None
 
         lb_hostname = self.hostgroup[host_hg]['lb']
@@ -79,13 +78,12 @@ class Config(AttrDict):
         lb_username = lb_config.api_user
         lb_password = lb_config.api_password
 
-        log.debug('Returning {0} with username {1} and password'.format(lb_hostname, lb_username))
+        self.log.debug('Returning {0} with username {1} and password'.format(lb_hostname, lb_username), tag=servicename)
         return lb_hostname, lb_username, lb_password
 
     def get_service_hosts(self, servicename):
         """Get the list of hosts this service should be deployed to"""
 
-        log = Log('{0}:{1}'.format(self.__class__.__name__,servicename))
         service_config = self.get_with_defaults('service', servicename)
         hosts = []
 
@@ -94,7 +92,7 @@ class Config(AttrDict):
                 hosts += self.hostgroup[hg]['hosts']
 
         if hosts:
-            log.info('configured to run on: {0}'.format(', '.join(hosts)))
+            self.log.info('configured to run on: {0}'.format(', '.join(hosts)), tag=servicename)
 
         return hosts
 

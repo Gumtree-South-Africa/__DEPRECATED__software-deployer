@@ -13,7 +13,7 @@ class Command(object):
         else:
             self.servicename = None
 
-        self.log = Log('{0}:{1}'.format(self.__class__.__name__, self.servicename))
+        self.log = Log(instance=self.__class__.__name__, tag=self.servicename)
 
         for key, value in kwargs.iteritems():
             setattr(self, key, value)

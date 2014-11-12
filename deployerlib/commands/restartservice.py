@@ -5,15 +5,15 @@ from deployerlib.commands import disableloadbalancer, enableloadbalancer, contro
 class RestartService(object):
     """Meta-command that includes load balancer control, service control and service activation"""
 
-    def __init__(self, remote_host, stop_command, start_command,
+    def __init__(self, remote_host, servicename, stop_command, start_command,
       lb_hostname=None, lb_username=None, lb_password=None, lb_service=None,
       check_command=None, control_timeout=60, lb_timeout=60):
-        self.log = Log(self.__class__.__name__)
+        self.log = Log(instance=self.__class__.__name__,tag=servicename)
         self.remote_host = remote_host
 
         self.subcommands = [
-          controlservice.ControlService(remote_host, stop_command, check_command, want_state=2, timeout=control_timeout),
-          controlservice.ControlService(remote_host, start_command, check_command, want_state=0, timeout=control_timeout),
+          controlservice.ControlService(remote_host, stop_command, check_command, want_state=2, timeout=control_timeout, servicename=servicename),
+          controlservice.ControlService(remote_host, start_command, check_command, want_state=0, timeout=control_timeout, servicename=servicename),
         ]
 
         if lb_service:

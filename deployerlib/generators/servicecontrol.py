@@ -30,20 +30,21 @@ class ServiceControl(object):
           'stages': [],
         }
 
-        for service in self.services:
-            service_config = self.config.get_with_defaults('service', service)
-            hosts = self.config.get_service_hosts(service)
-            stage_name = '{0} service {1}'.format(self.action.capitalize(), service)
+        for servicename in self.services:
+            service_config = self.config.get_with_defaults('service', servicename)
+            hosts = self.config.get_service_hosts(servicename)
+            stage_name = '{0} service {1}'.format(self.action.capitalize(), servicename)
             stage_tasks = []
 
             for hostname in hosts:
 
-                self.log.debug('Adding command to {0} service {1} on {2}'.format(
-                  self.action, service, hostname))
+                self.log.debug('Adding command to {0} service on {1}'.format(
+                  self.action, hostname), tag=servicename)
 
                 this_task = {
                   'remote_host': hostname,
                   'remote_user': self.config.user,
+                  'servicename': servicename,
                 }
 
                 control_commands = {}
@@ -53,7 +54,7 @@ class ServiceControl(object):
 
                     if control_commands[cmd]:
                         control_commands[cmd] = control_commands[cmd].format(
-                          servicename=service,
+                          servicename=servicename,
                           port=service_config['port'],
                         )
 
@@ -72,13 +73,13 @@ class ServiceControl(object):
                 this_task['check_command'] = control_commands['check_command']
 
 
-                lb_hostname, lb_username, lb_password = self.config.get_lb(service, hostname)
+                lb_hostname, lb_username, lb_password = self.config.get_lb(servicename, hostname)
 
                 if not self.config.skip_lb and lb_hostname and lb_username and lb_password:
                     if hasattr(service_config, 'lb_service'):
                         this_task['lb_service'] = service_config.lb_service.format(
                           hostname=hostname.split('.', 1)[0],
-                          servicename=service,
+                          servicename=servicename,
                         )
 
                         this_task.update({
@@ -88,9 +89,9 @@ class ServiceControl(object):
                         })
 
                     else:
-                        self.log.warning('No lb_service defined for service {0}'.format(service))
+                        self.log.warning('No lb_service defined', tag=servicename)
                 else:
-                    self.log.warning('No load balancer found for {0} on {1}'.format(service, hostname))
+                    self.log.warning('No load balancer found for {0}'.format(hostname), tag=servicename)
 
                 for key in this_task.keys():
 
@@ -108,6 +109,6 @@ class ServiceControl(object):
                 })
 
             else:
-                self.log.warning('No tasks for state "stage_name"')
+                self.log.warning('No tasks for state "stage_name"', tag=servicename)
 
         return task_list

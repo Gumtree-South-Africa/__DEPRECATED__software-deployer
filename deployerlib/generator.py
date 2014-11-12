@@ -99,7 +99,7 @@ class Generator(object):
         else:
             remote_version = 1
 
-        self.log.debug('{0} current version is {1}'.format(package.servicename, remote_version))
+        self.log.debug('current version is {0}'.format(remote_version), tag=package.servicename)
 
         self._remote_versions.append((package.servicename, host.hostname, remote_version))
 

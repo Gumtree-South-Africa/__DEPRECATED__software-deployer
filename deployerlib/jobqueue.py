@@ -21,7 +21,7 @@ from deployerlib.exceptions import DeployerException
 class JobQueue(object):
     """
     The goal of this class is to make a queue of processes to run, and go
-    through them running X number at any given time. 
+    through them running X number at any given time.
 
     So if the bubble is 5 start with 5 running and move the bubble of running
     procs along the queue looking something like this:
@@ -34,7 +34,7 @@ class JobQueue(object):
         __________________[~~~~~]..
         ____________________[~~~~~]
         ___________________________
-                                End 
+                                End
     """
     def __init__(self, max_running, max_per_host=None, remote_results={}, config=None):
         """

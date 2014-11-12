@@ -37,19 +37,18 @@ class AuroraGenerator(object):
 
         for package in self.packages:
 
-            log = Log('{0}:{1}'.format(self.__class__.__name__,package.servicename))
             service_config = self.config.get_with_defaults('service', package.servicename)
             hosts = self.config.get_service_hosts(package.servicename)
             lb_service =  hasattr(service_config, 'lb_service')
 
             if not lb_service:
-                log.warning('No lb_service defined')
+                self.log.warning('No lb_service defined', tag=package.servicename)
 
             for hostname in hosts:
 
                 if not self.config.redeploy and self.remote_versions.get(package.servicename).get(hostname) \
                   == package.version:
-                    log.debug('is up to date on {0}, skipping'.format(hostname))
+                    self.log.debug('is up to date on {0}, skipping'.format(hostname), tag=package.servicename)
                     continue
 
                 upload_tasks.append({
@@ -96,7 +95,7 @@ class AuroraGenerator(object):
                     if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
                       if x['servicename'] == package.servicename]:
 
-                        log.info('Adding DB migrations to be run on {0}'.format(hostname))
+                        self.log.info('Adding DB migrations to be run on {0}'.format(hostname), tag=package.servicename)
 
                         dbmig_tasks.append({
                           'servicename': package.servicename,
@@ -125,7 +124,7 @@ class AuroraGenerator(object):
                                 })
 
                         else:
-                            log.warning('No load balancer found for service on {0}'.format(hostname))
+                            self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=package.servicename)
 
                     for option in ('control_timeout', 'lb_timeout'):
                         if hasattr(service_config, option):
@@ -139,7 +138,7 @@ class AuroraGenerator(object):
                               port=service_config['port'],
                             )
                         else:
-                            log.warning('No {0} configured'.format(cmd))
+                            self.log.warning('No {0} configured'.format(cmd), tag=package.servicename)
 
                     deploy_tasks.append(deploy_task)
 

@@ -12,11 +12,14 @@ level = logging.INFO
 
 class Log(object):
 
-    def __init__(self, instance='DEPLOYER'):
+    def __init__(self, instance='DEPLOYER', tag=''):
 
         global level
         self.logger = self.get_logger(instance, level)
         self.instance = instance
+        if not tag:
+            tag = '*'
+        self.tag = tag
 
     def get_logger(self, instance, level):
         """If a logger exists for this instance, return it; otherwise create a new logger"""
@@ -37,7 +40,7 @@ class Log(object):
         console = logging.StreamHandler(sys.stdout)
         console.setLevel(level)
 
-        formatter = logging.Formatter('%(asctime)s [%(levelname)-8s] [%(class)-15s] [%(remote)s] [%(service)s] %(message)s')
+        formatter = logging.Formatter('%(asctime)s [%(levelname)-8s] [%(name)-15s] [%(remote)s] [%(tag)s] %(message)s')
 
         console.setFormatter(formatter)
         logger.addHandler(console)
@@ -61,7 +64,7 @@ class Log(object):
 
         return logger
 
-    def log(self, message, level):
+    def log(self, message, level, tag=''):
         """
         Pretty logger with levels and colors for the console.
         If scripts are running as user 'hudson' or 'jenkins' colors are ommited.
@@ -81,28 +84,25 @@ class Log(object):
         else:
             remote = host
 
-        items = self.instance.split(':',1)
-        if len(items) == 2:
-            (classname,servicename) = tuple(items)
-        else:
-            (classname,servicename) = (items[0],'*')
+        if not tag:
+            tag = self.tag
 
-        self.logger.log(level, message, extra={'class': classname, 'service': servicename, 'remote': remote})
+        self.logger.log(level, message, extra={'tag': tag, 'remote': remote})
 
-    def debug(self, message):
-        self.log(message, logging.DEBUG)
+    def debug(self, message, tag=''):
+        self.log(message, logging.DEBUG, tag)
 
-    def info(self, message):
-        self.log(message, logging.INFO)
+    def info(self, message, tag=''):
+        self.log(message, logging.INFO, tag)
 
-    def warning(self, message):
-        self.log(yellow(message), logging.WARNING)
+    def warning(self, message, tag=''):
+        self.log(yellow(message), logging.WARNING, tag)
 
-    def error(self, message):
-        self.log(cyan(message), logging.ERROR)
+    def error(self, message, tag=''):
+        self.log(cyan(message), logging.ERROR, tag)
 
-    def critical(self, message):
-        self.log(red(message), logging.CRITICAL)
+    def critical(self, message, tag=''):
+        self.log(red(message), logging.CRITICAL, tag)
 
 
 def set_debug(debug=True):
