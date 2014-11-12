@@ -36,9 +36,9 @@ class CopyFile(Command):
                 return False
 
         self.log.info('Copying {0} to {1}'.format(self.source, self.destination))
-        res = self.remote_host.execute_remote('cp -Rp {0} {1}'.format(self.source, self.destination))
+        res = self.remote_host.execute_remote('cp -R {0} {1}'.format(self.source, self.destination))
 
         if res.failed:
-            self.log.critical('Failed to copy {0} to {1}'.format(self.source, self.destination))
+            self.log.critical('Failed to copy {0} to {1}: {2}'.format(self.source, self.destination, res))
 
         return res.succeeded
