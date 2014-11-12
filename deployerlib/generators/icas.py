@@ -41,7 +41,13 @@ class IcasGenerator(Generator):
             if not service_config:
                 raise DeployerException('Unknown service: {0}'.format(package.servicename))
 
-            for hostname in self.config.get_service_hosts(package.servicename):
+            hosts = self.config.get_service_hosts(package.servicename)
+
+            if not hosts:
+                self.log.warning('Service {0} is not configured to run on any hosts'.format(
+                  package.servicename))
+
+            for hostname in hosts:
 
                 upload_tasks.append({
                   'command': 'upload',
