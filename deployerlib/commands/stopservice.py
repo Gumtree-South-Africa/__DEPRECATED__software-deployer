@@ -11,7 +11,7 @@ class StopService(Command):
         self.controlservice = ControlService(
           remote_host=self.remote_host,
           control_command=self.stop_command,
-          servicename=self.servicename,
+          tag=self.tag,
         )
 
         if check_command:
@@ -21,7 +21,7 @@ class StopService(Command):
               check_command=self.check_command,
               want_state=2,
               timeout=timeout,
-              servicename=self.servicename,
+              tag=self.tag,
             )
 
         else:

@@ -55,7 +55,7 @@ class IcasGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': package.fullpath,
                   'destination': service_config.destination,
-                  'servicename': package.servicename,
+                  'tag': package.servicename,
                 })
 
                 unpack_tasks.append({
@@ -64,7 +64,7 @@ class IcasGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': os.path.join(service_config.destination, package.filename),
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
-                  'servicename': package.servicename,
+                  'tag': package.servicename,
                 })
 
                 # handle unpack directories
@@ -111,7 +111,7 @@ class IcasGenerator(Generator):
                         unpack_location=unpack_location,
                         properties_path=properties_path,
                       ),
-                      'servicename': package.servicename,
+                      'tag': package.servicename,
                       'if_exists': dbmig_location,
                     })
 
@@ -129,7 +129,7 @@ class IcasGenerator(Generator):
                           service_config.unpack_dir, package.packagename, service_config.environment)),
                           'destination': '{0}/'.format(service_config.properties_path),
                           'continue_if_exists': True,
-                          'servicename': package.servicename,
+                          'tag': package.servicename,
                         })
 
                     # no further work required for deploying properties
@@ -143,13 +143,14 @@ class IcasGenerator(Generator):
                   'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
                   'destination': os.path.join(service_config.install_location, package.packagename),
                   'link_target': os.path.join(service_config.install_location, package.servicename),
-                  'servicename': package.servicename,
+                  'tag': package.servicename,
                 }
 
                 # add LB tasks if configured for this service
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
                 if lb_hostname and lb_username and lb_password:
+
                     if hasattr(service_config, 'lb_service'):
                         deploy_task['lb_service'] = service_config.lb_service.format(
                           hostname=hostname.split('.', 1)[0],

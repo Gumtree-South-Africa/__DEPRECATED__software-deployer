@@ -14,7 +14,7 @@ class EnableLoadbalancer(Command):
 
         res = None
 
-        with LoadBalancer(self.lb_hostname, self.lb_username, self.lb_password, self.servicename) as lb:
+        with LoadBalancer(self.lb_hostname, self.lb_username, self.lb_password, self.tag) as lb:
             res = lb.enable_service(self.lb_service, self.timeout)
 
         return res

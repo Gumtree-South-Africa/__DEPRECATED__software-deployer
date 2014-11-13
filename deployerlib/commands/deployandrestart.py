@@ -19,7 +19,7 @@ class DeployAndRestart(Command):
             stop_command=stop_command,
             check_command=check_command,
             timeout=control_timeout,
-            servicename=self.servicename,
+            tag=self.tag,
           ),
 
           movefile.MoveFile(
@@ -27,19 +27,19 @@ class DeployAndRestart(Command):
             source=source,
             destination=destination,
             clobber=True,
-            servicename=self.servicename,
+            tag=self.tag,
           ),
 
           symlink.SymLink(
             remote_host=remote_host,
             source=destination,
             destination=link_target,
-            servicename=self.servicename,
+            tag=self.tag,
           ),
 
           startservice.StartService(
             remote_host=remote_host,
-            servicename=self.servicename,
+            tag=self.tag,
             start_command=start_command,
             check_command=check_command,
             timeout=control_timeout,
@@ -53,7 +53,7 @@ class DeployAndRestart(Command):
               'lb_password': lb_password,
               'lb_service': lb_service,
               'timeout': lb_timeout,
-              'servicename': self.servicename,
+              'tag': self.tag,
             }
 
             self.subcommands.insert(0, disableloadbalancer.DisableLoadbalancer(**lb_args))
@@ -62,8 +62,8 @@ class DeployAndRestart(Command):
         return True
 
     def __repr__(self):
-        return '{0}(remote_host={1} servicename={2})'.format(self.__class__.__name__,
-          repr(self.remote_host.hostname), repr(self.servicename))
+        return '{0}(remote_host={1} tag={2})'.format(self.__class__.__name__,
+          repr(self.remote_host.hostname), repr(self.tag))
 
     def execute(self):
         """Execute the sub-commands"""

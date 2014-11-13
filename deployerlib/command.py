@@ -10,12 +10,12 @@ class Command(object):
 
     def __init__(self, **kwargs):
 
-        if 'servicename' in kwargs:
-            self.servicename = kwargs.pop('servicename')
+        if 'tag' in kwargs:
+            self.tag = kwargs.pop('tag')
         else:
-            self.servicename = None
+            self.tag = None
 
-        self.log = Log(instance=self.__class__.__name__, tag=self.servicename)
+        self.log = Log(instance=self.__class__.__name__, tag=self.tag)
 
         for key, value in kwargs.iteritems():
             setattr(self, key, value)

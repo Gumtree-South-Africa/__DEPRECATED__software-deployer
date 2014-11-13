@@ -1,3 +1,9 @@
+software-deployer (0.9.3) precise; urgency=low
+
+  * Bugfixes and functionality
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Thu, 13 Nov 2014 17:21:29 +0100
+
 software-deployer (0.9.2) precise; urgency=low
 
   * Bugfix for deploy.py; commands now use class inheritance

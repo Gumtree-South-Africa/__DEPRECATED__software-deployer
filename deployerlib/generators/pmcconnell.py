@@ -44,7 +44,7 @@ class DemoGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': package.fullpath,
                   'destination': service_config.destination,
-                  'servicename': package.servicename,
+                  'tag': package.servicename,
                 })
 
                 unpack_tasks.append({
@@ -53,7 +53,7 @@ class DemoGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': os.path.join(service_config.destination, package.filename),
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
-                  'servicename': package.servicename,
+                  'tag': package.servicename,
                 })
 
                 cleanup_tasks.append({
@@ -62,6 +62,7 @@ class DemoGenerator(Generator):
                   'remote_user': self.config.user,
                   'path': service_config.install_location,
                   'filespec': '{0}_*'.format(package.servicename),
+                  'keepversions': 5,
                 })
 
                 deploy_task = {
@@ -72,7 +73,7 @@ class DemoGenerator(Generator):
                   'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
                   'destination': os.path.join(service_config.install_location, package.packagename),
                   'link_target': os.path.join(service_config.install_location, package.servicename),
-                  'servicename': package.servicename,
+                  'tag': package.servicename,
                 }
 
                 if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
@@ -89,7 +90,7 @@ class DemoGenerator(Generator):
                         migration_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
                         migration_options='',
                       ),
-                      'servicename': package.servicename,
+                      'tag': package.servicename,
                     })
 
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)

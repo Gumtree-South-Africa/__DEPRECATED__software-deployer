@@ -11,7 +11,7 @@ class StartService(Command):
         self.controlservice = ControlService(
           remote_host=self.remote_host,
           control_command=self.start_command,
-          servicename=self.servicename,
+          tag=self.tag,
         )
 
         if check_command:
@@ -21,7 +21,7 @@ class StartService(Command):
               check_command=self.check_command,
               want_state=0,
               timeout=timeout,
-              servicename=self.servicename,
+              tag=self.tag,
             )
 
         else:

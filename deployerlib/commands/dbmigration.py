@@ -15,8 +15,8 @@ class DBMigration(Command):
         if self.if_exists:
 
             if not self.remote_host.file_exists(self.if_exists):
-                self.log.debug('Skipping migrations for {0}, file does not exist: {1}'.format(
-                  self.servicename, self.if_exists))
+                self.log.debug('Skipping migrations, file does not exist: {1}'.format(
+                  self.if_exists))
                 return True
 
             self.log.debug('{0} exists, continuing with migration'.format(self.if_exists))
