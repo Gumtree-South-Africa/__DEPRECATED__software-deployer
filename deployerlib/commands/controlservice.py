@@ -4,7 +4,7 @@ from deployerlib.command import Command
 class ControlService(Command):
     """Stop, start and check a remote service"""
 
-    def verify(self, remote_host, control_command):
+    def initialize(self, remote_host, control_command):
         return True
 
     def execute(self):

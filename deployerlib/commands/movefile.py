@@ -4,7 +4,7 @@ from deployerlib.command import Command
 class MoveFile(Command):
     """Move or rename a remote file or directory"""
 
-    def verify(self, remote_host, source, destination, clobber=True):
+    def initialize(self, remote_host, source, destination, clobber=True):
         """If clobber is True, remove the target file if it exists"""
         self.clobber = clobber
         return True

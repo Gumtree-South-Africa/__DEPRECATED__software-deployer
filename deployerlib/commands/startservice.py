@@ -6,7 +6,7 @@ from deployerlib.commands.checkservice import CheckService
 class StartService(Command):
     """Start a service and check to make sure it has been startped successfully"""
 
-    def verify(self, remote_host, start_command, check_command=None, timeout=60):
+    def initialize(self, remote_host, start_command, check_command=None, timeout=60):
 
         self.controlservice = ControlService(
           remote_host=self.remote_host,

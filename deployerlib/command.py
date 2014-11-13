@@ -1,3 +1,5 @@
+import time
+
 from deployerlib.log import Log
 
 from deployerlib.exceptions import DeployerException
@@ -18,10 +20,10 @@ class Command(object):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
-        res = self.verify(**kwargs)
+        res = self.initialize(**kwargs)
 
         if not res:
-            raise DeployerException('Failed to initialize {0}: verify() returned {1}'.format(
+            raise DeployerException('Failed to initialize {0}: initialize() returned {1}'.format(
               repr(self), repr(res)))
 
         self.log.debug('Command initialized successfully: {0}'.format(repr(self)))
@@ -30,7 +32,7 @@ class Command(object):
         attrs = ', '.join(['{0}={1}'.format(key, repr(value)) for key, value in vars(self).iteritems()])
         return '{0}({1})'.format(self.__class__.__name__, attrs)
 
-    def verify(self, **kwargs):
+    def initialize(self, **kwargs):
         """Classes can optionally use this method to verify the input provided to their command
            or provide further initialization.
         """
@@ -46,7 +48,14 @@ class Command(object):
     def thread_execute(self, procname=None, remote_results={}):
         """Executor runs this method, which calls self.execute and returns the results"""
 
+        start_time = time.time()
+        self.log.debug('Task execution started')
+
         res = self.execute()
+
+        duration = int(time.time() - start_time)
+
+        self.log.debug('Task execution finished, duration {0} seconds'.format(duration))
 
         remote_results[procname] = res
         return res

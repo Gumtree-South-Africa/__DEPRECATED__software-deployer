@@ -5,7 +5,7 @@ from deployerlib.commands import disableloadbalancer, enableloadbalancer, stopse
 class DeployAndRestart(Command):
     """Meta-command that includes load balancer control, service control and service activation"""
 
-    def verify(self, remote_host, source, stop_command, start_command, link_target=None,
+    def initialize(self, remote_host, source, stop_command, start_command, link_target=None,
       lb_hostname=None, lb_username=None, lb_password=None, lb_service=None, destination=None,
       check_command=None, control_timeout=60, lb_timeout=60):
 

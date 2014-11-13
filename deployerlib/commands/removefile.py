@@ -4,7 +4,7 @@ from deployerlib.command import Command
 class RemoveFile(Command):
     """Remove a file or directory"""
 
-    def verify(self, remote_host, source):
+    def initialize(self, remote_host, source):
         return True
 
     def execute(self, procname=None, remote_results={}):

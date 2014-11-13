@@ -4,7 +4,7 @@ from deployerlib.command import Command
 class CreateDirectory(Command):
     """Create a directory on a remote host"""
 
-    def verify(self, remote_host, source, clobber=False):
+    def initialize(self, remote_host, source, clobber=False):
         self.clobber = clobber
 
         return True

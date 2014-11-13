@@ -4,9 +4,8 @@ from deployerlib.command import Command
 class CopyFile(Command):
     """Copy a remote file or directory to another location on the same remote host"""
 
-    def verify(self, remote_host, source, destination, remove_if_exists=False, continue_if_exists=False):
+    def initialize(self, remote_host, source, destination, remove_if_exists=False, continue_if_exists=False):
         """If clobber is True, remove the target file if it exists"""
-        self.destination = destination
         self.remove_if_exists = remove_if_exists
         self.continue_if_exists = continue_if_exists
 

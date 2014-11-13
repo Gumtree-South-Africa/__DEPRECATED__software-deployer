@@ -4,7 +4,7 @@ from deployerlib.command import Command
 class SymLink(Command):
     """Manage a remote symlink"""
 
-    def verify(self, remote_host, source, destination):
+    def initialize(self, remote_host, source, destination):
         return True
 
     def execute(self):

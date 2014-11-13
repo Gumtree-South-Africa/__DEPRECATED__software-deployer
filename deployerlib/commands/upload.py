@@ -4,7 +4,7 @@ from deployerlib.command import Command
 class Upload(Command):
     """Upload files to a server"""
 
-    def verify(self, remote_host, source, destination):
+    def initialize(self, remote_host, source, destination):
         return True
 
     def execute(self, procname=None, remote_results={}):

@@ -1,5 +1,6 @@
 import os
 import json
+import time
 
 from fabric.colors import green
 from multiprocessing import Process, Manager
@@ -190,14 +191,19 @@ class Executor(object):
     def run(self):
         """Run each stage"""
 
-        for stage in self.stages:
+        tasklist_start_time = time.time()
+
+        for idx, stage in enumerate(self.stages):
 
             self.remote_results.clear()
 
             if not stage['tasks']:
                 self.log.info('No tasks for stage: {0}'.format(stage['name']))
 
+            start_time = time.time()
             self.log.info(green('Starting stage: {0}'.format(stage['name'])))
+            self.log.debug('Stage {0} execution started: "{1}"'.format(idx, stage['name']))
+
             job_queue = JobQueue(stage['concurrency'], stage['concurrency_per_host'], remote_results=self.remote_results)
 
             for task in stage['tasks']:
@@ -205,12 +211,24 @@ class Executor(object):
 
             job_queue.close()
             res = job_queue.run()
-            self.log.info(green('Finished stage: {0}'.format(stage['name'])))
+
+            duration = int(time.time() - start_time)
 
             failed = [x for x in self.remote_results.keys() if not self.remote_results[x]]
+
+            if failed:
+                self.log.critical('Failed stage: {0}'.format(stage['name']))
+            else:
+                self.log.info(green('Finished stage: {0}'.format(stage['name'])))
+
+            self.log.debug('Stage {0} execution finished, duration {1} seconds: "{2}"'.format(
+              idx, duration, stage['name']))
 
             for failed_job in failed:
                 self.log.error('Failed job: {0}'.format(failed_job))
 
             if failed or not res:
                 raise DeployerException('Failed jobs')
+
+        tasklist_duration = int(time.time() - tasklist_start_time)
+        self.log.debug('Tasklist execution time: {0} seconds'.format(tasklist_duration))

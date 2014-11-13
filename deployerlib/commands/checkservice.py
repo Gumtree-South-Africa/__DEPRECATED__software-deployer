@@ -5,7 +5,7 @@ from deployerlib.command import Command
 class CheckService(Command):
     """Probe a service to make sure it's in the correct state"""
 
-    def verify(self, remote_host, check_command, want_state=0, timeout=60):
+    def initialize(self, remote_host, check_command, want_state=0, timeout=60):
         self.want_state = want_state
         self.timeout = timeout
         return True

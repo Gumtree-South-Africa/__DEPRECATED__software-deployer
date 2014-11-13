@@ -4,7 +4,7 @@ from deployerlib.command import Command
 class ExecuteCommand(Command):
     """Execute a remote command"""
 
-    def verify(self, remote_host, command):
+    def initialize(self, remote_host, command):
         return True
 
     def execute(self):

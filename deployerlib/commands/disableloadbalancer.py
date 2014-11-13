@@ -5,7 +5,7 @@ from deployerlib.loadbalancer import LoadBalancer
 class DisableLoadbalancer(Command):
     """Disable a service on a load balancer"""
 
-    def verify(self, lb_hostname, lb_username, lb_password, lb_service, timeout=60):
+    def initialize(self, lb_hostname, lb_username, lb_password, lb_service, timeout=60):
         self.timeout = timeout
         return True
 

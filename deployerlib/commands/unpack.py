@@ -4,7 +4,7 @@ from deployerlib.command import Command
 class Unpack(Command):
     """Unpack a packge on a remote host"""
 
-    def verify(self, remote_host, source, destination):
+    def initialize(self, remote_host, source, destination):
         self.command = self.get_unpack_command()
 
         if not self.command:

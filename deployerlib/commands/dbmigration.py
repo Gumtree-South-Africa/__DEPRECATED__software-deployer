@@ -6,7 +6,7 @@ from deployerlib.command import Command
 class DBMigration(Command):
     """Execute database migrations"""
 
-    def verify(self, remote_host, source, if_exists=None):
+    def initialize(self, remote_host, source, if_exists=None):
         self.if_exists = if_exists
         return True
 
