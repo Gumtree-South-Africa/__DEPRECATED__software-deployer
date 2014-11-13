@@ -31,7 +31,11 @@ class CommandLine(object):
 
         parser.parse_args(namespace=self)
 
-        deployerlib.log.set_debug(self.debug)
+        if self.debug:
+            deployerlib.log.set_level(logging.DEBUG)
+        elif self.verbose:
+            deployerlib.log.set_level(logging.VERBOSE)
+
         log = deployerlib.log.Log(self.__class__.__name__)
         log.debug('Commandline "{0}" resulted in this CommandLine object: {1}'.format(' '.join(sys.argv),self))
 

@@ -8,13 +8,22 @@ from fabric.api import env
 
 
 level = logging.INFO
+logging.VERBOSE = 15
+logging.addLevelName(logging.VERBOSE, 'VERBOSE')
+
+
+
+def set_level(new_level):
+
+    global level
+    level = new_level
 
 
 class Log(object):
 
     def __init__(self, instance='DEPLOYER', tag=''):
-
         global level
+
         self.logger = self.get_logger(instance, level)
         self.instance = instance
         if not tag:
@@ -92,6 +101,9 @@ class Log(object):
     def debug(self, message, tag=''):
         self.log(message, logging.DEBUG, tag)
 
+    def verbose(self, message, tag=''):
+        self.log(message, logging.VERBOSE, tag)
+
     def info(self, message, tag=''):
         self.log(message, logging.INFO, tag)
 
@@ -103,13 +115,3 @@ class Log(object):
 
     def critical(self, message, tag=''):
         self.log(red(message), logging.CRITICAL, tag)
-
-
-def set_debug(debug=True):
-
-    global level
-
-    if debug:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO

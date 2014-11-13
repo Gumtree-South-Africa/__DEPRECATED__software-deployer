@@ -49,13 +49,11 @@ class Command(object):
         """Executor runs this method, which calls self.execute and returns the results"""
 
         start_time = time.time()
-        self.log.debug('Task execution started')
 
         res = self.execute()
 
         duration = int(time.time() - start_time)
-
-        self.log.debug('Task execution finished, duration {0} seconds'.format(duration))
+        self.log.verbose('Task execution finished, duration {0} seconds'.format(duration))
 
         remote_results[procname] = res
         return res

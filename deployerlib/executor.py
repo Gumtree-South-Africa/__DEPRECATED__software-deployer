@@ -202,7 +202,6 @@ class Executor(object):
 
             start_time = time.time()
             self.log.info(green('Starting stage: {0}'.format(stage['name'])))
-            self.log.debug('Stage {0} execution started: "{1}"'.format(idx, stage['name']))
 
             job_queue = JobQueue(stage['concurrency'], stage['concurrency_per_host'], remote_results=self.remote_results)
 
@@ -221,7 +220,7 @@ class Executor(object):
             else:
                 self.log.info(green('Finished stage: {0}'.format(stage['name'])))
 
-            self.log.debug('Stage {0} execution finished, duration {1} seconds: "{2}"'.format(
+            self.log.verbose('Stage {0} execution duration: {1} seconds ({2})'.format(
               idx, duration, stage['name']))
 
             for failed_job in failed:
@@ -231,4 +230,4 @@ class Executor(object):
                 raise DeployerException('Failed jobs')
 
         tasklist_duration = int(time.time() - tasklist_start_time)
-        self.log.debug('Tasklist execution time: {0} seconds'.format(tasklist_duration))
+        self.log.verbose('Tasklist execution duration: {0} seconds'.format(tasklist_duration))
