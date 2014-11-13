@@ -13,4 +13,5 @@ __all__ = [
   'enableloadbalancer',
   'executecommand',
   'sendgraphite',
+  'cleanup',
 ]

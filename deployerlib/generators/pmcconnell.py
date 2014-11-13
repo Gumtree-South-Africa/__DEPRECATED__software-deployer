@@ -23,6 +23,7 @@ class DemoGenerator(Generator):
         dbmig_tasks = []
         deploy_tasks = []
         remove_temp_tasks = []
+        cleanup_tasks = []
 
         for package in packages:
 
@@ -53,6 +54,14 @@ class DemoGenerator(Generator):
                   'source': os.path.join(service_config.destination, package.filename),
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
                   'servicename': package.servicename,
+                })
+
+                cleanup_tasks.append({
+                  'command': 'cleanup',
+                  'remote_host': hostname,
+                  'remote_user': self.config.user,
+                  'path': service_config.install_location,
+                  'filespec': '{0}_*'.format(package.servicename),
                 })
 
                 deploy_task = {
@@ -209,6 +218,14 @@ class DemoGenerator(Generator):
               'name': 'Remove temp directories',
               'concurrency': 10,
               'tasks': remove_temp_tasks,
+            })
+
+        if cleanup_tasks:
+            task_list['stages'].append({
+              'name': 'Cleanup',
+              'concurrency': 10,
+              'concurrency_per_host': 5,
+              'tasks': cleanup_tasks,
             })
 
         if deploy_tasks:
