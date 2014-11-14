@@ -210,7 +210,7 @@ class Executor(object):
                 job_queue.append(task)
 
             job_queue.close()
-            res = job_queue.run()
+            job_queue.run()
 
             duration = int(time.time() - start_time)
 
@@ -227,7 +227,7 @@ class Executor(object):
             for failed_job in failed:
                 self.log.error('Failed job: {0}'.format(failed_job))
 
-            if failed or not res:
+            if failed:
                 raise DeployerException('Failed jobs')
 
         tasklist_duration = int(time.time() - tasklist_start_time)

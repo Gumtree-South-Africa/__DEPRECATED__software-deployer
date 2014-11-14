@@ -11,7 +11,7 @@ class RemoveFile(Command):
         """Remove the file or directory"""
 
         self.log.info('Removing file: {0}'.format(self.source))
-        res = self.remote_host.execute_remote('rm -rf {0}'.format(self.source))
+        res = self.remote_host.execute_remote('/bin/rm -rf {0}'.format(self.source))
 
         if res.succeeded:
             self.log.debug('Removed {0}'.format(self.source))

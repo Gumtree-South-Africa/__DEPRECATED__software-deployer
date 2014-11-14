@@ -18,7 +18,7 @@ class CleanUp(Command):
 
     def execute(self):
         res = self.remote_host.execute_remote(
-          "find {0} -maxdepth 1 -name '{1}'".format(self.path, self.filespec))
+          "/usr/bin/find {0} -maxdepth 1 -name '{1}'".format(self.path, self.filespec))
 
         if res.failed:
             self.log.critical('Failed to list files in {0}: {1}'.format(self.path, res))

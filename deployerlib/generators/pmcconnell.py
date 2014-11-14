@@ -19,11 +19,14 @@ class DemoGenerator(Generator):
 
         upload_tasks = []
         create_temp_tasks = []
+        properties_tasks = []
         unpack_tasks = []
         dbmig_tasks = []
         deploy_tasks = []
         remove_temp_tasks = []
         cleanup_tasks = []
+
+        properties_done = []
 
         for package in packages:
 
@@ -56,14 +59,51 @@ class DemoGenerator(Generator):
                   'tag': package.servicename,
                 })
 
+                # clean up upload directory
                 cleanup_tasks.append({
                   'command': 'cleanup',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
-                  'path': service_config.install_location,
+                  'path': service_config.destination,
                   'filespec': '{0}_*'.format(package.servicename),
                   'keepversions': 5,
                 })
+
+                if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
+                  x['source'] == os.path.join(service_config.install_location, service_config.unpack_dir)]:
+                    create_temp_tasks.append({
+                      'command': 'createdirectory',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
+                      'clobber': True,
+                    })
+
+                    remove_temp_tasks.append({
+                      'command': 'removefile',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
+                    })
+
+                if package.servicename == 'cas-properties':
+
+                    if not (hostname, package.servicename) in properties_done:
+                        properties_done.append((hostname, package.servicename))
+
+                        properties_tasks.append({
+                          'command': 'copyfile',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'source': '{0}/*'.format(os.path.join(service_config.install_location,
+                          service_config.unpack_dir, package.packagename, service_config.environment)),
+                          'destination': '{0}/'.format(service_config.properties_path),
+                          'continue_if_exists': True,
+                          'tag': package.servicename,
+                        })
+
+                    # no further work required for deploying properties
+                    continue
 
                 deploy_task = {
                   '_servicename': package.servicename,
@@ -123,22 +163,15 @@ class DemoGenerator(Generator):
 
                 deploy_tasks.append(deploy_task)
 
-                if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
-                  x['source'] == os.path.join(service_config.install_location, service_config.unpack_dir)]:
-                    create_temp_tasks.append({
-                      'command': 'createdirectory',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
-                      'clobber': True,
-                    })
-
-                    remove_temp_tasks.append({
-                      'command': 'removefile',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
-                    })
+                # clean up install location
+                cleanup_tasks.append({
+                  'command': 'cleanup',
+                  'remote_host': hostname,
+                  'remote_user': self.config.user,
+                  'path': service_config.install_location,
+                  'filespec': '{0}_*'.format(package.servicename),
+                  'keepversions': 5,
+                })
 
         if not upload_tasks and not unpack_tasks and not deploy_tasks:
             self.log.info('No services require deployment')
@@ -170,11 +203,19 @@ class DemoGenerator(Generator):
               'tasks': unpack_tasks,
             })
 
-#        if dbmig_tasks:
-#
-#            if not sent_graphite:
-#                sent_graphite = True
-#                task_list['stages'].append(self.get_graphite_stage('start'))
+        if properties_tasks:
+            task_list['stages'].append({
+              'name': 'Properties',
+              'concurrency': 10,
+              'concurrency_per_host': 5,
+              'tasks': properties_tasks,
+            })
+
+        if dbmig_tasks:
+
+            if not sent_graphite:
+                sent_graphite = True
+                task_list['stages'].append(self.get_graphite_stage('start'))
 
             for task in dbmig_tasks:
                 del task['_servicename']
@@ -201,9 +242,9 @@ class DemoGenerator(Generator):
             for task in this_stage:
                 del task['_servicename']
 
-#            if not sent_graphite:
-#                sent_graphite = True
-#                task_list['stages'].append(self.get_graphite_stage('start'))
+            if not sent_graphite:
+                sent_graphite = True
+                task_list['stages'].append(self.get_graphite_stage('start'))
 
             task_list['stages'].append({
               'name': 'Deploy {0}'.format(', '.join(servicenames)),
@@ -211,8 +252,8 @@ class DemoGenerator(Generator):
               'tasks': this_stage,
             })
 
-#        if sent_graphite:
-#            task_list['stages'].append(self.get_graphite_stage('end'))
+        if sent_graphite:
+            task_list['stages'].append(self.get_graphite_stage('end'))
 
         if remove_temp_tasks:
             task_list['stages'].append({
