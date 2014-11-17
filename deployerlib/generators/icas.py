@@ -287,29 +287,20 @@ class IcasGenerator(Generator):
     def get_active_cfp(self, hostlist):
         """Find the active cfp server"""
 
-        # placeholder
-        import random
-        return random.choice(hostlist)
-
         active_host = None
         log_cmd = 'tail -n 1000 /opt/logs/cas-cfp-service.log | grep "Start handling batch with" | grep -v "Start handling batch with 0 events"'
 
         for hostname in hostlist:
             remote_host = self.get_remote_host(hostname, self.config.user)
+
             res = remote_host.execute_remote(log_cmd)
 
             if res.return_code == 0:
+                self.log.info('Active cfp host is {0}'.format(hostname))
+                return hostname
 
-                if active_host:
-                    raise DeployerException('Found multiple active cfp hosts: {0} and {1}'.format(
-                      active_host, hostname))
-
-                active_host = hostname
-
-        if not active_host:
-            raise DeployerException('Unable to determine active cfp host')
-
-        return active_host
+        self.log.warning('Unable to find active cfp host, using {0}'.format(hostlist[0]))
+        return hostlist[0]
 
     def get_deploy_stage(self, tasklist, hostlist):
         """Return a stage based on a list of tasks and a list of hosts"""
