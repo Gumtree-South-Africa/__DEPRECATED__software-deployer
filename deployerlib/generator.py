@@ -16,6 +16,7 @@ class Generator(object):
     def __init__(self, config):
         self.log = Log(self.__class__.__name__)
         self.config = config
+        self._remote_hosts = []
 
     def generate(self):
         """Return an empty task list"""
@@ -33,9 +34,9 @@ class Generator(object):
                 self.log.info('Adding package {0}'.format(filename))
                 packages.append(Package(filename))
 
-        elif self.config.directory:
+        elif self.config.release:
 
-            for directory in self.config.directory:
+            for directory in self.config.release:
 
                 if not os.path.isdir(directory):
                     raise DeployerException('Not a directory: {0}'.format(directory))
@@ -60,11 +61,10 @@ class Generator(object):
         manager = Manager()
         remote_results = manager.dict()
         self._remote_versions = manager.list()
-        self._remote_hosts = []
 
         for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
-            hosts = [self._get_remote_host(x, self.config.user) for x in self.config.get_service_hosts(package.servicename)]
+            hosts = [self.get_remote_host(x, self.config.user) for x in self.config.get_service_hosts(package.servicename)]
 
             for host in hosts:
                 procname = 'RemoteVersions({0}/{1})'.format(host.hostname, package.servicename)
@@ -123,7 +123,7 @@ class Generator(object):
 
         return remote_versions
 
-    def _get_remote_host(self, hostname, username=''):
+    def get_remote_host(self, hostname, username=''):
         """Return a host object from a hostname"""
 
         match = [x for x in self._remote_hosts if x.hostname == hostname]

@@ -29,13 +29,13 @@ class GeneratorHelper(object):
                 self.log.info('Adding package {0}'.format(filename))
                 packages.append(Package(filename))
 
-        elif self.config.directory:
+        elif self.config.release:
 
-            if not os.path.isdir(self.config.directory):
-                raise DeployerException('Not a directory: {0}'.format(self.config.directory))
+            if not os.path.isdir(self.config.release):
+                raise DeployerException('Not a directory: {0}'.format(self.config.release))
 
-            for filename in os.listdir(self.config.directory):
-                fullpath = os.path.join(self.config.directory, filename)
+            for filename in os.listdir(self.config.release):
+                fullpath = os.path.join(self.config.release, filename)
                 self.log.info('Adding package: {0}'.format(fullpath))
                 packages.append(Package(fullpath))
 

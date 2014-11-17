@@ -173,8 +173,19 @@ class IcasGenerator(Generator):
                     if hasattr(service_config, option):
                         deploy_task[option] = getattr(service_config, option)
 
+                # check for services that should not be started
+                if self.config.get('dont_start') and package.servicename in self.config.dont_start.keys() and \
+                  hostname in self.config.dont_start[package.servicename]:
+
+                    self.log.warning('Service {0} will not be started on {1} (as per config.dont_start)'.format(
+                      package.servicename, hostname))
+
+                    control_commands = ['stop_command', 'check_command']
+                else:
+                    control_commands = ['stop_command', 'start_command', 'check_command']
+
                 # add service control options
-                for cmd in ['stop_command', 'start_command', 'check_command']:
+                for cmd in control_commands:
 
                     if hasattr(service_config, cmd):
                         deploy_task[cmd] = service_config[cmd].format(
@@ -276,9 +287,25 @@ class IcasGenerator(Generator):
     def get_active_cfp(self, hostlist):
         """Find the active cfp server"""
 
-        # placeholder
-        import random
-        return random.choice(hostlist)
+        active_host = None
+        log_cmd = 'tail -n 1000 /opt/logs/cas-cfp-service.log | grep "Start handling batch with" | grep -v "Start handling batch with 0 events"'
+
+        for hostname in hostlist:
+            remote_host = self.get_remote_host(hostname, self.config.user)
+            res = remote_host.execute_remote(log_cmd)
+
+            if res.return_code == 0:
+
+                if active_host:
+                    raise DeployerException('Found multiple active cfp hosts: {0} and {1}'.format(
+                      active_host, hostname))
+
+                active_host = hostname
+
+        if not active_host:
+            raise DeployerException('Unable to determine active cfp host')
+
+        return active_host
 
     def get_deploy_stage(self, tasklist, hostlist):
         """Return a stage based on a list of tasks and a list of hosts"""
