@@ -1,5 +1,13 @@
 #! /usr/bin/python
 
+
+# debug
+import sys
+sys.path.insert(0, '/tmp/software-deployer')
+
+
+
+
 import os
 import sys
 import argparse

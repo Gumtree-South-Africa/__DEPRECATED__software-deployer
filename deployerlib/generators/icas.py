@@ -287,6 +287,10 @@ class IcasGenerator(Generator):
     def get_active_cfp(self, hostlist):
         """Find the active cfp server"""
 
+        # placeholder
+        import random
+        return random.choice(hostlist)
+
         active_host = None
         log_cmd = 'tail -n 1000 /opt/logs/cas-cfp-service.log | grep "Start handling batch with" | grep -v "Start handling batch with 0 events"'
 

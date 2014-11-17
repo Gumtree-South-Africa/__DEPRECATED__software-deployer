@@ -4,20 +4,29 @@ from deployerlib.command import Command
 class SymLink(Command):
     """Manage a remote symlink"""
 
-    def initialize(self, remote_host, source, destination):
+    def initialize(self, remote_host, source, destination, clobber=True):
         return True
 
     def execute(self):
         self.log.debug('Checking for an existing link {0}'.format(self.destination))
         res = self.remote_host.execute_remote('/bin/readlink {0}'.format(self.destination))
 
-        if res.succeeded and res == self.source:
-            self.log.info('Symlink is already in place: {0}'.format(self.destination))
-            return True
+        if res.succeeded:
+            if res == self.source:
+                self.log.info('Symlink is already in place: {0}'.format(self.destination))
+                return True
+            else:
+                self.log.debug('Removing old symlink: {0}'.format(self.destination))
+                res = self.remote_host.execute_remote('rm -f {0}'.format(self.destination))
+
+                if res.failed:
+                    self.log.critical('Unable to remove old symlink {0}: {1}'.format(
+                      self.destination, res))
+                    return False
         else:
             self.log.debug('Symlink is not yet in place: {0}'.format(self.destination))
 
-        self.log.info('Setting symlink for {0}'.format(self.destination))
+        self.log.info('Setting symlink for {0} to {1}'.format(self.destination, self.source))
         res = self.remote_host.execute_remote('ln -sf {0} {1}'.format(
           self.source, self.destination))
 
