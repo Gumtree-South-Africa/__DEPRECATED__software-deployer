@@ -8,6 +8,8 @@ __all__ = [
   'createdirectory',
   'deployandrestart',
   'controlservice',
+  'stopservice',
+  'startservice',
   'restartservice',
   'disableloadbalancer',
   'enableloadbalancer',

@@ -20,7 +20,7 @@ parser.add_argument('--dump', action='store_true', help='Dump the resulting task
 parser.add_argument('--save', help='Save the resulting task list to a file')
 component_group = parser.add_mutually_exclusive_group(required=True)
 component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
-component_group.add_argument('--directory', nargs='+', help='Specify a directory of components to deploy')
+component_group.add_argument('--release', '--directory', nargs='+', help='Specify a directory of components to deploy')
 
 args = CommandLine(parents=parser)
 config = Config(args)

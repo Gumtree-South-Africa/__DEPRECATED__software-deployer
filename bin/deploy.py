@@ -14,7 +14,7 @@ from deployerlib.exceptions import DeployerException
 parser = argparse.ArgumentParser()
 component_group = parser.add_mutually_exclusive_group(required=True)
 component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
-component_group.add_argument('--directory', nargs='+', help='Specify a directory of components to deploy')
+component_group.add_argument('--release', '--directory', nargs='+', help='Specify a directory of components to deploy')
 component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
 
 log = Log(os.path.basename(__file__))

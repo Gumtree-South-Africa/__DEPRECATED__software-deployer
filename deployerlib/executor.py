@@ -30,6 +30,8 @@ class Executor(object):
           'removefile': removefile.RemoveFile,
           'deploy_and_restart': deployandrestart.DeployAndRestart,
           'control_service': controlservice.ControlService,
+          'stop_service': stopservice.StopService,
+          'start_service': startservice.StartService,
           'restart_service': restartservice.RestartService,
           'disable_loadbalancer': disableloadbalancer.DisableLoadbalancer,
           'enable_loadbalancer': enableloadbalancer.EnableLoadbalancer,
@@ -157,13 +159,10 @@ class Executor(object):
             else:
                 job_id = 'local'
 
-            self.log.debug('Instantiating {0} with args: {1}'.format(
-              callable.__name__, task))
-
             try:
                 remote_task = callable(**task)
             except TypeError as e:
-                raise DeployerException('Invalid arguments passed to {0}: {1}'.format(
+                raise DeployerException('Error initializing {0}: {1}'.format(
                   callable.__name__, e))
 
             procname = repr(remote_task)

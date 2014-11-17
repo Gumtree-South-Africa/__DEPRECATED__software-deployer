@@ -15,8 +15,8 @@ from deployerlib.executor import Executor
 parser = argparse.ArgumentParser()
 action_group = parser.add_mutually_exclusive_group(required=True)
 action_group.add_argument('--restartservice', nargs='+', metavar='SERVICE', help='Single service to restart')
-action_group.add_argument('--disableservice', nargs='+', metavar='SERVICE', help='Single service to disable')
-action_group.add_argument('--enableservice', nargs='+', metavar='SERVICE', help='Single service to enable')
+action_group.add_argument('--disableservice', nargs='+', metavar='SERVICE', help='Single service to disable (WARNING: No LB control)')
+action_group.add_argument('--enableservice', nargs='+', metavar='SERVICE', help='Single service to enable (WARNING: No LB control)')
 parser.add_argument('--skip-lb', action='store_true', help='Do not do load balancer control')
 
 log = Log(os.path.basename(__file__))
@@ -30,6 +30,6 @@ executor = Executor(tasklist=tasklist)
 if config.dry_run:
     log.info('Dry run, not executing any tasks')
     print json.dumps(tasklist, indent=4, sort_keys=True)
-    sys.exit(1)
+    sys.exit(0)
 
 executor.run()

@@ -20,6 +20,7 @@ class Command(object):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
+        self.log.debug('Initializing class: {0}'.format(repr(self)))
         res = self.initialize(**kwargs)
 
         if not res:

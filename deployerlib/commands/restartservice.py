@@ -1,30 +1,55 @@
 from deployerlib.log import Log
-from deployerlib.commands import disableloadbalancer, enableloadbalancer, controlservice
+from deployerlib.command import Command
+from deployerlib.commands import stopservice, startservice, disableloadbalancer, enableloadbalancer
 
 
-class RestartService(object):
+class RestartService(Command):
     """Meta-command that includes load balancer control, service control and service activation"""
 
-    def __init__(self, remote_host, servicename, stop_command, start_command,
+    def initialize(self, remote_host, stop_command, start_command,
       lb_hostname=None, lb_username=None, lb_password=None, lb_service=None,
       check_command=None, control_timeout=60, lb_timeout=60):
-        self.log = Log(instance=self.__class__.__name__,tag=servicename)
-        self.remote_host = remote_host
 
         self.subcommands = [
-          controlservice.ControlService(remote_host, stop_command, check_command, want_state=2, timeout=control_timeout, servicename=servicename),
-          controlservice.ControlService(remote_host, start_command, check_command, want_state=0, timeout=control_timeout, servicename=servicename),
+
+          stopservice.StopService(
+            remote_host=remote_host,
+            stop_command=stop_command,
+            check_command=check_command,
+            timeout=control_timeout,
+            tag=self.tag,
+          ),
+
+          startservice.StartService(
+            remote_host=remote_host,
+            start_command=start_command,
+            check_command=check_command,
+            timeout=control_timeout,
+            tag=self.tag,
+          ),
         ]
 
         if lb_service:
-            self.subcommands.insert(0, disableloadbalancer.DisableLoadbalancer(lb_hostname, lb_username, lb_password, lb_service, timeout=lb_timeout))
-            self.subcommands.append(enableloadbalancer.EnableLoadbalancer(lb_hostname, lb_username, lb_password, lb_service, timeout=lb_timeout))
+
+            lb_args = {
+              'lb_hostname': lb_hostname,
+              'lb_username': lb_username,
+              'lb_password': lb_password,
+              'lb_service': lb_service,
+              'timeout': lb_timeout,
+              'tag': self.tag,
+            }
+
+            self.subcommands.insert(0, disableloadbalancer.DisableLoadbalancer(**lb_args))
+            self.subcommands.append(enableloadbalancer.EnableLoadbalancer(**lb_args))
+
+        return True
 
     def __repr__(self):
-        return '{0}(remote_host={1} subcommands={2})'.format(self.__class__.__name__,
-          repr(self.remote_host.hostname), repr(self.subcommands))
+        return '{0}(remote_host={1}, tag={2})'.format(self.__class__.__name__,
+          self.remote_host.hostname, self.tag)
 
-    def execute(self, procname=None, remote_results={}):
+    def execute(self):
         """Execute the sub-commands"""
 
         for subcommand in self.subcommands:
@@ -36,5 +61,4 @@ class RestartService(object):
                 remote_results[procname] = False
                 return False
 
-        remote_results[procname] = True
         return True
