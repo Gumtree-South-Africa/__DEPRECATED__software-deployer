@@ -6,8 +6,11 @@ class DisableLoadbalancer(Command):
     """Disable a service on a load balancer"""
 
     def initialize(self, lb_hostname, lb_username, lb_password, lb_service,
-      timeout=60, continue_on_fail=True):
+      timeout=60, continue_on_fail=False):
+
+        self.continue_on_fail = continue_on_fail
         self.timeout = timeout
+
         return True
 
     def execute(self):
@@ -20,7 +23,7 @@ class DisableLoadbalancer(Command):
             self.log.info('Service {0} disabled on {1}'.format(self.lb_service, self.lb_hostname))
         else:
 
-            if continue_on_fail:
+            if self.continue_on_fail:
                 self.log.warning('Failed to disable {0} on {1}'.format(self.lb_service, self.lb_hostname))
                 return True
             else:

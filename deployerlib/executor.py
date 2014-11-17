@@ -216,7 +216,7 @@ class Executor(object):
             failed = [x for x in self.remote_results.keys() if not self.remote_results[x]]
 
             if failed:
-                self.log.critical('Failed stage: {0}'.format(stage['name']))
+                self.log.error('Failed stage: {0}'.format(stage['name']))
             else:
                 self.log.info(green('Finished stage: {0}'.format(stage['name'])))
 

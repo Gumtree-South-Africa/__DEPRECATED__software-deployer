@@ -150,7 +150,15 @@ class DemoGenerator(Generator):
                 else:
                     self.log.warning('No load balancer found for {0} on {1}'.format(package.servicename, hostname))
 
-                for cmd in ['stop_command', 'start_command', 'check_command']:
+                if package.servicename in self.config.dont_start.keys() and \
+                  hostname in self.config.dont_start[package.servicename]:
+                    self.log.warning('Service {0} will not be started on {1} (as per config.dont_start)'.format(
+                      package.servicename, hostname))
+                    control_commands = ['stop_command', 'check_command']
+                else:
+                    control_commands = ['stop_command', 'start_command', 'check_command']
+
+                for cmd in control_commands:
 
                     if hasattr(service_config, cmd):
                         deploy_task[cmd] = service_config[cmd].format(
@@ -226,6 +234,8 @@ class DemoGenerator(Generator):
               'tasks': dbmig_tasks,
             })
 
+        deploying_something = False
+
         for servicenames in self.config.deployment_order:
 
             if isinstance(servicenames, basestring):
@@ -236,6 +246,8 @@ class DemoGenerator(Generator):
             if not this_stage:
                 self.log.debug('No deployment tasks for service {0}'.format(', '.join(servicenames)))
                 continue
+
+            deploying_something = True
 
             deploy_tasks = [x for x in deploy_tasks if not x in this_stage]
 
@@ -250,6 +262,45 @@ class DemoGenerator(Generator):
               'name': 'Deploy {0}'.format(', '.join(servicenames)),
               'concurrency': 3,
               'tasks': this_stage,
+            })
+
+        if deploying_something:
+            stop_tasks = []
+
+            for servicename in self.config.dont_start.keys():
+                service_config = self.config.get_with_defaults('service', servicename)
+
+                for hostname in self.config.dont_start[servicename]:
+                    self.log.info('Ensuring service {0} is stopped on {1}'.format(
+                      servicename, hostname))
+
+                    stop_task = {
+                      'command': 'stop_service',
+                      'tag': servicename,
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                    }
+
+                for control_command in ['stop_command', 'check_command']:
+                    command = service_config.get(control_command)
+
+                    if not command:
+                        continue
+
+                    command = command.format(
+                      servicename=servicename,
+                      port=service_config.port,
+                    )
+
+                    stop_task[control_command] = command
+
+                stop_tasks.append(stop_task)
+
+            task_list['stages'].append({
+              'name': 'Ensure dont_start services are not running',
+              'concurrency': 10,
+              'concurrency_per_host': 5,
+              'tasks': stop_tasks,
             })
 
         if sent_graphite:

@@ -5,48 +5,15 @@ from deployerlib.commands import disableloadbalancer, enableloadbalancer, stopse
 class DeployAndRestart(Command):
     """Meta-command that includes load balancer control, service control and service activation"""
 
-    def initialize(self, remote_host, source, stop_command, start_command, link_target=None,
-      lb_hostname=None, lb_username=None, lb_password=None, lb_service=None, destination=None,
+    def initialize(self, remote_host, source, destination=None, stop_command=None, start_command=None,
+      link_target=None, lb_hostname=None, lb_username=None, lb_password=None, lb_service=None,
       check_command=None, control_timeout=60, lb_timeout=60):
 
         if not destination:
             destination = source
 
-        self.subcommands = [
-
-          stopservice.StopService(
-            remote_host=remote_host,
-            stop_command=stop_command,
-            check_command=check_command,
-            timeout=control_timeout,
-            tag=self.tag,
-          ),
-
-          movefile.MoveFile(
-            remote_host=remote_host,
-            source=source,
-            destination=destination,
-            clobber=True,
-            tag=self.tag,
-          ),
-
-          symlink.SymLink(
-            remote_host=remote_host,
-            source=destination,
-            destination=link_target,
-            tag=self.tag,
-          ),
-
-          startservice.StartService(
-            remote_host=remote_host,
-            tag=self.tag,
-            start_command=start_command,
-            check_command=check_command,
-            timeout=control_timeout,
-          ),
-        ]
-
         if lb_service:
+
             lb_args = {
               'lb_hostname': lb_hostname,
               'lb_username': lb_username,
@@ -56,8 +23,53 @@ class DeployAndRestart(Command):
               'tag': self.tag,
             }
 
-            self.subcommands.insert(0, disableloadbalancer.DisableLoadbalancer(**lb_args))
-            self.subcommands.append(enableloadbalancer.EnableLoadbalancer(**lb_args))
+        else:
+            lb_args = None
+
+        self.subcommands = []
+
+        if stop_command:
+
+            if lb_args:
+                self.subcommands.append(disableloadbalancer.DisableLoadbalancer(**lb_args))
+
+            self.subcommands.append(stopservice.StopService(
+              remote_host=remote_host,
+              stop_command=stop_command,
+              check_command=check_command,
+              timeout=control_timeout,
+              tag=self.tag,
+            ))
+
+        self.subcommands.append(movefile.MoveFile(
+          remote_host=remote_host,
+          source=source,
+          destination=destination,
+          clobber=True,
+          tag=self.tag,
+        ))
+
+        if link_target:
+
+            self.subcommands.append(symlink.SymLink(
+              remote_host=remote_host,
+              source=destination,
+              destination=link_target,
+              tag=self.tag,
+            ))
+
+        if start_command:
+
+            self.subcommands.append(startservice.StartService(
+              remote_host=remote_host,
+              tag=self.tag,
+              start_command=start_command,
+              check_command=check_command,
+              timeout=control_timeout,
+            ))
+
+            if lb_args:
+                self.subcommands.append(enableloadbalancer.EnableLoadbalancer(**lb_args))
 
         return True
 

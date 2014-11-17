@@ -6,8 +6,11 @@ class EnableLoadbalancer(Command):
     """Enable a service on a load balancer"""
 
     def initialize(self, lb_hostname, lb_username, lb_password, lb_service,
-      continue_on_fail=True, timeout=60):
+      continue_on_fail=False, timeout=60):
+
+        self.continue_on_fail = continue_on_fail
         self.timeout = timeout
+
         return True
 
     def execute(self):
@@ -22,7 +25,7 @@ class EnableLoadbalancer(Command):
             self.log.info('Service {0} enabled on {1}'.format(self.lb_service, self.lb_hostname))
         else:
 
-            if continue_on_fail:
+            if self.continue_on_fail:
                 self.log.warning('Failed to enable {0} on {1}'.format(self.lb_service, self.lb_hostname))
                 return True
             else:
