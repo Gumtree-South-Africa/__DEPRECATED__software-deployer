@@ -32,8 +32,11 @@ class IcasGenerator(Generator):
         migration_done = []
         properties_done = []
 
-        active_cfp_host = self.get_active_cfp(self.config.get_service_hosts('cas-cfp-service'))
-        self.log.info('Active cfp server is {0}'.format(active_cfp_host))
+        if [x for x in packages if x.servicename.endswith('-cfp-service')]:
+            active_cfp_host = self.get_active_cfp(self.config.get_service_hosts('cas-cfp-service'))
+            self.log.info('Active cfp server is {0}'.format(active_cfp_host))
+        else:
+            active_cfp_host = None
 
         for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
@@ -287,29 +290,34 @@ class IcasGenerator(Generator):
     def get_active_cfp(self, hostlist):
         """Find the active cfp server"""
 
+        self.log.debug('Determining active cfp host')
+
         active_host = None
         log_cmd = 'tail -n 1000 /opt/logs/cas-cfp-service.log | grep "Start handling batch with" | grep -v "Start handling batch with 0 events"'
 
         for hostname in hostlist:
             remote_host = self.get_remote_host(hostname, self.config.user)
 
-            res = remote_host.execute_remote(log_cmd)
+            try:
+                res = remote_host.execute_remote(log_cmd)
+            except SystemExit as e:
+                self.log.info('Ignoring failed connection to {0}'.format(hostname))
+            else:
+                if res.succeeded and res.return_code == 0:
+                    self.log.info('cfp service is active on {0}'.format(hostname))
+                    return hostname
 
-            if res.return_code == 0:
-                self.log.info('Active cfp host is {0}'.format(hostname))
-                return hostname
-
-        self.log.warning('Unable to find active cfp host, using {0}'.format(hostlist[0]))
-        return hostlist[0]
+        self.log.warning('Unable to find active cfp host, will deploy cfp with concurrency'.format(hostlist[0]))
+        return None
 
     def get_deploy_stage(self, tasklist, hostlist):
         """Return a stage based on a list of tasks and a list of hosts"""
 
         this_stage_tasks = [x for x in tasklist if x['remote_host'] in hostlist]
-        this_stage_hosts = ', '.join(set([x['remote_host'] for x in tasklist]))
+        this_stage_hosts = ', '.join(set([x['remote_host'] for x in this_stage_tasks]))
 
         if not this_stage_tasks:
-            self.log.warning('No tasks found for deployment_order group {0}'.format(this_stage_hosts))
+            self.log.warning('No tasks found for deployment_order group {0}'.format(hostlist))
             return None, None
 
         tasklist = [x for x in tasklist if not x in this_stage_tasks]

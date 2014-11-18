@@ -19,7 +19,7 @@ class Generator(object):
         self._remote_hosts = []
 
     def generate(self):
-        """Return an empty task list"""
+        """Generators that re-use this class can provide their own generate() method"""
 
         return {}
 

@@ -9,12 +9,7 @@ class Command(object):
     """Framework for a remote command to be run with JobQueue"""
 
     def __init__(self, **kwargs):
-
-        if 'tag' in kwargs:
-            self.tag = kwargs.pop('tag')
-        else:
-            self.tag = None
-
+        self.tag = kwargs.pop('tag', None)
         self.log = Log(instance=self.__class__.__name__, tag=self.tag)
 
         for key, value in kwargs.iteritems():
@@ -30,7 +25,7 @@ class Command(object):
         self.log.debug('Command initialized successfully: {0}'.format(repr(self)))
 
     def __repr__(self):
-        attrs = ', '.join(['{0}={1}'.format(key, repr(value)) for key, value in vars(self).iteritems()])
+        attrs = ', '.join(['{0}={1}'.format(key, repr(value)) for key, value in vars(self).iteritems() if key != 'log'])
         return '{0}({1})'.format(self.__class__.__name__, attrs)
 
     def initialize(self, **kwargs):

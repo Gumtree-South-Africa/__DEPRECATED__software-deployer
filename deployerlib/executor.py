@@ -3,6 +3,7 @@ import json
 import time
 
 from fabric.colors import green
+from fabric.network import disconnect_all
 from multiprocessing import Process, Manager
 
 from deployerlib.commands import *
@@ -190,6 +191,9 @@ class Executor(object):
 
     def run(self):
         """Run each stage"""
+
+        self.log.debug('Discarding unused remote connections')
+        disconnect_all()
 
         tasklist_start_time = time.time()
 
