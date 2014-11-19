@@ -1,26 +1,22 @@
 import os
 
 from deployerlib.log import Log
-from deployerlib.generatorhelper import GeneratorHelper
+from deployerlib.generator import Generator
 from deployerlib.exceptions import DeployerException
 
 
-class AuroraGenerator(object):
+class AuroraGenerator(Generator):
     """Aurora task list generator"""
-
-    def __init__(self, config):
-        self.log = Log(self.__class__.__name__)
-        config_structure = config._get_config_struct()
-        if config.vrfy_w_recurse(config,config_structure):
-            self.config = config
-            self.generatorhelper = GeneratorHelper(config)
-            self.packages = self.generatorhelper.get_packages()
-            self.remote_versions = self.generatorhelper.get_remote_versions(self.packages)
-        else:
-            raise DeployerException('Config verification detected errors')
 
     def generate(self):
         """Build the task list"""
+
+        config_structure = self.config._get_config_struct()
+        if not self.config.vrfy_w_recurse(self.config, config_structure):
+            raise DeployerException('Config verification detected errors')
+
+        packages = self.get_packages()
+        remote_versions = self.get_remote_versions(packages)
 
         task_list = {
           'name': 'Aurora deployment',
@@ -35,7 +31,7 @@ class AuroraGenerator(object):
         deploy_tasks = []
         remove_temp_tasks = []
 
-        for package in self.packages:
+        for package in packages:
 
             service_config = self.config.get_with_defaults('service', package.servicename)
             hosts = self.config.get_service_hosts(package.servicename)
@@ -46,13 +42,13 @@ class AuroraGenerator(object):
 
             for hostname in hosts:
 
-                if not self.config.redeploy and self.remote_versions.get(package.servicename).get(hostname) \
+                if not self.config.redeploy and remote_versions.get(package.servicename).get(hostname) \
                   == package.version:
-                    self.log.debug('is up to date on {0}, skipping'.format(hostname), tag=package.servicename)
+                    self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=package.servicename)
                     continue
 
                 upload_tasks.append({
-                  'servicename': package.servicename,
+                  'tag': package.servicename,
                   'command': 'upload',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
@@ -61,7 +57,7 @@ class AuroraGenerator(object):
                 })
 
                 unpack_tasks.append({
-                  'servicename': package.servicename,
+                  'tag': package.servicename,
                   'command': 'unpack',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
@@ -71,7 +67,7 @@ class AuroraGenerator(object):
 
                 if service_config.control_type == 'props':
                     props_tasks.append({
-                      'servicename': package.servicename,
+                      'tag': package.servicename,
                       'command': 'copyfile',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
@@ -79,11 +75,12 @@ class AuroraGenerator(object):
                           service_config.unpack_dir, package.packagename, self.config.environment)),
                       'destination': '{0}/'.format(service_config.properties_location),
                       'continue_if_exists': True,
+                      'recursive': True,
                     })
 
                 if service_config.control_type == 'daemontools':
                     deploy_task = {
-                      'servicename': package.servicename,
+                      'tag': package.servicename,
                       'command': 'deploy_and_restart',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
@@ -93,12 +90,12 @@ class AuroraGenerator(object):
                     }
 
                     if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
-                      if x['servicename'] == package.servicename]:
+                      if x['tag'] == package.servicename]:
 
                         self.log.info('Adding DB migrations to be run on {0}'.format(hostname), tag=package.servicename)
 
                         dbmig_tasks.append({
-                          'servicename': package.servicename,
+                          'tag': package.servicename,
                           'command': 'dbmigration',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
@@ -207,7 +204,7 @@ class AuroraGenerator(object):
             if isinstance(servicenames, basestring):
                 servicenames = [servicenames]
 
-            this_stage = [x for x in deploy_tasks if x['servicename'] in servicenames]
+            this_stage = [x for x in deploy_tasks if x['tag'] in servicenames]
 
             if not this_stage:
                 self.log.debug('No deployment tasks for service(s) {0}'.format(', '.join(servicenames)))
@@ -217,8 +214,8 @@ class AuroraGenerator(object):
 
             to_deploy = []
             for x in this_stage:
-                if x['servicename'] not in to_deploy:
-                    to_deploy.append(x['servicename'])
+                if x['tag'] not in to_deploy:
+                    to_deploy.append(x['tag'])
 
             task_list['stages'].append({
               'name': 'Deploy {0}'.format(', '.join(to_deploy)),
@@ -234,7 +231,7 @@ class AuroraGenerator(object):
             })
 
         if deploy_tasks:
-            leftovers = set([x['servicename'] for x in deploy_tasks])
+            leftovers = set([x['tag'] for x in deploy_tasks])
             raise DeployerException('Leftover tasks - services not specified in deployment order? {0}'.format(
               ', '.join(leftovers)))
 

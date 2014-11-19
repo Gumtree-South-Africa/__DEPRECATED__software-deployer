@@ -287,9 +287,30 @@ class Config(AttrDict):
                 }
 
         config_structure = {
+                # command line options:
                 'config': {
                     'type': str,
                     'allowed_re': path_re,
+                    },
+                'release': {
+                    'type': str,
+                    'allowed_re': path_re,
+                    'options': ['allow_none'],
+                    },
+                'component': {
+                    'type': str,
+                    'allowed_re': path_re,
+                    'options': ['allow_none'],
+                    },
+                'tasklist': {
+                    'type': str,
+                    'allowed_re': path_re,
+                    'options': ['allow_none'],
+                    },
+                'save': {
+                    'type': str,
+                    'allowed_re': path_re,
+                    'options': ['allow_none'],
                     },
                 'cluster': {
                     'type': str,
@@ -297,6 +318,10 @@ class Config(AttrDict):
                     'options': ['allow_none'],
                     },
                 'debug': {
+                    'type': bool,
+                    'options': ['allow_none'],
+                    },
+                'dry_run': {
                     'type': bool,
                     'options': ['allow_none'],
                     },
@@ -317,6 +342,23 @@ class Config(AttrDict):
                     'type': bool,
                     'options': ['allow_none'],
                     },
+                'hosts': {
+                    'type': list,
+                    'allowed_types': [str],
+                    'allowed_re': domain_re,
+                    'options': ['allow_none'],
+                    },
+                'hostgroups': {
+                    'type': list,
+                    'allowed_types': [str],
+                    'allowed_re': hostgroup_re,
+                    'options': ['allow_none'],
+                    },
+                'dump': {
+                    'type': bool,
+                    'options': ['allow_none'],
+                    },
+                # global config options:
                 'dns_suffix': {
                     'type': str,
                     'allowed_re': domain_re,

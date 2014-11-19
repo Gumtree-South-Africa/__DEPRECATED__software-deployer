@@ -13,6 +13,13 @@ log = Log('config_verify')
 # Add command line option for components to deploy
 parser = argparse.ArgumentParser()
 #parser.add_argument('--servicename', help='Specify the service name to act on', required=True)
+parser.add_argument('--dump', action='store_true', help='Dump the resulting task list')
+parser.add_argument('--save', help='Save the resulting task list to a file')
+component_group = parser.add_mutually_exclusive_group(required=False)
+component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
+component_group.add_argument('--release', '--directory', nargs='+', help='Specify a directory of components to deploy')
+component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
+
 
 args = CommandLine(parents=parser)
 config = Config(args)
