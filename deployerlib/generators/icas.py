@@ -27,6 +27,7 @@ class IcasGenerator(Generator):
         deploy_tasks = []
         cfp_tasks = []
         remove_temp_tasks = []
+        cleanup_tasks = []
 
         tempdir_done = []
         migration_done = []
@@ -67,6 +68,17 @@ class IcasGenerator(Generator):
                   'remote_user': self.config.user,
                   'source': os.path.join(service_config.destination, package.filename),
                   'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
+                  'tag': package.servicename,
+                })
+
+                # clean up upload directory
+                cleanup_tasks.append({
+                  'command': 'cleanup',
+                  'remote_host': hostname,
+                  'remote_user': self.config.user,
+                  'path': service_config.destination,
+                  'filespec': '{0}_*'.format(package.servicename),
+                  'keepversions': self.config.keep_versions,
                   'tag': package.servicename,
                 })
 
@@ -205,35 +217,55 @@ class IcasGenerator(Generator):
                 else:
                     deploy_tasks.append(deploy_task)
 
+                # clean up install location
+                cleanup_tasks.append({
+                  'command': 'cleanup',
+                  'remote_host': hostname,
+                  'remote_user': self.config.user,
+                  'path': service_config.install_location,
+                  'filespec': '{0}_*'.format(package.servicename),
+                  'keepversions': self.config.keep_versions,
+                  'tag': package.servicename,
+                })
+
+        if properties_tasks or dbmig_tasks or deploy_tasks:
+            doing_deploy_tasks = True
+        else:
+            doing_deploy_tasks = False
+
         if upload_tasks:
             task_list['stages'].append({
               'name': 'Upload',
-              'concurrency': self.config.prep_concurrency,
-              'concurrency_per_host': self.config.prep_concurrency_per_host,
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': upload_tasks,
             })
 
         if create_temp_tasks:
             task_list['stages'].append({
               'name': 'Create temp directories',
-              'concurrency': self.config.prep_concurrency,
-              'concurrency_per_host': self.config.prep_concurrency_per_host,
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': create_temp_tasks,
             })
 
         if unpack_tasks:
             task_list['stages'].append({
               'name': 'Unpack',
-              'concurrency': self.config.prep_concurrency,
-              'concurrency_per_host': self.config.prep_concurrency_per_host,
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': unpack_tasks,
             })
+
+        if hasattr(self.config, 'graphite') and doing_deploy_tasks:
+            doing_deploy_tasks = True
+            task_list['stages'].append(self.get_graphite_stage('start'))
 
         if properties_tasks:
 
             task_list['stages'].append({
               'name': 'Properties',
-              'concurrency': self.config.prep_concurrency,
+              'concurrency': self.config.non_deploy_concurrency,
               'tasks': properties_tasks,
             })
 
@@ -277,12 +309,23 @@ class IcasGenerator(Generator):
 
             sys.exit(1)
 
+        if hasattr(self.config, 'graphite') and doing_deploy_tasks:
+            task_list['stages'].append(self.get_graphite_stage('end'))
+
         if remove_temp_tasks:
             task_list['stages'].append({
               'name': 'Remove temp directories',
-              'concurrency': self.config.prep_concurrency,
-              'concurrency_per_host': self.config.prep_concurrency_per_host,
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': remove_temp_tasks,
+            })
+
+        if cleanup_tasks:
+            task_list['stages'].append({
+              'name': 'Cleanup',
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
+              'tasks': cleanup_tasks,
             })
 
         return task_list
@@ -332,3 +375,20 @@ class IcasGenerator(Generator):
         }
 
         return this_task, this_stage_tasks
+
+    def get_graphite_stage(self, metric_suffix):
+        """Return a task for send_graphite"""
+
+        task = {
+          'command': 'send_graphite',
+          'carbon_host': self.config.graphite.carbon_host,
+          'metric_name': '.'.join((self.config.graphite.metric_prefix, metric_suffix)),
+        }
+
+        stage = {
+          'name': 'Send graphite {0}'.format(metric_suffix),
+          'concurrency': 1,
+          'tasks': [task],
+        }
+
+        return stage

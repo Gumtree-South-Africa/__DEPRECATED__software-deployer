@@ -30,23 +30,17 @@ class ServiceControl(Generator):
 
         if self.config.hosts:
             hosts = self.config.hosts
-        elif self.config.hostgroups:
 
-            for hostgroup in self.config.hostgroups:
-
-                if not hostgroup in self.config.hostgroup:
-                    raise DeployerException('Hostgroup {0} does not exist in the config file'.format(
-                      hostgroup))
-
-                hosts += self.config.hostgroup[hostgroup]['hosts']
-
-        if not hosts:
-            raise DeployerException('No hosts were specified?')
+            if not type(hosts) == list:
+                hosts = [hosts]
 
         for servicename in self.services:
             service_config = self.config.get_with_defaults('service', servicename)
             stage_name = '{0} service {1}'.format(self.action.capitalize(), servicename)
             stage_tasks = []
+
+            if not self.config.hosts:
+                hosts = self.config.get_service_hosts(servicename)
 
             for hostname in hosts:
 
