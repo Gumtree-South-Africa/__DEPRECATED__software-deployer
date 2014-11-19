@@ -298,7 +298,8 @@ class Config(AttrDict):
                     'options': ['allow_none'],
                     },
                 'component': {
-                    'type': str,
+                    'type': list,
+                    'allowed_types': [str],
                     'allowed_re': path_re,
                     'options': ['allow_none'],
                     },
