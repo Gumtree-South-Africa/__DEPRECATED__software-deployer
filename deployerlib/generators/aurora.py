@@ -11,10 +11,6 @@ class AuroraGenerator(Generator):
     def generate(self):
         """Build the task list"""
 
-        config_structure = self.config._get_config_struct()
-        if not self.config.vrfy_w_recurse(self.config, config_structure):
-            raise DeployerException('Config verification detected errors')
-
         packages = self.get_packages()
         remote_versions = self.get_remote_versions(packages)
 

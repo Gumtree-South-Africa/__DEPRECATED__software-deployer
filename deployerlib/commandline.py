@@ -23,7 +23,8 @@ class CommandLine(object):
         parser.add_argument('-c', '--config', required=require_config, help='Specify a platform config file')
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
-        host_group.add_argument('--hostgroups', '--cluster', help='Specify a cluster of hosts to deploy to')
+        host_group.add_argument('--hostgroups', nargs='+', help='Specify one or more hostgroups to deploy to')
+        host_group.add_argument('--cluster', nargs='+', help='Specify one or more clusters of hostgroups to deploy to')
         host_group.add_argument('--hosts', nargs='+', help='Specify a list of hosts to deploy to')
 
         parser.add_argument('--redeploy', action='store_true', help='Redeploy services even if they exist on remote hosts')

@@ -23,6 +23,7 @@ component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
 
 args = CommandLine(parents=parser)
 config = Config(args)
-config_structure = config._get_config_struct()
-config.vrfy_w_recurse(config,config_structure)
-#config.verify()
+#if config.config_ok():
+#    log.info('All tests passed, config ok')
+#else:
+#    log.error('Config verify found errors')

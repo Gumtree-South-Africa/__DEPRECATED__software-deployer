@@ -12,6 +12,7 @@ class Config(AttrDict):
 
     def __init__(self, mapping={}, *args, **kwargs):
 
+        loaded = False
         if type(mapping) is CommandLine and hasattr(mapping, 'config'):
 
             self.__setattr__('log', Log(self.__class__.__name__), force=True)
@@ -23,7 +24,16 @@ class Config(AttrDict):
                 config = yaml.safe_load(f)
                 mapping = dict(config.items() + mapping.items())
 
+            loaded = True
+
         super(self.__class__, self).__init__(mapping, *args, **kwargs)
+
+        if loaded:
+            if self.ok():
+                self.log.info('Config verified: OK')
+            else:
+                self.log.critical('Config verify found errors, exiting.')
+                exit(1)
 
     def get_defaults(self, item, recurse=True):
         d = {}
@@ -96,10 +106,15 @@ class Config(AttrDict):
 
         return hosts
 
-    def vrfy_w_recurse(self, config, struct, parent='', errors=0):
+    def ok(self):
+        struct = self._get_config_struct()
+        return self.vrfy_w_recurse(self, struct) == 0
+
+    def vrfy_w_recurse(self, config, struct, parent=''):
+        errors = 0
         for item in config.keys():
             if parent:
-                item_display = parent + '[{0}]'.format(item)
+                item_display = parent + '[{0}]'.format(repr(item))
             else:
                 item_display = item
             found = ''
@@ -156,8 +171,7 @@ class Config(AttrDict):
                                         allowed_struct = dict(c.items())
                                         if type(va) is not list:
                                             allowed_struct['type'] = type(va)
-                                        self.vrfy_w_recurse({ '{0}[{1}]'.format(item,i): va }, { '{0}[{1}]'.format(item,i): allowed_struct }, '',
-                                                errors)
+                                        errors += self.vrfy_w_recurse({ '{0}[{1}]'.format(item,i): va }, { '{0}[{1}]'.format(item,i): allowed_struct }, '')
                                     else:
                                         self.log.error('Type {0} of list member {1} of item {2} is not allowed'.format(type(va),str(va),item_display))
                                         errors += 1
@@ -171,7 +185,7 @@ class Config(AttrDict):
                                         if 'options' in as_val and 'mandatory' in as_val['options']:
                                             c['allowed_struct'][as_key]['options'].remove('mandatory')
                                             c['allowed_struct'][as_key]['options'].append('skip_mandatory')
-                                self.vrfy_w_recurse(v,c['allowed_struct'],item,errors)
+                                errors += self.vrfy_w_recurse(v,c['allowed_struct'],item)
                     else:
                         if type(v) is type(None) and 'options' in c and 'allow_none' in c['options']:
                             self.log.debug('Empty value for {0} is allowed'.format(item_display))
@@ -184,7 +198,7 @@ class Config(AttrDict):
             if 'options' in c and 'mandatory' in c['options'] and item not in config:
                 self.log.error('Missing mandatory item "{0}" in config {1}'.format(item,parent))
                 errors += 1
-        return errors == 0
+        return errors
 
     def _get_config_struct(self):
         domain_re = '^[a-zA-Z0-9]+(?:[.-]?[a-zA-Z0-9]+)+$'
@@ -293,7 +307,8 @@ class Config(AttrDict):
                     'allowed_re': path_re,
                     },
                 'release': {
-                    'type': str,
+                    'type': list,
+                    'allowed_types': [str],
                     'allowed_re': path_re,
                     'options': ['allow_none'],
                     },
@@ -314,8 +329,9 @@ class Config(AttrDict):
                     'options': ['allow_none'],
                     },
                 'cluster': {
-                    'type': str,
-                    'allowed_re': alnum_re,
+                    'type': list,
+                    'allowed_types': [str],
+                    'allowed_re': '^[a-z_]+$',
                     'options': ['allow_none'],
                     },
                 'debug': {
@@ -465,7 +481,7 @@ class Config(AttrDict):
                                         'allowed_range': (1,65535),
                                         'options': ['allow_none'],
                                         }),
-                                    ('service_type', {
+                                    ('cluster', {
                                         'type': str,
                                         'allowed_re': '^[a-z_]+$',
                                         'options': ['mandatory'],

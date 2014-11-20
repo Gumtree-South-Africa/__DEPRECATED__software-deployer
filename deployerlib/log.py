@@ -3,7 +3,7 @@ import logging
 import logging.handlers
 
 from time import gmtime, strftime
-from fabric.colors import red, green, yellow, cyan
+from fabric.colors import red, green, yellow, cyan, blue, magenta
 from fabric.api import env
 
 
@@ -96,7 +96,7 @@ class Log(object):
         if not tag:
             tag = self.tag
 
-        self.logger.log(level, message, extra={'tag': tag, 'remote': remote})
+        self.logger.log(level, message, extra={'tag': green(tag), 'remote': remote})
 
     def debug(self, message, tag=''):
         self.log(message, logging.DEBUG, tag)
@@ -105,7 +105,7 @@ class Log(object):
         self.log(message, logging.VERBOSE, tag)
 
     def info(self, message, tag=''):
-        self.log(message, logging.INFO, tag)
+        self.log(magenta(message), logging.INFO, tag)
 
     def warning(self, message, tag=''):
         self.log(yellow(message), logging.WARNING, tag)
