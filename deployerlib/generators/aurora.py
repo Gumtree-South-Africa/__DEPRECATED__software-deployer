@@ -12,7 +12,8 @@ class AuroraGenerator(Generator):
         """Build the task list"""
 
         packages = self.get_packages()
-        remote_versions = self.get_remote_versions(packages)
+        if not self.config.redeploy:
+            remote_versions = self.get_remote_versions(packages)
 
         task_list = {
           'name': 'Aurora deployment',

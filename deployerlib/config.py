@@ -254,6 +254,7 @@ class Config(AttrDict):
                 're/^[a-zA-Z_]+_command/': {
                     'type': str,
                     'allowed_re': command_re,
+                    'options': ['allow_none'],
                     },
                 'control_timeout': {
                     'type': int,
@@ -274,6 +275,10 @@ class Config(AttrDict):
                     'allowed_re': lb_service_re,
                     },
                 'migration_location': {
+                    'type': str,
+                    'allowed_re': path_re,
+                    },
+                'properties_path': {
                     'type': str,
                     'allowed_re': path_re,
                     },
@@ -389,6 +394,39 @@ class Config(AttrDict):
                     'options': ['allow_none'],
                     },
                 # global config options:
+                'deploy_concurrency': {
+                    'type': int,
+                    'allowed_range': (0,30),
+                    },
+                'deploy_concurrency_per_host': {
+                    'type': int,
+                    'allowed_range': (0,30),
+                    },
+                'dont_start': {
+                    'type': dict,
+                    'allowed_struct': {
+                        're/'+service_re+'/': {
+                            'type': list,
+                            'allowed_re': domain_re,
+                            },
+                        },
+                    },
+                'non_deploy_concurrency': {
+                    'type': int,
+                    'allowed_range': (0,30),
+                    },
+                'non_deploy_concurrency_per_host': {
+                    'type': int,
+                    'allowed_range': (0,30),
+                    },
+                'prep_concurrency': {
+                    'type': int,
+                    'allowed_range': (0,30),
+                    },
+                'prep_concurrency_per_host': {
+                    'type': int,
+                    'allowed_range': (0,30),
+                    },
                 'dns_suffix': {
                     'type': str,
                     'allowed_re': domain_re,
@@ -401,7 +439,7 @@ class Config(AttrDict):
                     'type': str,
                     'allowed_re': alnum_re,
                     },
-                'keepversions': {
+                'keep_versions': {
                     'type': int,
                     'allowed_range': (0,100),
                     'options': ['mandatory'],

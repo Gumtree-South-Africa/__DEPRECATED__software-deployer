@@ -37,7 +37,7 @@ fra01-scrubber:
 general:
   destination: /opt/tarballs
   environment: production
-  keepversions: 5
+  keep_versions: 5
   logs: /opt/logs
   platform: aurora
   properties: /etc/marktplaats
