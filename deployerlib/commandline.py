@@ -24,7 +24,7 @@ class CommandLine(object):
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
         host_group.add_argument('--hostgroups', nargs='+', help='Specify one or more hostgroups to deploy to')
-        host_group.add_argument('--cluster', nargs='+', help='Specify one or more clusters of hostgroups to deploy to')
+        host_group.add_argument('--categories', nargs='+', help='Specify one or more categories to deploy to')
         host_group.add_argument('--hosts', nargs='+', help='Specify a list of hosts to deploy to')
 
         parser.add_argument('--redeploy', action='store_true', help='Redeploy services even if they exist on remote hosts')

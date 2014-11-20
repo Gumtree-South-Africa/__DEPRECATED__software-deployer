@@ -136,9 +136,17 @@ class Config(AttrDict):
                     self.log.debug('Trying to get defaults for {0} "{1}"'.format(parent,item))
                     v = dict(self.get_with_defaults(parent,item).items())
                 if 'type' not in c:
-                    self.log.error('Struct for item "{0}" does not contain a type specification'.format(item_display))
-                    errors += 1
-                else:
+                    if 'types' in c:
+                        for t in c['types']:
+                            if type(v) == t['type']:
+                                c.update(t)
+                        if 'type' not in c:
+                            self.log.error('Type "{1}" of item "{0}" does not match supported types in struct'.format(item_display,str(type(v))))
+                            errors += 1
+                    else:
+                        self.log.error('Struct for item "{0}" does not contain a type or types specification'.format(item_display))
+                        errors += 1
+                if 'type' in c:
                     if type(v) == c['type']:
                         self.log.debug('Type "{1}" of item "{0}" is correct'.format(item_display,str(c['type'])))
                         if type(v) is int:
@@ -171,7 +179,7 @@ class Config(AttrDict):
                                         allowed_struct = dict(c.items())
                                         if type(va) is not list:
                                             allowed_struct['type'] = type(va)
-                                        errors += self.vrfy_w_recurse({ '{0}[{1}]'.format(item,i): va }, { '{0}[{1}]'.format(item,i): allowed_struct }, '')
+                                        errors += self.vrfy_w_recurse({ '{0}[{1}]'.format(item,repr(i)): va }, { '{0}[{1}]'.format(item,repr(i)): allowed_struct }, '')
                                     else:
                                         self.log.error('Type {0} of list member {1} of item {2} is not allowed'.format(type(va),str(va),item_display))
                                         errors += 1
@@ -179,7 +187,7 @@ class Config(AttrDict):
                         if type(v) is dict:
                             if 'allowed_struct' in c:
                                 if parent:
-                                    item = parent + '[{0}]'.format(item)
+                                    item = parent + '[{0}]'.format(repr(item))
                                 if 'options' in c and 'skip_mandatory' in c['options']:
                                     for (as_key,as_val) in c['allowed_struct'].items():
                                         if 'options' in as_val and 'mandatory' in as_val['options']:
@@ -207,13 +215,14 @@ class Config(AttrDict):
         simple_re = '^[a-zA-Z0-9_-]+$'
         service_re = '^[a-zA-Z0-9._-]+$'
         control_type_re = '^(daemontools|apache2|tomcat|props)$'
-        hostgroup_re = '^[a-z0-9]+_[a-z0-9_]+$'
+        #hostgroup_re = '^[a-z0-9]+_[a-z0-9_]+$'
+        hostgroup_re = alnum_re
         command_re = '^[^;]+$'
         username_re = '^[a-z0-9_]+$'
         lb_service_re = '^[a-zA-Z0-9_{}-]+$'
 
         service_params_struct = {
-                'protocol': {
+                'service_type': {
                     'type': str,
                     'allowed_re': '^(http|thrift)$',
                     'options': ['mandatory'],
@@ -268,6 +277,10 @@ class Config(AttrDict):
                     'type': str,
                     'allowed_re': path_re,
                     },
+                'environment': {
+                    'type': str,
+                    'allowed_re': simple_re,
+                    }
                 }
 
         lb_params_struct = {
@@ -328,7 +341,7 @@ class Config(AttrDict):
                     'allowed_re': path_re,
                     'options': ['allow_none'],
                     },
-                'cluster': {
+                'categories': {
                     'type': list,
                     'allowed_types': [str],
                     'allowed_re': '^[a-z_]+$',
@@ -387,7 +400,6 @@ class Config(AttrDict):
                 'environment': {
                     'type': str,
                     'allowed_re': alnum_re,
-                    'options': ['mandatory'],
                     },
                 'keepversions': {
                     'type': int,
@@ -439,15 +451,24 @@ class Config(AttrDict):
                         'options': ['mandatory'],
                         },
                 'deployment_order': {
-                        'type': list,
-                        'allowed_types': [str,list],
-                        'allowed_re': service_re,
+                        'types': [
+                            {
+                                'type': list,
+                                'allowed_types': [str,list],
+                                'allowed_re': service_re,
+                                },
+                            {
+                                'type': dict,
+                                'allowed_struct': {
+                                    're/'+alnum_re+'/': {
+                                        'type': list,
+                                        'allowed_types': [str,list],
+                                        'allowed_re': domain_re,
+                                        },
+                                    },
+                                },
+                            ],
                         'options': ['mandatory'],
-                        },
-                'datacenters': {
-                        'type': list,
-                        'allowed_types': [str],
-                        'allowed_re': simple_re,
                         },
                 'hostgroup': {
                         'type': dict,
@@ -481,10 +502,9 @@ class Config(AttrDict):
                                         'allowed_range': (1,65535),
                                         'options': ['allow_none'],
                                         }),
-                                    ('cluster', {
+                                    ('category', {
                                         'type': str,
                                         'allowed_re': '^[a-z_]+$',
-                                        'options': ['mandatory'],
                                         }),
                                     ]),
                                 },
