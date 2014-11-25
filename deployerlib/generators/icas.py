@@ -189,8 +189,12 @@ class IcasGenerator(Generator):
                         deploy_task[option] = getattr(service_config, option)
 
                 # check for services that should not be started
-                if self.config.get('dont_start') and package.servicename in self.config.dont_start.keys() and \
-                  hostname in self.config.dont_start[package.servicename]:
+                if self.config.get('dont_start') and \
+                   package.servicename in self.config.dont_start.keys() and \
+                   (
+                     self.config.dont_start[package.servicename] is None or \
+                     hostname in self.config.dont_start[package.servicename]
+                   ):
 
                     self.log.warning('Service {0} will not be started on {1} (as per config.dont_start)'.format(
                       package.servicename, hostname))
@@ -333,7 +337,7 @@ class IcasGenerator(Generator):
     def get_active_cfp(self, hostlist):
         """Find the active cfp server"""
 
-        self.log.debug('Determining active cfp host')
+        self.log.info('Determining active cfp host')
 
         active_host = None
         log_cmd = 'tail -n 1000 /opt/logs/cas-cfp-service.log | grep "Start handling batch with" | grep -v "Start handling batch with 0 events"'
@@ -343,8 +347,9 @@ class IcasGenerator(Generator):
 
             try:
                 res = remote_host.execute_remote(log_cmd)
-            except SystemExit as e:
-                self.log.info('Ignoring failed connection to {0}'.format(hostname))
+            except Exception:
+                self.log.info('Failed to connect to {0}, skipping check for active cfp host'.format(hostname))
+                return None
             else:
                 if res.succeeded and res.return_code == 0:
                     self.log.info('cfp service is active on {0}'.format(hostname))

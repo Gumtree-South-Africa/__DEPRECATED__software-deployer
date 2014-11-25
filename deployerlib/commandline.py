@@ -21,6 +21,7 @@ class CommandLine(object):
 
         parser.add_argument('--dry-run', action='store_true', help='Do a dry run without executing any tasks')
         parser.add_argument('-c', '--config', required=require_config, help='Specify a platform config file')
+        parser.add_argument('--no-config-verify', '-n', action='store_true', help='Don\'t attempt to verify config file syntax')
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
         host_group.add_argument('--hostgroups', nargs='+', help='Specify one or more hostgroups to deploy to')

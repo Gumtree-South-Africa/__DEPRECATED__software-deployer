@@ -28,7 +28,7 @@ class Config(AttrDict):
 
         super(self.__class__, self).__init__(mapping, *args, **kwargs)
 
-        if loaded:
+        if loaded and not self.no_config_verify:
             if self.ok():
                 self.log.info('Config verified: OK')
             else:
