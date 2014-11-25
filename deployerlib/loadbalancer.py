@@ -79,7 +79,7 @@ class LoadBalancer(object):
         else:
             return service.get_svrstate(), service
 
-    def enable_service(self, lbservice, timeout=60):
+    def enable_service(self, lbservice, timeout=60, enable_anyway=True):
         """Get the state of a load balancer service"""
 
         cur_state, service = self.get_service_state(lbservice)
@@ -88,7 +88,7 @@ class LoadBalancer(object):
             self.log.warning('Service {0} does not exist on {1}'.format(lbservice, self.hostname))
             return True
 
-        if cur_state == 'UP':
+        if cur_state == 'UP' and not enable_anyway:
             self.log.warning('Service {0} is already {1}'.format(lbservice, cur_state))
             return True
 
@@ -111,7 +111,7 @@ class LoadBalancer(object):
           lbservice, self.hostname, new_state))
         return False
 
-    def disable_service(self, lbservice, timeout=60):
+    def disable_service(self, lbservice, timeout=60, disable_anyway=True):
         """Disable a service on the load balancer"""
 
         cur_state, service = self.get_service_state(lbservice)
@@ -120,7 +120,7 @@ class LoadBalancer(object):
             self.log.warning('Service {0} does not exist on {1}'.format(lbservice, self.hostname))
             return True
 
-        if cur_state != 'UP':
+        if cur_state != 'UP' and not disable_anyway:
             self.log.warning('Service {0} is already {1}'.format(lbservice, cur_state))
             return True
 

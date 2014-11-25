@@ -45,7 +45,19 @@ class IcasGenerator(Generator):
             if not service_config:
                 raise DeployerException('Unknown service: {0}'.format(package.servicename))
 
-            hosts = self.config.get_service_hosts(package.servicename)
+            configured_hosts = self.config.get_service_hosts(package.servicename)
+
+            if self.config.hosts:
+
+                if set(self.config.hosts) < set(configured_hosts):
+                    hosts = self.config.hosts
+                else:
+                    self.log.critical('Service {0} is not configured to run on host {1}'.format(
+                      package.servicename, ' or '.join(self.config.hosts)))
+                    sys.exit(1)
+
+            else:
+                hosts = configured_hosts
 
             if not hosts:
                 self.log.warning('Service {0} is not configured to run on any hosts'.format(
@@ -261,7 +273,7 @@ class IcasGenerator(Generator):
               'tasks': unpack_tasks,
             })
 
-        if hasattr(self.config, 'graphite') and doing_deploy_tasks:
+        if hasattr(self.config, 'graphite') and doing_deploy_tasks and self.config.release:
             doing_deploy_tasks = True
             task_list['stages'].append(self.get_graphite_stage('start'))
 
@@ -347,7 +359,7 @@ class IcasGenerator(Generator):
 
             try:
                 res = remote_host.execute_remote(log_cmd)
-            except Exception:
+            except (Exception, SystemExit):
                 self.log.info('Failed to connect to {0}, skipping check for active cfp host'.format(hostname))
                 return None
             else:
