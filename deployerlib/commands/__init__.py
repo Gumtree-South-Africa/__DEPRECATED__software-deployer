@@ -1,19 +1,8 @@
-__all__ = [
-  'upload',
-  'unpack',
-  'dbmigration',
-  'copyfile',
-  'movefile',
-  'removefile',
-  'createdirectory',
-  'deployandrestart',
-  'controlservice',
-  'stopservice',
-  'startservice',
-  'restartservice',
-  'disableloadbalancer',
-  'enableloadbalancer',
-  'executecommand',
-  'sendgraphite',
-  'cleanup',
-]
+import os
+
+__all__ = []
+
+for dirent in os.listdir(os.path.dirname(__file__)):
+
+    if dirent.endswith('.py') and not dirent.startswith('_'):
+        __all__.append(dirent[:-3])

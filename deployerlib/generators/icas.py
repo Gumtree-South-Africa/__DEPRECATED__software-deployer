@@ -13,7 +13,9 @@ class IcasGenerator(Generator):
         """Build the task list"""
 
         packages = self.get_packages()
-        remote_versions = self.get_remote_versions(packages)
+
+        if not self.config.redeploy:
+            remote_versions = self.get_remote_versions(packages)
 
         task_list = {
           'name': 'iCAS deployment',
@@ -25,6 +27,7 @@ class IcasGenerator(Generator):
         unpack_tasks = []
         dbmig_tasks = []
         properties_tasks = []
+        daemontools_tasks = []
         deploy_tasks = []
         cfp_tasks = []
         remove_temp_tasks = []
@@ -66,8 +69,9 @@ class IcasGenerator(Generator):
 
             for hostname in hosts:
 
-                if not self.config.redeploy and remote_versions.get(package.servicename).get(hostname) \
-                  == package.version:
+                if not self.config.redeploy and remote_versions.get(package.servicename) and \
+                  remote_versions.get(package.servicename).get(hostname) == package.version:\
+
                     self.log.info('Service {0} is up to date on {1}, skipping'.format(
                       package.servicename, hostname))
                     continue
@@ -180,6 +184,48 @@ class IcasGenerator(Generator):
                   'tag': package.servicename,
                 }
 
+                # clean up install location
+                cleanup_tasks.append({
+                  'command': 'cleanup',
+                  'remote_host': hostname,
+                  'remote_user': self.config.user,
+                  'path': service_config.install_location,
+                  'filespec': '{0}_*'.format(package.servicename),
+                  'keepversions': self.config.keep_versions,
+                  'tag': package.servicename,
+                })
+
+                # Enable or disable daemontools
+                if service_config.control_type == 'daemontools':
+
+                    if service_config.enabled_on_hosts and (service_config.enabled_on_hosts == 'all' \
+                      or hostname in service_config.enabled_on_hosts):
+
+                        daemontools_tasks.append({
+                          'command': 'add_daemontools',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'servicename': package.servicename,
+                          'unless_exists': '/etc/service/{0}'.format(package.servicename),
+                          'tag': package.servicename,
+                        })
+
+                    else:
+                        self.log.warning('Service will be disabled on {0}'.format(hostname), tag=package.servicename)
+
+                        daemontools_tasks.append({
+                          'command': 'remove_daemontools',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'servicename': package.servicename,
+                          'if_exists': '/etc/service/{0}'.format(package.servicename),
+                          'tag': package.servicename,
+                        })
+
+                        # The remaining tasks only apply to services that will are enabled on this host
+                        deploy_tasks.append(deploy_task)
+                        continue
+
                 # add LB tasks if configured for this service
                 lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
@@ -207,20 +253,7 @@ class IcasGenerator(Generator):
                     if hasattr(service_config, option):
                         deploy_task[option] = getattr(service_config, option)
 
-                # check for services that should not be started
-                if self.config.get('dont_start') and \
-                   package.servicename in self.config.dont_start.keys() and \
-                   (
-                     self.config.dont_start[package.servicename] is None or \
-                     hostname in self.config.dont_start[package.servicename]
-                   ):
-
-                    self.log.warning('Service {0} will not be started on {1} (as per config.dont_start)'.format(
-                      package.servicename, hostname))
-
-                    control_commands = ['stop_command', 'check_command']
-                else:
-                    control_commands = ['stop_command', 'start_command', 'check_command']
+                control_commands = ['stop_command', 'start_command', 'check_command']
 
                 # add service control options
                 for cmd in control_commands:
@@ -239,17 +272,6 @@ class IcasGenerator(Generator):
                     cfp_tasks.append(deploy_task)
                 else:
                     deploy_tasks.append(deploy_task)
-
-                # clean up install location
-                cleanup_tasks.append({
-                  'command': 'cleanup',
-                  'remote_host': hostname,
-                  'remote_user': self.config.user,
-                  'path': service_config.install_location,
-                  'filespec': '{0}_*'.format(package.servicename),
-                  'keepversions': self.config.keep_versions,
-                  'tag': package.servicename,
-                })
 
         if properties_tasks or dbmig_tasks or deploy_tasks:
             doing_deploy_tasks = True
@@ -290,6 +312,14 @@ class IcasGenerator(Generator):
               'name': 'Properties',
               'concurrency': self.config.non_deploy_concurrency,
               'tasks': properties_tasks,
+            })
+
+        if daemontools_tasks:
+
+            task_list['stages'].append({
+              'name': 'Setting daemontools state',
+              'concurrency': self.config.non_deploy_concurrency,
+              'tasks': daemontools_tasks,
             })
 
         if dbmig_tasks:
@@ -381,7 +411,7 @@ class IcasGenerator(Generator):
         """Return a stage based on a list of tasks and a list of hosts"""
 
         this_stage_tasks = [x for x in tasklist if x['remote_host'] in hostlist]
-        this_stage_hosts = ', '.join(set([x['remote_host'] for x in this_stage_tasks]))
+        this_stage_hosts = ', '.join(sorted(set([x['remote_host'] for x in this_stage_tasks])))
 
         if not this_stage_tasks:
             self.log.debug('No tasks found for deployment_order group {0}'.format(hostlist))

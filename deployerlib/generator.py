@@ -81,9 +81,9 @@ class Generator(object):
         failed = [x for x in remote_results.keys() if not remote_results[x]]
 
         if failed or not res:
-            raise DeployerException('Failed jobs: {0}'.format(', '.join(failed)))
-
-        self.log.info(green('Finished stage: Check remote service versions'))
+            self.log.error('Failed stage: Check remote service versions')
+        else:
+            self.log.info(green('Finished stage: Check remote service versions'))
 
         return self._resolve_remote_versions()
 
