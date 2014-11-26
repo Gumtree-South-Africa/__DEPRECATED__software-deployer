@@ -13,6 +13,7 @@ class IcasGenerator(Generator):
         """Build the task list"""
 
         packages = self.get_packages()
+        remote_versions = self.get_remote_versions(packages)
 
         task_list = {
           'name': 'iCAS deployment',
@@ -64,6 +65,12 @@ class IcasGenerator(Generator):
                   package.servicename))
 
             for hostname in hosts:
+
+                if not self.config.redeploy and remote_versions.get(package.servicename).get(hostname) \
+                  == package.version:
+                    self.log.info('Service {0} is up to date on {1}, skipping'.format(
+                      package.servicename, hostname))
+                    continue
 
                 upload_tasks.append({
                   'command': 'upload',
@@ -377,7 +384,7 @@ class IcasGenerator(Generator):
         this_stage_hosts = ', '.join(set([x['remote_host'] for x in this_stage_tasks]))
 
         if not this_stage_tasks:
-            self.log.warning('No tasks found for deployment_order group {0}'.format(hostlist))
+            self.log.debug('No tasks found for deployment_order group {0}'.format(hostlist))
             return None, None
 
         tasklist = [x for x in tasklist if not x in this_stage_tasks]
