@@ -6,11 +6,16 @@ from time import gmtime, strftime
 from fabric.colors import red, green, yellow, cyan, blue, magenta
 from fabric.api import env
 
-
+# Default level
 level = logging.INFO
+
+# Add level VERBOSE
 logging.VERBOSE = 15
 logging.addLevelName(logging.VERBOSE, 'VERBOSE')
 
+# Add level HIDEBUG
+logging.HIDEBUG = 5
+logging.addLevelName(logging.HIDEBUG, 'HIDEBUG')
 
 
 def set_level(new_level):
@@ -97,6 +102,9 @@ class Log(object):
             tag = self.tag
 
         self.logger.log(level, message, extra={'tag': tag, 'remote': remote})
+
+    def hidebug(self, message, tag=''):
+        self.log(message, logging.HIDEBUG, tag)
 
     def debug(self, message, tag=''):
         self.log(message, logging.DEBUG, tag)

@@ -41,7 +41,7 @@ class Package(object):
         if not os.access(path, os.R_OK):
             raise DeployerException('{0} is not readable'.format(path))
 
-        self.log.debug('{0} exists and is readable'.format(path))
+        self.log.hidebug('{0} exists and is readable'.format(path))
         return True
 
     def split_file_extension(self, filename):
@@ -56,7 +56,7 @@ class Package(object):
         else:
             raise DeployerException('Unsupported file type: {0}'.format(filename))
 
-        self.log.debug('Package name is {0}, file type is {1}'.format(packagename, filetype))
+        self.log.hidebug('Package name is {0}, file type is {1}'.format(packagename, filetype))
         return packagename, filetype
 
     def get_servicename_from_packagename(self, packagename):
@@ -69,7 +69,7 @@ class Package(object):
               packagename))
 
         self.log.tag = servicename
-        self.log.debug('Determined service name from package {0}'.format(packagename))
+        self.log.hidebug('Determined service name from package {0}'.format(packagename))
         return servicename
 
     def get_servicetype_from_servicename(self, servicename):
@@ -101,9 +101,9 @@ class Package(object):
 
         try:
             sha, timestamp = version.split('-')
-            self.log.debug('SHA is {0}, timestamp is {1}'.format(sha, timestamp))
+            self.log.hidebug('SHA is {0}, timestamp is {1}'.format(sha, timestamp))
         except:
-            self.log.debug('Unable to extract SHA and timestamp from package version: {0}'.format(
+            self.log.hidebug('Unable to extract SHA and timestamp from package version: {0}'.format(
               version))
             sha, timestamp = None, None
 

@@ -44,6 +44,17 @@ class IcasGenerator(Generator):
             active_cfp_host = None
 
         for package in packages:
+
+            if hasattr(self.config, 'ignore_packages'):
+
+                if not hasattr(self.config.ignore_packages, '__iter__'):
+                    self.config.ignore_packages = [self.config.ignore_packages]
+
+                if any(x in package.servicename for x in self.config.ignore_packages):
+                    self.log.info('Skipping package {0} because it matched "ignore_packages"'.format(
+                      package.servicename))
+                    continue
+
             service_config = self.config.get_with_defaults('service', package.servicename)
 
             if not service_config:

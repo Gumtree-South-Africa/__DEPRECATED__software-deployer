@@ -15,14 +15,14 @@ class Command(object):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
-        self.log.debug('Initializing class: {0}'.format(repr(self)))
+        self.log.hidebug('Initializing class: {0}'.format(repr(self)))
         res = self.initialize(**kwargs)
 
         if not res:
             raise DeployerException('Failed to initialize {0}: initialize() returned {1}'.format(
               repr(self), repr(res)))
 
-        self.log.debug('Command initialized successfully: {0}'.format(repr(self)))
+        self.log.hidebug('Command initialized successfully: {0}'.format(repr(self)))
 
     def __repr__(self):
         attrs = ', '.join(['{0}={1}'.format(key, repr(value)) for key, value in vars(self).iteritems() if key != 'log'])
