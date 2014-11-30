@@ -1,3 +1,15 @@
+software-deployer (0.9.10) precise; urgency=low
+
+  * Improvements to behaviour of --hosts and --hostgroups
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Sun, 30 Nov 2014 12:24:36 +0100
+
+software-deployer (0.9.9) precise; urgency=low
+
+  * Bug fixes for Cleanup and Config
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Sat, 29 Nov 2014 22:03:12 +0100
+
 software-deployer (0.9.8) precise; urgency=low
 
   * Make deployer ready for Aurora
