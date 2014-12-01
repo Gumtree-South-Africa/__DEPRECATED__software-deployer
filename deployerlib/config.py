@@ -57,10 +57,10 @@ class Config(AttrDict):
                 c_defaults = self.get_defaults(dict(c.items()))
                 return AttrDict(dict(ct_defaults + c_defaults + self.get_defaults(dict(ct_defaults + c_defaults + c.items())) + c.items()))
             else:
-                self.log.debug('No values for {0} found in config[{1}]. Will return defaults only.'.format(key,configtype))
+                self.log.debug('No values for {0} found in config[{1}]. Will return None.'.format(key,configtype))
         else:
-            self.log.debug('No key "{0}" found in config. Will return defaults only.'.format(configtype))
-        return AttrDict(dict(self.get_defaults(configtype)))
+            self.log.debug('No key "{0}" found in config. Will return None.'.format(configtype))
+        return None
 
     def get_lb(self, servicename, hostname):
         """Return the load balancer that controls supplied service on supplied host"""
@@ -70,7 +70,7 @@ class Config(AttrDict):
         hostgroups =  self.get_with_defaults('service', servicename)['hostgroups']
         for hg in hostgroups:
 
-            if hostname in self.hostgroup[hg]['hosts']:
+            if hostname in self.hostgroup[hg]['hosts'] or hostname.rsplit('.'+self.dns_suffix, 1)[0] in self.hostgroup[hg]['hosts']:
                 host_hg = hg
                 break
 
@@ -84,7 +84,10 @@ class Config(AttrDict):
             return None, None, None
 
         lb_hostname = self.hostgroup[host_hg]['lb']
-        lb_config = self.get_with_defaults('lb', lb_hostname)
+        if hasattr(self,'lb') and hasattr(self.lb, lb_hostname):
+            lb_config = self.get_with_defaults('lb', lb_hostname)
+        else:
+            lb_config = AttrDict(dict(self.get_defaults('lb')))
         lb_username = lb_config.api_user
         lb_password = lb_config.api_password
 
@@ -102,6 +105,9 @@ class Config(AttrDict):
                 hosts += self.hostgroup[hg]['hosts']
 
         if hosts:
+            if 'dns_suffix' in self:
+                hosts = ['{0}.{1}'.format(h,self.dns_suffix) if h.count('.') < 3 else h for h in hosts]
+
             self.log.info('configured to run on: {0}'.format(', '.join(hosts)), tag=servicename)
 
         return hosts

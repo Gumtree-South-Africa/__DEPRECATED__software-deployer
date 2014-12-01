@@ -30,22 +30,19 @@ class AuroraGenerator(Generator):
 
         for package in packages:
 
-            service_config = self.config.get_with_defaults('service', package.servicename)
-            hosts = self.config.get_service_hosts(package.servicename)
-            lb_service =  hasattr(service_config, 'lb_service')
-
-            if not lb_service:
-                self.log.warning('No lb_service defined', tag=package.servicename)
+            servicename = package.servicename
+            service_config = self.config.get_with_defaults('service', servicename)
+            hosts = self.config.get_service_hosts(servicename)
 
             for hostname in hosts:
 
-                if not self.config.redeploy and remote_versions.get(package.servicename).get(hostname) \
+                if not self.config.redeploy and remote_versions.get(servicename).get(hostname) \
                   == package.version:
-                    self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=package.servicename)
+                    self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=servicename)
                     continue
 
                 upload_tasks.append({
-                  'tag': package.servicename,
+                  'tag': servicename,
                   'command': 'upload',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
@@ -54,7 +51,7 @@ class AuroraGenerator(Generator):
                 })
 
                 unpack_tasks.append({
-                  'tag': package.servicename,
+                  'tag': servicename,
                   'command': 'unpack',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
@@ -64,7 +61,7 @@ class AuroraGenerator(Generator):
 
                 if service_config.control_type == 'props':
                     props_tasks.append({
-                      'tag': package.servicename,
+                      'tag': servicename,
                       'command': 'copyfile',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
@@ -77,22 +74,22 @@ class AuroraGenerator(Generator):
 
                 if service_config.control_type == 'daemontools':
                     deploy_task = {
-                      'tag': package.servicename,
+                      'tag': servicename,
                       'command': 'deploy_and_restart',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
                       'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
                       'destination': os.path.join(service_config.install_location, package.packagename),
-                      'link_target': os.path.join(service_config.install_location, package.servicename),
+                      'link_target': os.path.join(service_config.install_location, servicename),
                     }
 
                     if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
-                      if x['tag'] == package.servicename]:
+                      if x['tag'] == servicename]:
 
-                        self.log.info('Adding DB migrations to be run on {0}'.format(hostname), tag=package.servicename)
+                        self.log.info('Adding DB migrations to be run on {0}'.format(hostname), tag=servicename)
 
                         dbmig_tasks.append({
-                          'tag': package.servicename,
+                          'tag': servicename,
                           'command': 'dbmigration',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
@@ -104,21 +101,45 @@ class AuroraGenerator(Generator):
                               ),
                           })
 
-                    if lb_service:
-                        lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
+                    if '.' in servicename:
+                        shortservicename = servicename.rsplit(".", 1)[1].replace("-server", "")
+                    else:
+                        shortservicename = service
 
-                        if lb_hostname and lb_username and lb_password:
-                            if hasattr(service_config, 'lb_service'):
-                                deploy_task['lb_service'] = service_config.lb_service.format(hostname=hostname)
+                    if '.' in hostname:
+                        shorthostname = hostname.split(".", 1)[0]
+                    else:
+                        shorthostname = hostname
 
-                                deploy_task.update({
-                                  'lb_hostname': lb_hostname,
-                                  'lb_username': lb_username,
-                                  'lb_password': lb_password,
-                                })
+                    if hasattr(service_config, 'lb_service'):
+                        lb_service = service_config.lb_service.format(
+                                hostname=shorthostname,
+                                servicename=shortservicename,
+                                )
+                    else:
 
+                        if self.config.environment == "production":
+                            lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0] + "." + self.config.platform
+                        elif self.config.environment == "lp":
+                            lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0] + "." + self.config.platform + self.config.environment
                         else:
-                            self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=package.servicename)
+                            lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0]
+
+                        self.log.info('Generated lb_service={0}'.format(repr(lb_service)))
+
+                    lb_hostname, lb_username, lb_password = self.config.get_lb(servicename, hostname)
+
+                    if lb_hostname and lb_username and lb_password:
+                        deploy_task['lb_service'] = lb_service
+
+                        deploy_task.update({
+                          'lb_hostname': lb_hostname,
+                          'lb_username': lb_username,
+                          'lb_password': lb_password,
+                        })
+
+                    else:
+                        self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=servicename)
 
                     for option in ('control_timeout', 'lb_timeout'):
                         if hasattr(service_config, option):
@@ -128,11 +149,11 @@ class AuroraGenerator(Generator):
 
                         if hasattr(service_config, cmd):
                             deploy_task[cmd] = service_config[cmd].format(
-                              servicename=package.servicename,
+                              servicename=servicename,
                               port=service_config['port'],
                             )
                         else:
-                            self.log.warning('No {0} configured'.format(cmd), tag=package.servicename)
+                            self.log.warning('No {0} configured'.format(cmd), tag=servicename)
 
                     deploy_tasks.append(deploy_task)
 
@@ -153,6 +174,7 @@ class AuroraGenerator(Generator):
                       'source': os.path.join(service_config.install_location, service_config.unpack_dir),
                     })
             # end for hostname in hosts:
+        # end for package in packages:
 
         if not upload_tasks and not unpack_tasks and not deploy_tasks:
             self.log.info('No services require deployment')
