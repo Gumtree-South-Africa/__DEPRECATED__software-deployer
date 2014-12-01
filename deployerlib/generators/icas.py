@@ -50,8 +50,8 @@ class IcasGenerator(Generator):
                 if not hasattr(self.config.ignore_packages, '__iter__'):
                     self.config.ignore_packages = [self.config.ignore_packages]
 
-                if any(x in package.servicename for x in self.config.ignore_packages):
-                    self.log.info('Skipping package {0} because it matched "ignore_packages"'.format(
+                if package.servicename in self.config.ignore_packages:
+                    self.log.info('Skipping package {0} because it is in "ignore_packages"'.format(
                       package.servicename))
                     continue
 
@@ -209,7 +209,7 @@ class IcasGenerator(Generator):
                 # Enable or disable daemontools
                 if service_config.control_type == 'daemontools':
 
-                    if service_config.enabled_on_hosts and (service_config.enabled_on_hosts == 'all' \
+                    if hasattr(service_config, 'enabled_on_hosts') and (service_config.enabled_on_hosts == 'all' \
                       or hostname in service_config.enabled_on_hosts):
 
                         daemontools_tasks.append({
