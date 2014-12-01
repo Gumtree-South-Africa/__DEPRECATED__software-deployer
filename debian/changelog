@@ -1,3 +1,15 @@
+software-deployer (0.9.7) precise; urgency=low
+
+  * Bug fix that caused incorrect command results to be returned to executor
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Mon, 01 Dec 2014 16:47:25 +0100
+
+software-deployer (0.9.6) precise; urgency=low
+
+  * Generator functionality
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Thu, 27 Nov 2014 14:13:59 +0100
+
 software-deployer (0.9.5) precise; urgency=low
 
   * Bugfix

@@ -34,7 +34,7 @@ class RemoteHost(object):
     def __repr__(self):
 
         return '{0}(hostname={1}, username={2})'.format(self.__class__.__name__,
-          repr(env.host_string), repr(env.user))
+          repr(self.hostname), repr(self.username))
 
     def put_remote(self, local_file, remote_dir, **fabric_settings):
         """Upload a file to a remote host"""
@@ -62,21 +62,3 @@ class RemoteHost(object):
                 return sudo(command, shell=False)
             else:
                 return run(command)
-
-
-def get_host_by_hostname(hostname, username=''):
-    """Get or create a host object"""
-
-    match = [x for x in all_hosts if x.hostname == hostname]
-
-    if len(match) == 1:
-        return match[0]
-    elif len(match) > 1:
-        raise DeployerException('More than one host found with hostname{0}'.format(hostname))
-    else:
-        host = RemoteHost(hostname, username)
-        all_hosts.append(host)
-        return host
-
-
-all_hosts = []

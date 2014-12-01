@@ -36,13 +36,14 @@ class JobQueue(object):
         ___________________________
                                 End
     """
-    def __init__(self, max_running, max_per_host=None, remote_results={}, config=None):
+    def __init__(self, remote_results, max_running, max_per_host=None, config=None):
         """
         Setup the class to resonable defaults.
         """
 
         self.log = Log(self.__class__.__name__)
         self.remote_results = remote_results
+        self.not_run = 'NOTRUN'
         self._queued = []
         self._running = []
         self._completed = []
@@ -101,11 +102,10 @@ class JobQueue(object):
         for process in processlist:
             self._queued.append(process)
             self._num_of_jobs += 1
-            # prime with failed result in case no results are returned
-            self.remote_results[process.name] = False
-
-            if self._debug:
-                print("job queue appended %s." % process.name)
+            # prime with not_run string to differentiate failed jobs from jobs
+            # which have not run
+            self.remote_results[process.name] = self.not_run
+            self.log.hidebug('{0} appended job {1}'.format(self.__class__.__name__, process.name))
 
     def run(self):
         """
@@ -215,7 +215,7 @@ class JobQueue(object):
 
                         if not self.remote_results[job._name]:
                             _abort_queue(job._name)
-                            return results
+                            return False
 
                         done = self._running.pop(id)
                         self._completed.append(done)
@@ -247,7 +247,7 @@ class JobQueue(object):
         for job in self._completed:
             results[job.name]['exit_code'] = job.exitcode
 
-        return results
+        return True
 
     def _fill_results(self, results):
         """
@@ -257,8 +257,6 @@ class JobQueue(object):
         while True:
             try:
                 datum = self._comms_queue.get_nowait()
-                # debug
-                print 'YYYYY datum:', datum
                 results[datum['name']]['results'] = datum['result']
             except Queue.Empty:
                 break

@@ -73,14 +73,14 @@ class Generator(object):
                 job._host = host.hostname
                 job_list.append(job)
 
-        job_queue = JobQueue(concurrency, concurrency_per_host, remote_results=remote_results)
+        job_queue = JobQueue(remote_results, concurrency, concurrency_per_host)
         job_queue.append(job_list)
 
         job_queue.close()
-        res = job_queue.run()
+        queue_result = job_queue.run()
         failed = [x for x in remote_results.keys() if not remote_results[x]]
 
-        if failed or not res:
+        if failed or not queue_result:
             self.log.error('Failed stage: Check remote service versions')
         else:
             self.log.info(green('Finished stage: Check remote service versions'))

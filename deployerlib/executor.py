@@ -159,6 +159,7 @@ class Executor(object):
 
                 task['remote_host'] = self.get_remote_host(task['remote_host'], username)
                 job_id = task['remote_host'].hostname
+
             else:
                 job_id = 'local'
 
@@ -209,31 +210,33 @@ class Executor(object):
             start_time = time.time()
             self.log.info(green('Starting stage: {0}'.format(stage['name'])))
 
-            job_queue = JobQueue(stage['concurrency'], stage['concurrency_per_host'], remote_results=self.remote_results)
+            job_queue = JobQueue(self.remote_results, stage['concurrency'], stage['concurrency_per_host'])
 
             for task in stage['tasks']:
                 job_queue.append(task)
 
             job_queue.close()
-            job_queue.run()
+            queue_success = job_queue.run()
 
             duration = int(time.time() - start_time)
-
             failed = [x for x in self.remote_results.keys() if not self.remote_results[x]]
 
-            if failed:
+            if failed or not queue_success:
                 self.log.error('Failed stage: {0}'.format(stage['name']))
+
+                for failed_job in failed:
+                    self.log.error('Failed job: {0}'.format(failed_job))
+
+                for not_run in [x for x in self.remote_results.keys() if self.remote_results[x] == job_queue.not_run]:
+                    self.log.debug('Job not run due to aborted queue: {0}'.format(not_run))
+
+                raise DeployerException('Failed jobs')
+
             else:
                 self.log.info(green('Finished stage: {0}'.format(stage['name'])))
 
             self.log.verbose('Stage {0} execution duration: {1} seconds ({2})'.format(
               idx, duration, stage['name']))
-
-            for failed_job in failed:
-                self.log.error('Failed job: {0}'.format(failed_job))
-
-            if failed:
-                raise DeployerException('Failed jobs')
 
         tasklist_duration = int(time.time() - tasklist_start_time)
         self.log.verbose('Tasklist execution duration: {0} seconds'.format(tasklist_duration))
