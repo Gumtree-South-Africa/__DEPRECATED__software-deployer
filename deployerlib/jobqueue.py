@@ -213,7 +213,7 @@ class JobQueue(object):
                     if not job.is_alive():
                         self.log.debug('Found finished job: {0}'.format(job._name))
 
-                        if not self.remote_results[job._name]:
+                        if not self.remote_results[job._name] or self.remote_results[job._name] == self.not_run:
                             _abort_queue(job._name)
                             return False
 

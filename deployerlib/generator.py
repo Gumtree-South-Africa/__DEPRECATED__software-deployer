@@ -64,6 +64,11 @@ class Generator(object):
 
         for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
+
+            if not service_config:
+                self.log.debug('Service not found in config: {0}'.format(package.servicename))
+                continue
+
             hosts = [self.get_remote_host(x, self.config.user) for x in self.config.get_service_hosts(package.servicename)]
 
             for host in hosts:
