@@ -6,7 +6,14 @@ from deployerlib.exceptions import DeployerException
 
 
 class Command(object):
-    """Framework for a remote command to be run with JobQueue"""
+    """Parent class for a remote command to be run with JobQueue
+
+       Commands should inherit this class and override the execute() method. execute()
+       should return True on success and False if it wants exection to stop.
+
+       Commands can optionally override the initialize() method in order to verify
+       input or provide further initialization.
+    """
 
     def __init__(self, **kwargs):
         self.tag = kwargs.pop('tag', None)
@@ -45,6 +52,9 @@ class Command(object):
         """Executor runs this method, which calls self.execute and returns the results"""
 
         start_time = time.time()
+
+        # Return None by default, in case the command fails to complete
+        remote_results[procname] = None
 
         res = self.execute()
 

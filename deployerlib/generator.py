@@ -11,7 +11,24 @@ from deployerlib.exceptions import DeployerException
 
 
 class Generator(object):
-    """Provide access to elements a generator might require"""
+    """Parent class for generators
+
+       Generators should inherit this class and override the generate() method.
+       The generate() method should return a dictionary of tasks to be run by
+       the Executor.
+
+       Generators will inherit the following methods:
+
+       self.get_packages(): Gets a list of components as specified on the command
+       line and returns a list of Package objects.
+
+       self.get_remote_versions(list_of_package_objects): Get the versions of
+       packages running on remote hosts. Returns a dict of package versions,
+       i.e. remote_versions[servicename][hostname]
+
+       self.get_graphite_stage(metric_suffix): Returns a tasklist stage that
+       calls the send_graphite command.
+    """
 
     def __init__(self, config):
         self.log = Log(self.__class__.__name__)
