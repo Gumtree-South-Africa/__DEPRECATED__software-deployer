@@ -141,3 +141,20 @@ class Generator(object):
             host = RemoteHost(hostname, username)
             self._remote_hosts.append(host)
             return host
+
+    def get_graphite_stage(self, metric_suffix):
+        """Return a task for send_graphite"""
+
+        task = {
+          'command': 'send_graphite',
+          'carbon_host': self.config.graphite.carbon_host,
+          'metric_name': '.'.join((self.config.graphite.metric_prefix, metric_suffix)),
+        }
+
+        stage = {
+          'name': 'Send graphite {0}'.format(metric_suffix),
+          'concurrency': 1,
+          'tasks': [task],
+        }
+
+        return stage

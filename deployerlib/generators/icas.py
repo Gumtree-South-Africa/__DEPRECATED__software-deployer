@@ -314,7 +314,6 @@ class IcasGenerator(Generator):
             })
 
         if hasattr(self.config, 'graphite') and doing_deploy_tasks and self.config.release:
-            doing_deploy_tasks = True
             task_list['stages'].append(self.get_graphite_stage('start'))
 
         if properties_tasks:
@@ -440,20 +439,3 @@ class IcasGenerator(Generator):
         }
 
         return this_task, this_stage_tasks
-
-    def get_graphite_stage(self, metric_suffix):
-        """Return a task for send_graphite"""
-
-        task = {
-          'command': 'send_graphite',
-          'carbon_host': self.config.graphite.carbon_host,
-          'metric_name': '.'.join((self.config.graphite.metric_prefix, metric_suffix)),
-        }
-
-        stage = {
-          'name': 'Send graphite {0}'.format(metric_suffix),
-          'concurrency': 1,
-          'tasks': [task],
-        }
-
-        return stage

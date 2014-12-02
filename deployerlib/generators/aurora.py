@@ -180,6 +180,11 @@ class AuroraGenerator(Generator):
             self.log.info('No services require deployment')
             return
 
+        if props_tasks or dbmig_tasks or deploy_tasks:
+            doing_deploy_tasks = True
+        else:
+            doing_deploy_tasks = False
+
         if upload_tasks:
             task_list['stages'].append({
               'name': 'Upload',
@@ -203,6 +208,9 @@ class AuroraGenerator(Generator):
               'concurrency_per_host': 3,
               'tasks': unpack_tasks,
             })
+
+        if hasattr(self.config, 'graphite') and doing_deploy_tasks and self.config.release:
+            task_list['stages'].append(self.get_graphite_stage('start'))
 
         if props_tasks:
             task_list['stages'].append({
@@ -241,6 +249,9 @@ class AuroraGenerator(Generator):
               'concurrency': 3,
               'tasks': this_stage,
             })
+
+        if hasattr(self.config, 'graphite') and doing_deploy_tasks:
+            task_list['stages'].append(self.get_graphite_stage('end'))
 
         if remove_temp_tasks:
             task_list['stages'].append({
