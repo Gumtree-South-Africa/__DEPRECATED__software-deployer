@@ -138,71 +138,75 @@ class Config(AttrDict):
                 self.log.debug('Item "{0}" found in struct'.format(item_display))
                 c = struct[found]
                 v = config[item]
-                if parent and type(v) is dict:
-                    self.log.debug('Trying to get defaults for {0} "{1}"'.format(parent,item))
-                    v = dict(self.get_with_defaults(parent,item).items())
-                if 'type' not in c:
-                    if 'types' in c:
-                        for t in c['types']:
-                            if type(v) == t['type']:
-                                c.update(t)
-                        if 'type' not in c:
-                            self.log.error('Type "{1}" of item "{0}" does not match supported types in struct'.format(item_display,str(type(v))))
-                            errors += 1
+                if type(v) is type(None):
+                    if 'options' in c and 'allow_none' in c['options']:
+                        self.log.debug('Empty value for {0} is allowed'.format(item_display))
                     else:
-                        self.log.error('Struct for item "{0}" does not contain a type or types specification'.format(item_display))
+                        self.log.error('NoneType is not allowed for {0}'.format(item_display))
                         errors += 1
-                if 'type' in c:
-                    if type(v) == c['type']:
-                        self.log.debug('Type "{1}" of item "{0}" is correct'.format(item_display,str(c['type'])))
-                        if type(v) is int:
-                            if 'allowed_range' in c:
-                                min,max = c['allowed_range']
-                                if v >= min and v <= max:
-                                    self.log.debug('Value "{1}" of item "{0}" lies within allowed range {2}'.format(item_display,v,str(c['allowed_range'])))
-                                else:
-                                    self.log.error('Value "{1}" of item "{0}" lies outside allowed range {2}'.format(item_display,v,str(c['allowed_range'])))
-                                    errors += 1
-                        if type(v) is str:
-                            if 'allowed_re' in c:
-                                if re.match(c['allowed_re'],v):
-                                    self.log.debug('Value "{1}" of item "{0}" matches RE "{2}"'.format(item_display,v,c['allowed_re']))
-                                else:
-                                    self.log.error('Value "{1}" of item "{0}" does NOT match RE "{2}"'.format(item_display,v,c['allowed_re']))
-                                    errors += 1
-                        if type(v) is list:
-                            if 'allowed_values' in c:
-                                for va in v:
-                                    if va in c['allowed_values']:
-                                        self.log.debug('Member value "{1}" of list item "{0}" is allowed'.format(item_display,va))
+                else:
+                    if parent and type(v) is dict:
+                        self.log.debug('Trying to get defaults for {0} "{1}"'.format(parent,item))
+                        v = dict(self.get_with_defaults(parent,item).items())
+                    if 'type' not in c:
+                        if 'types' in c:
+                            for t in c['types']:
+                                if type(v) == t['type']:
+                                    c.update(t)
+                            if 'type' not in c:
+                                self.log.error('Type "{1}" of item "{0}" does not match supported types in struct'.format(item_display,str(type(v))))
+                                errors += 1
+                        else:
+                            self.log.error('Struct for item "{0}" does not contain a type or types specification'.format(item_display))
+                            errors += 1
+                    if 'type' in c:
+                        if type(v) == c['type']:
+                            self.log.debug('Type "{1}" of item "{0}" is correct'.format(item_display,str(c['type'])))
+                            if type(v) is int:
+                                if 'allowed_range' in c:
+                                    min,max = c['allowed_range']
+                                    if v >= min and v <= max:
+                                        self.log.debug('Value "{1}" of item "{0}" lies within allowed range {2}'.format(item_display,v,str(c['allowed_range'])))
                                     else:
-                                        self.log.error('Member value "{1}" of list item "{0}" is NOT allowed'.format(item_display,va))
+                                        self.log.error('Value "{1}" of item "{0}" lies outside allowed range {2}'.format(item_display,v,str(c['allowed_range'])))
                                         errors += 1
-                            elif 'allowed_types' in c:
-                                i = 0
-                                for va in v:
-                                    if type(va) in c['allowed_types']:
-                                        allowed_struct = dict(c.items())
-                                        if type(va) is not list:
-                                            allowed_struct['type'] = type(va)
-                                        errors += self.vrfy_w_recurse({ '{0}[{1}]'.format(item,repr(i)): va }, { '{0}[{1}]'.format(item,repr(i)): allowed_struct }, '')
+                            if type(v) is str:
+                                if 'allowed_re' in c:
+                                    if re.match(c['allowed_re'],v):
+                                        self.log.debug('Value "{1}" of item "{0}" matches RE "{2}"'.format(item_display,v,c['allowed_re']))
                                     else:
-                                        self.log.error('Type {0} of list member {1} of item {2} is not allowed'.format(type(va),str(va),item_display))
+                                        self.log.error('Value "{1}" of item "{0}" does NOT match RE "{2}"'.format(item_display,v,c['allowed_re']))
                                         errors += 1
-                                    i += 1
-                        if type(v) is dict:
-                            if 'allowed_struct' in c:
-                                if parent:
-                                    item = parent + '[{0}]'.format(repr(item))
-                                if 'options' in c and 'skip_mandatory' in c['options']:
-                                    for (as_key,as_val) in c['allowed_struct'].items():
-                                        if 'options' in as_val and 'mandatory' in as_val['options']:
-                                            c['allowed_struct'][as_key]['options'].remove('mandatory')
-                                            c['allowed_struct'][as_key]['options'].append('skip_mandatory')
-                                errors += self.vrfy_w_recurse(v,c['allowed_struct'],item)
-                    else:
-                        if type(v) is type(None) and 'options' in c and 'allow_none' in c['options']:
-                            self.log.debug('Empty value for {0} is allowed'.format(item_display))
+                            if type(v) is list:
+                                if 'allowed_values' in c:
+                                    for va in v:
+                                        if va in c['allowed_values']:
+                                            self.log.debug('Member value "{1}" of list item "{0}" is allowed'.format(item_display,va))
+                                        else:
+                                            self.log.error('Member value "{1}" of list item "{0}" is NOT allowed'.format(item_display,va))
+                                            errors += 1
+                                elif 'allowed_types' in c:
+                                    i = 0
+                                    for va in v:
+                                        if type(va) in c['allowed_types']:
+                                            allowed_struct = dict(c.items())
+                                            if type(va) is not list:
+                                                allowed_struct['type'] = type(va)
+                                            errors += self.vrfy_w_recurse({ '{0}[{1}]'.format(item,repr(i)): va }, { '{0}[{1}]'.format(item,repr(i)): allowed_struct }, '')
+                                        else:
+                                            self.log.error('Type {0} of list member {1} of item {2} is not allowed'.format(type(va),str(va),item_display))
+                                            errors += 1
+                                        i += 1
+                            if type(v) is dict:
+                                if 'allowed_struct' in c:
+                                    if parent:
+                                        item = parent + '[{0}]'.format(repr(item))
+                                    if 'options' in c and 'skip_mandatory' in c['options']:
+                                        for (as_key,as_val) in c['allowed_struct'].items():
+                                            if 'options' in as_val and 'mandatory' in as_val['options']:
+                                                c['allowed_struct'][as_key]['options'].remove('mandatory')
+                                                c['allowed_struct'][as_key]['options'].append('skip_mandatory')
+                                    errors += self.vrfy_w_recurse(v,c['allowed_struct'],item)
                         else:
                             self.log.error('Unexpected type "{0}" of item "{1}"'.format(type(v),item_display))
                             errors += 1
@@ -353,8 +357,15 @@ class Config(AttrDict):
                     'options': ['allow_none'],
                     },
                 'categories': {
-                    'type': list,
-                    'allowed_types': [str],
+                    'types': [
+                        {
+                            'type': list,
+                            'allowed_types': [str],
+                            },
+                        {
+                            'type': str,
+                            },
+                        ],
                     'allowed_re': '^[a-z_]+$',
                     'options': ['allow_none'],
                     },

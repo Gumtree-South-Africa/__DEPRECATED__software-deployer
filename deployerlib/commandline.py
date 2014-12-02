@@ -25,12 +25,18 @@ class CommandLine(object):
         parser.add_argument('--verify-config', action='store_true', help='Don\'t attempt to verify config file syntax')
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
-        host_group.add_argument('--hostgroups', nargs='+', help='Specify one or more hostgroups to deploy to')
-        host_group.add_argument('--categories', nargs='+', help='Specify one or more categories to deploy to')
         host_group.add_argument('--hosts', nargs='+', help='Specify a list of hosts to deploy to')
+        host_group.add_argument('--hostgroups', nargs='+', metavar='HOSTGROUP', help='Specify one or more hostgroups to deploy to')
+        host_group.add_argument('--categories', nargs='+', metavar='CATEGORY', help='Specify one or more categories to deploy to (replaces --cluster)')
+        # supporting --cluster for backwards compatibility:
+        host_group.add_argument('--cluster', choices=['frontend', 'backend', 'scrubber', 'properties', 'ranking'],
+            help='Cluster to deploy to (deprecated, use --hosts, --hostgroups, or --categories)', dest='categories')
 
         parser.add_argument('--redeploy', action='store_true', help='Redeploy services even if they exist on remote hosts')
         parser.add_argument('--parallel', type=int, default=3, help='Number of hosts to run in parallel')
+
+        parser.add_argument('--pipeline-start', action='store_true', help='Will inform pipeline that deployment was started')
+        parser.add_argument('--pipeline-end', action='store_true', help='Will inform pipeline that deployment was ended')
 
         parser.parse_args(namespace=self)
 
