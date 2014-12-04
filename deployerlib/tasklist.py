@@ -23,10 +23,10 @@ class Tasklist(object):
           'test': testgenerator.TestGenerator,
         }
 
-        generator = generators.get(config.platform)
+        generator = generators.get(generator_name)
 
         if not generator:
-            raise DeployerException('No callable matrix defined for platform {0}'.format(config.platform))
+            raise DeployerException('No callable matrix defined for platform {0}'.format(generator_name))
 
         self.log.debug('Using generator: {0}'.format(generator.__name__))
 

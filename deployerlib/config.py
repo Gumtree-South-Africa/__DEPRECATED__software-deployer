@@ -20,9 +20,11 @@ class Config(AttrDict):
 
             mapping = vars(mapping)
 
-            with open(mapping['config'], 'r') as f:
-                config = yaml.safe_load(f)
-                mapping = dict(config.items() + mapping.items())
+            if mapping.get('config'):
+
+                with open(mapping['config'], 'r') as f:
+                    config = yaml.safe_load(f)
+                    mapping = dict(config.items() + mapping.items())
 
             loaded = True
 

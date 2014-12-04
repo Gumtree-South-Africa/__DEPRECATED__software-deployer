@@ -50,6 +50,10 @@ class Executor(object):
         self.remote_results = manager.dict()
 
         if not tasklist:
+
+            if not filename:
+                raise DeployerException('Empty tasklist and no filename specified')
+
             tasklist = self.read_tasklist(filename)
 
         self.stages = self.parse_stages(tasklist)
@@ -241,3 +245,5 @@ class Executor(object):
 
         tasklist_duration = int(time.time() - tasklist_start_time)
         self.log.verbose('Tasklist execution duration: {0} seconds'.format(tasklist_duration))
+
+        return True
