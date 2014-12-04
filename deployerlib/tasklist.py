@@ -20,6 +20,7 @@ class Tasklist(object):
           'pmcconnell': pmcconnell.DemoGenerator,
           'icas': icas.IcasGenerator,
           'aurora': aurora.AuroraGenerator,
+          'test': testgenerator.TestGenerator,
         }
 
         generator = generators.get(config.platform)

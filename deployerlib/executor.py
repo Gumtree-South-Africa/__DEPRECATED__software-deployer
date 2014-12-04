@@ -41,6 +41,7 @@ class Executor(object):
           'execute_command': executecommand.ExecuteCommand,
           'send_graphite': sendgraphite.SendGraphite,
           'cleanup': cleanup.CleanUp,
+          'test_command': testcommand.TestCommand,
         }
 
         manager = Manager()
