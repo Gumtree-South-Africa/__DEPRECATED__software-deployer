@@ -2,12 +2,14 @@ import sys
 import logging
 import logging.handlers
 
-from time import gmtime, strftime
 from fabric.colors import red, green, yellow, cyan, blue, magenta
 from fabric.api import env
 
+from deployerlib.exceptions import DeployerException
+
 # Default level
 level = logging.INFO
+logfile = ''
 
 # Add level VERBOSE
 logging.VERBOSE = 15
@@ -24,10 +26,17 @@ def set_level(new_level):
     level = new_level
 
 
+def set_logfile(new_logfile):
+
+    global logfile
+    logfile = new_logfile
+
+
 class Log(object):
 
     def __init__(self, instance='DEPLOYER', tag=''):
         global level
+        global logfile
 
         self.logger = self.get_logger(instance, level)
         self.instance = instance
@@ -46,10 +55,10 @@ class Log(object):
     def create_logger(self, instance, level):
         """Create and return a new logger"""
 
-        logger = logging.getLogger(instance)
-        logger.setLevel(level)
+        global logfile
 
-        d = strftime("%Y-%m-%d-%H:%M:%S", gmtime())
+        logger = logging.getLogger(instance)
+        logger.setLevel(1)
 
         console = logging.StreamHandler(sys.stdout)
         console.setLevel(level)
@@ -59,49 +68,36 @@ class Log(object):
         console.setFormatter(formatter)
         logger.addHandler(console)
 
-#        # silently create log directory
-#        try:
-#            auroralib.util.DUtil.mkdir_p('/opt/log')
-#        except IOError, e:
-#            raise DBailException("Can not create logging directory /opt/log. Permission denied?")
-#
-#        try:
-#            logfile = logging.FileHandler('/opt/log/deployer-%s.log' % d)
-#        except IOError, e:
-#            raise DBailException("Can not open logfile, permission denied?")
-#
-#        logfile.setLevel(logging.DEBUG)
-#
-#        logfile.setFormatter(formatter)
-#        logger.addHandler(logfile)
-#        #logger.handlers[0].doRollover()  # we want a new log each time we deploy something
+        if logfile:
+
+            try:
+                logfile_h = logging.FileHandler(logfile)
+            except IOError, e:
+                raise DeployerException("Can not open logfile, permission denied?")
+
+            if level > logging.DEBUG:
+                logfile_level = logging.DEBUG
+            else:
+                logfile_level = level
+
+            logfile_h.setLevel(logfile_level)
+
+            logfile_h.setFormatter(formatter)
+            logger.addHandler(logfile_h)
 
         return logger
 
     def log(self, message, level, tag=''):
-        """
-        Pretty logger with levels and colors for the console.
-        If scripts are running as user 'hudson' or 'jenkins' colors are ommited.
-        Takes: message (Logger reporting for duty!), level (info, warn, error)
-        Gives: formatted message to the console
-        """
+        """Pretty logger with levels and colors"""
 
         host = '*'
-        user = '*'
         if env.host:
             host = env.host
-            if env.user:
-                user = env.user
-
-        if self.logger.isEnabledFor(logging.DEBUG):
-            remote = '{0}@{1}'.format(user,host)
-        else:
-            remote = host
 
         if not tag:
             tag = self.tag
 
-        self.logger.log(level, message, extra={'tag': tag, 'remote': remote})
+        self.logger.log(level, message, extra={'tag': tag, 'remote': host})
 
     def hidebug(self, message, tag=''):
         self.log(message, logging.HIDEBUG, tag)

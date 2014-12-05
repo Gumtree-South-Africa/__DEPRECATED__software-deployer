@@ -112,14 +112,20 @@ class Generator(object):
     def _get_remote_version(self, package, service_config, host, procname=None, remote_results={}):
         """Method passed to JobQueue to get a remote service version"""
 
-        res = host.execute_remote('/bin/readlink {0}'.format(os.path.join(
-          service_config.install_location, package.servicename)))
+        remote_version = 'UNDETERMINED'
 
-        if res:
-            installed_package = os.path.basename(res)
-            remote_version = package.get_version_from_packagename(installed_package)
+        if hasattr(service_config, 'control_type') and service_config.control_type == 'props' and hasattr(service_config, 'properties_location'):
+            res = host.execute_remote("/bin/cat %s/properties_version" % service_config.properties_location)
+
+            if res:
+                remote_version = res
         else:
-            remote_version = 1
+            res = host.execute_remote('/bin/readlink {0}'.format(os.path.join(
+              service_config.install_location, package.servicename)))
+
+            if res:
+                installed_package = os.path.basename(res)
+                remote_version = package.get_version_from_packagename(installed_package)
 
         self.log.debug('Current version is {0}'.format(remote_version), tag=package.servicename)
 
@@ -153,7 +159,7 @@ class Generator(object):
         if len(match) == 1:
             return match[0]
         elif len(match) > 1:
-            raise DeployerException('More than one host found with hostname{0}'.format(hostname))
+            raise DeployerException('More than one host found with hostname {0}'.format(hostname))
         else:
             host = RemoteHost(hostname, username)
             self._remote_hosts.append(host)
@@ -170,6 +176,64 @@ class Generator(object):
 
         stage = {
           'name': 'Send graphite {0}'.format(metric_suffix),
+          'concurrency': 1,
+          'tasks': [task],
+        }
+
+        return stage
+
+    def get_pipeline_notify_stage(self, status, release):
+        """Return a task for pipeline_notify"""
+
+        envt = self.config.environment
+        if envt == "production":
+            envt = "prod"
+
+        url = '%s/%s/%s/%s' % (self.config.pipeline_url, status, envt, release)
+        if 'proxy' in self.config:
+            proxy = self.config.proxy
+        else:
+            proxy = ''
+
+        task = {
+          'command': 'pipeline_notify',
+          'url': url,
+          'proxy': proxy
+        }
+
+        stage = {
+          'name': 'Notify pipeline with url {0}'.format(repr(url)),
+          'concurrency': 1,
+          'tasks': [task],
+        }
+
+        return stage
+
+    def get_pipeline_upload_stage(self, release):
+        """Return a task for pipeline_upload"""
+
+        url = '%s/package/%s/projects' % (self.config.pipeline_url, release)
+
+        if 'proxy' in self.config:
+            proxy = self.config.proxy
+        else:
+            proxy = ''
+
+        if 'deploy_package_basedir' in self.config:
+            deploy_package_basedir = self.config.deploy_package_basedir
+        else:
+            deploy_package_basedir = '/opt/deploy_packages'
+
+        task = {
+          'command': 'pipeline_upload',
+          'deploy_package_basedir': deploy_package_basedir,
+          'release': release,
+          'url': url,
+          'proxy': proxy
+        }
+
+        stage = {
+          'name': 'Upload projects of {0} to pipeline'.format(repr(release)),
           'concurrency': 1,
           'tasks': [task],
         }

@@ -85,11 +85,16 @@ class Config(AttrDict):
               hostname, host_hg), tag=servicename)
             return None, None, None
 
+        lb_config = AttrDict(dict(self.get_defaults('lb')))
         lb_hostname = self.hostgroup[host_hg]['lb']
-        if hasattr(self,'lb') and hasattr(self.lb, lb_hostname):
-            lb_config = self.get_with_defaults('lb', lb_hostname)
-        else:
-            lb_config = AttrDict(dict(self.get_defaults('lb')))
+        lb_full_hostname = self.get_full_hostname(lb_hostname)
+        if hasattr(self,'lb'):
+            if hasattr(self.lb, lb_hostname):
+                lb_config = self.get_with_defaults('lb', lb_hostname)
+            if hasattr(self.lb, lb_full_hostname):
+                lb_config = self.get_with_defaults('lb', lb_full_hostname)
+
+        lb_hostname = lb_full_hostname
         lb_username = lb_config.api_user
         lb_password = lb_config.api_password
 
@@ -107,12 +112,18 @@ class Config(AttrDict):
                 hosts += self.hostgroup[hg]['hosts']
 
         if hosts:
-            if 'dns_suffix' in self:
-                hosts = ['{0}.{1}'.format(h,self.dns_suffix) if h.count('.') < 3 else h for h in hosts]
+            hosts = [self.get_full_hostname(h) for h in hosts]
 
             self.log.info('configured to run on: {0}'.format(', '.join(hosts)), tag=servicename)
 
         return hosts
+
+    def get_full_hostname(self, host):
+        if 'dns_suffix' in self and host.count('.') < 3:
+            h = '{0}.{1}'.format(host,self.dns_suffix)
+        else:
+            h = host
+        return h
 
     def ok(self):
         struct = self._get_config_struct()

@@ -1,8 +1,11 @@
 import sys
 import logging
 import argparse
+import os
+from time import gmtime, strftime
 
 import deployerlib.log
+from deployerlib.exceptions import DeployerException
 
 
 class CommandLine(object):
@@ -22,7 +25,7 @@ class CommandLine(object):
 
         parser.add_argument('--dry-run', action='store_true', help='Do a dry run without executing any tasks')
         parser.add_argument('-c', '--config', required=require_config, help='Specify a platform config file')
-        parser.add_argument('--verify-config', action='store_true', help='Don\'t attempt to verify config file syntax')
+        parser.add_argument('--verify-config', action='store_true', help='Verify config file syntax')
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
         host_group.add_argument('--hosts', nargs='+', help='Specify a list of hosts to deploy to')
@@ -38,6 +41,9 @@ class CommandLine(object):
         parser.add_argument('--pipeline-start', action='store_true', help='Will inform pipeline that deployment was started')
         parser.add_argument('--pipeline-end', action='store_true', help='Will inform pipeline that deployment was ended')
 
+        parser.add_argument('--logdir',
+            help='Logging directory. If not specified logging is done to standard out only. Loglevel to file is always set to at least DEBUG.')
+
         parser.parse_args(namespace=self)
 
         if self.hidebug:
@@ -47,8 +53,29 @@ class CommandLine(object):
         elif self.verbose:
             deployerlib.log.set_level(logging.VERBOSE)
 
+        logfile=''
+        if self.logdir:
+            if os.path.exists(self.logdir):
+                if os.path.isdir(self.logdir):
+                    if os.access(self.logdir,os.W_OK):
+                        cmd_base = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+                        ts = strftime("%Y%m%d_%H%M%S", gmtime())
+                        logfile = os.path.join(self.logdir,'{0}_{1}.log'.format(cmd_base,ts))
+                        deployerlib.log.set_logfile(logfile)
+                    else:
+                        raise DeployerException('Logdir path {0} is not writeable'.format(self.logdir))
+                else:
+                    raise DeployerException('Logdir path {0} is not a directory'.format(self.logdir))
+            else:
+                raise DeployerException('Logdir path {0} does not exist'.format(self.logdir))
+
+
         log = deployerlib.log.Log(self.__class__.__name__)
-        log.hidebug('Commandline "{0}" resulted in this CommandLine object: {1}'.format(' '.join(sys.argv),self))
+        log.info('Command called: {0}'.format(' '.join(sys.argv)))
+        log.hidebug('CommandLine object: {0}'.format(self))
+        if logfile:
+            log.info('Using logfile {0}'.format(repr(logfile)))
+
 
     def __str__(self):
         """String representation"""

@@ -22,6 +22,7 @@ component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
 
 
 args = CommandLine(parents=parser)
+args.verify_config = True
 config = Config(args)
 #if config.config_ok():
 #    log.info('All tests passed, config ok')

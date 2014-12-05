@@ -30,6 +30,7 @@ class Executor(object):
           'movefile': movefile.MoveFile,
           'removefile': removefile.RemoveFile,
           'deploy_and_restart': deployandrestart.DeployAndRestart,
+          'deploy_properties': deployproperties.DeployProperties,
           'control_service': controlservice.ControlService,
           'stop_service': stopservice.StopService,
           'start_service': startservice.StartService,
@@ -40,6 +41,8 @@ class Executor(object):
           'enable_loadbalancer': enableloadbalancer.EnableLoadbalancer,
           'execute_command': executecommand.ExecuteCommand,
           'send_graphite': sendgraphite.SendGraphite,
+          'pipeline_notify': pipeline_notify.PipelineNotify,
+          'pipeline_upload': pipeline_upload.PipelineUpload,
           'cleanup': cleanup.CleanUp,
           'test_command': testcommand.TestCommand,
         }

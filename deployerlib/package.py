@@ -63,7 +63,7 @@ class Package(object):
         """Extract the service name from the package name"""
 
         try:
-            servicename = packagename.split('_', 1)[0]
+            servicename = packagename.rsplit('_', 1)[0]
         except:
             raise DeployerException('Unable to extract service name from package name: {0}'.format(
               packagename))
@@ -88,7 +88,7 @@ class Package(object):
         """Extract the service version string from the package name"""
 
         try:
-            version = packagename.split('_', 1)[-1]
+            version = packagename.rsplit('_', 1)[-1]
         except:
             raise DeployerException('Unable to extract service version from package name: {0}'.format(
               packagename))
@@ -100,7 +100,7 @@ class Package(object):
         """Extract SHA and timestamp from the package version"""
 
         try:
-            sha, timestamp = version.split('-')
+            sha, timestamp = version.rsplit('-')[-2:-1]
             self.log.hidebug('SHA is {0}, timestamp is {1}'.format(sha, timestamp))
         except:
             self.log.hidebug('Unable to extract SHA and timestamp from package version: {0}'.format(

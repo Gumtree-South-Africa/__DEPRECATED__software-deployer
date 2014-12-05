@@ -1,4 +1,5 @@
 import os
+import urllib2
 
 from deployerlib.log import Log
 from deployerlib.generator import Generator
@@ -15,8 +16,37 @@ class AuroraGenerator(Generator):
         if not self.config.redeploy:
             remote_versions = self.get_remote_versions(packages)
 
+        if self.config.release:
+            if type(self.config.release) is list:
+                if len(self.config.release) > 1:
+                    self.log.critical('No support for multiple release directories')
+                    raise DeployerException('No support for multiple release directories')
+                else:
+                    self.config.release = self.config.release[0]
+
+            if type(self.config.release) is not str:
+                raise DeployerException('{0} is of type {1}, should be {2}'.format(repr(self.config.release),repr(type(self.config.release)),
+                    repr(str)))
+
+            deploy_release = filter(None, self.config.release.split("/"))[-1]
+            if self.config.platform in deploy_release:
+                deploy_release = deploy_release.replace("%s-" % self.config.platform, "")
+            deploy_info = 'release {0}'.format(repr(deploy_release))
+        elif self.config.component:
+            deploy_info = 'component(s) {0}'.format(','.join(self.config.component))
+
+        if self.config.hosts:
+            deploy_info += ', to hosts {0}'.format(','.join(hosts))
+        elif self.config.hostgroups:
+            deploy_info += ', to hostgroups {0}'.format(','.join(self.config.hostgroups))
+        elif self.config.categories:
+            if type(self.config.categories) is str:
+                deploy_info += ', to cluster {0}'.format(self.config.categories)
+            else:
+                deploy_info += ', to categories {0}'.format(','.join(self.config.categories))
+
         task_list = {
-          'name': 'Aurora deployment',
+          'name': 'Aurora deployment of platform {0}, environment {1}, {2}'.format(self.config.platform, self.config.environment, deploy_info),
           'stages': [],
         }
 
@@ -62,14 +92,13 @@ class AuroraGenerator(Generator):
                 if service_config.control_type == 'props':
                     props_tasks.append({
                       'tag': servicename,
-                      'command': 'copyfile',
+                      'command': 'deploy_properties',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
                       'source': '{0}/*'.format(os.path.join(service_config.install_location,
                           service_config.unpack_dir, package.packagename, self.config.environment)),
                       'destination': '{0}/'.format(service_config.properties_location),
-                      'continue_if_exists': True,
-                      'recursive': True,
+                      'version': package.version,
                     })
 
                 if service_config.control_type == 'daemontools':
@@ -209,8 +238,15 @@ class AuroraGenerator(Generator):
               'tasks': unpack_tasks,
             })
 
-        if hasattr(self.config, 'graphite') and doing_deploy_tasks and self.config.release:
-            task_list['stages'].append(self.get_graphite_stage('start'))
+        if doing_deploy_tasks and self.config.release:
+            if hasattr(self.config, 'pipeline_url'):
+                if self.config.platform == 'aurora':
+                    if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_start:
+                        task_list['stages'].append(self.get_pipeline_notify_stage('deploying', deploy_release))
+
+            if hasattr(self.config, 'graphite'):
+                if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_start:
+                    task_list['stages'].append(self.get_graphite_stage('start'))
 
         if props_tasks:
             task_list['stages'].append({
@@ -250,8 +286,17 @@ class AuroraGenerator(Generator):
               'tasks': this_stage,
             })
 
-        if hasattr(self.config, 'graphite') and doing_deploy_tasks:
-            task_list['stages'].append(self.get_graphite_stage('end'))
+        if doing_deploy_tasks and self.config.release:
+            if hasattr(self.config, 'pipeline_url'):
+                if self.config.platform == 'aurora':
+                    if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
+                        task_list['stages'].append(self.get_pipeline_notify_stage('deployed', deploy_release))
+                        if self.config.environment == 'demo':
+                            task_list['stages'].append(self.get_pipeline_upload_stage(deploy_release))
+
+            if hasattr(self.config, 'graphite'):
+                if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
+                    task_list['stages'].append(self.get_graphite_stage('end'))
 
         if remove_temp_tasks:
             task_list['stages'].append({
@@ -266,3 +311,53 @@ class AuroraGenerator(Generator):
               ', '.join(leftovers)))
 
         return task_list
+
+    def uploadPackageToPipeline(self, package):
+
+        if not 'pipeline_url' in self.config:
+            self.log.error('pipeline_url is missing in config')
+            return False
+
+        projects = []
+        deploy_package_dir = "/opt/deploy_packages/%s" % (package)
+        try:
+            for fileName in os.listdir(deploy_package_dir):
+                if re.match(".*_(.*-){3}.*(tar.gz|.war)", fileName):
+                    suffix = fileName.split("_")[0]
+                    sp = fileName.split("-")
+                    projects.append({'project' : suffix, 'hash' : sp[len(sp) - 2]})
+
+            req = urllib2.Request('{0}/package/{1}/projects'.format(self.config.pipeline_url,package))
+            req.add_header('Content-Type', 'application/json')
+            urllib2.urlopen(req, json.dumps({'projects' : projects}))
+        except OSError as e:
+            self.log.warning("Deployment packages directory %s not present: %s" % (deploy_package_dir, e.strerror))
+            pass # Ignore the error for now, propably the directory does not exist
+
+
+    def notifyPipeline(self, status, package):
+
+        if not 'pipeline_url' in self.config:
+            self.log.error('pipeline_url is missing in config')
+            return False
+
+        envt = self.config.environment
+        if envt == "production":
+            envt = "prod"
+
+        url = '%s/%s/%s/%s' % (self.config.pipeline_url, status, envt, package)
+
+        self.log.info("Calling %s on pipeline..." % url)
+
+        if 'proxy' in self.config:
+            proxy_support = urllib2.ProxyHandler({ "http" : self.config.proxy })
+            opener = urllib2.build_opener(proxy_support)
+        else:
+            opener = urllib2.build_opener()
+
+        try:
+            opener.open(url)
+            return True
+        except:
+            return False
+
