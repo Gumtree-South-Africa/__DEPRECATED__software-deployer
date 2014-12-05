@@ -1,3 +1,18 @@
+software-deployer (0.9.8) precise; urgency=low
+
+  * Make deployer ready for Aurora
+  - add pipeline support
+  - check and set remote properties_version
+  - add logging to file by means of --logdir option
+  - improvements/corrections in log, package, generator, executor
+
+  * TODO:
+  - enable logging to file to a default logdir, with possibility to
+    disable logging to file with --nolog option
+  - add cleanup to aurora generator
+
+ -- Arnoud Witt <awitt@ebay.com>  Fri, 05 Dec 2014 13:09:55 +0100
+
 software-deployer (0.9.7) precise; urgency=low
 
   * Bug fix that caused incorrect command results to be returned to executor
