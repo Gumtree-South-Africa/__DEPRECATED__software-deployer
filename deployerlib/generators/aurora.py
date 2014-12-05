@@ -62,6 +62,10 @@ class AuroraGenerator(Generator):
 
             servicename = package.servicename
             service_config = self.config.get_with_defaults('service', servicename)
+            if not service_config:
+                self.log.critical('No service config found for service {0}'.format(repr(servicename)))
+                raise DeployerException('No service config found for service {0}'.format(repr(servicename)))
+
             hosts = self.config.get_service_hosts(servicename)
 
             for hostname in hosts:
