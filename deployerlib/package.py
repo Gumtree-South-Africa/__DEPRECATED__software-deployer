@@ -100,7 +100,7 @@ class Package(object):
         """Extract SHA and timestamp from the package version"""
 
         try:
-            sha, timestamp = version.rsplit('-')[-2:-1]
+            sha, timestamp = version.rsplit('-', 1)
             self.log.hidebug('SHA is {0}, timestamp is {1}'.format(sha, timestamp))
         except:
             self.log.hidebug('Unable to extract SHA and timestamp from package version: {0}'.format(

@@ -5,7 +5,7 @@ import unittest
 from deployerlib.exceptions import DeployerException
 
 
-class ExecutorTest(unittest.TestCase):
+class ExceptionTest(unittest.TestCase):
 
     def testCanRaise(self):
 

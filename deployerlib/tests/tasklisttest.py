@@ -29,7 +29,8 @@ class TasklistTest(unittest.TestCase):
     def testVerifyTasklist(self):
         self.log.info('Verifying generated task list')
         builder = Tasklist(self.config, 'test')
-        builder.verify_tasklist()
+        self.assertTrue(builder.verify_tasklist())
+        self.assertIn('stages', builder.tasklist)
 
 
 if __name__ == '__main__':
