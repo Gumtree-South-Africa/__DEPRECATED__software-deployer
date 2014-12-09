@@ -72,7 +72,7 @@ class Config(AttrDict):
         hostgroups =  self.get_with_defaults('service', servicename)['hostgroups']
         for hg in hostgroups:
 
-            if hostname in self.hostgroup[hg]['hosts'] or hostname.rsplit('.'+self.dns_suffix, 1)[0] in self.hostgroup[hg]['hosts']:
+            if hostname in self.hostgroup[hg]['hosts'] or (hasattr(self, 'dns_suffix') and hostname.rsplit('.'+self.dns_suffix, 1)[0]) in self.hostgroup[hg]['hosts']:
                 host_hg = hg
                 break
 
