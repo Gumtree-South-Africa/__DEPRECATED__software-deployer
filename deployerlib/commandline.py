@@ -75,6 +75,7 @@ class CommandLine(object):
         log = deployerlib.log.Log(self.__class__.__name__)
         log.info('Command called: {0}'.format(' '.join(sys.argv)))
         log.hidebug('CommandLine object: {0}'.format(self))
+
         if logfile:
             log.info('Using logfile {0}'.format(repr(logfile)))
 

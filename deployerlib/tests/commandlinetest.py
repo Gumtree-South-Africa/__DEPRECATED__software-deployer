@@ -29,7 +29,7 @@ class CommandLineTest(unittest.TestCase):
     def testConfig(self):
         self.log.info('Testing with --config')
 
-        sys.argv[1:] = ['--config', '/tmp/noconfig']
+        sys.argv[1:] = ['--config', '/tmp/noconfig', '--logdir', '']
         commandline = CommandLine()
         self.assertEqual(commandline.config, '/tmp/noconfig')
 
