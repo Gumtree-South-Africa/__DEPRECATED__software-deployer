@@ -104,6 +104,45 @@ class Config(AttrDict):
     def get_service_hosts(self, servicename):
         """Get the list of hosts this service should be deployed to"""
 
+        restrict_to_hosts = []
+        hostgroups = []
+        restrict_msg = 'Skipping because of '
+        if self.hosts:
+            restrict_to_hosts = self.hosts
+            restrict_msg += '"--hosts {0}"'.format(' '.join(self.hosts))
+        elif self.hostgroups:
+            hostgroups = self.hostgroups
+            for hg in hostgroups:
+                if not hg in self.hostgroup:
+                    raise DeployerException('Hostgroup {0}, as supplied with commandline option --hostgroups, was not found in config'.format(hg))
+            restrict_msg += '"--hostgroups {0}"'.format(' '.join(self.hostgroups))
+        elif self.categories:
+            if type(self.categories) is str:
+                categories = [self.categories]
+                restrict_msg += '"--cluster {0}"'.format(self.categories)
+            else:
+                categories = self.categories
+                restrict_msg += '"--categories {0}"'.format(' '.join(self.categories))
+
+            for cat in categories:
+                cat_defaults = AttrDict(dict(self.get_defaults(cat)))
+                if hasattr(cat_defaults, 'hostgroups'):
+                    hostgroups += cat_defaults.hostgroups
+                else:
+                    raise DeployerException('Cluster or category {0} supplied on commandline does not have any hostgroups associated'.format(repr(cat)))
+
+            hostgroups = list(set(hostgroups))
+
+            for hg in hostgroups:
+                if not hg in self.hostgroup:
+                    raise DeployerException('Hostgroup {0}, as associated with cluster or categories supplied on the commandline, was not found in config'.format(hg))
+
+
+        if hostgroups:
+            for hg in hostgroups:
+                for h in self.hostgroup[hg]['hosts']:
+                    restrict_to_hosts.append(self.get_full_hostname(h))
+
         service_config = self.get_with_defaults('service', servicename)
         hosts = []
 
@@ -114,7 +153,30 @@ class Config(AttrDict):
         if hosts:
             hosts = [self.get_full_hostname(h) for h in hosts]
 
-            self.log.info('configured to run on: {0}'.format(', '.join(hosts)), tag=servicename)
+            self.log.info('Configured to run on: {0}'.format(', '.join(hosts)), tag=servicename)
+
+        if restrict_to_hosts:
+            restrict_to_hosts = [self.get_full_hostname(h) for h in restrict_to_hosts]
+            if self.force:
+                restrict_msg = restrict_msg.replace('Skipping','--force was supplied, forcing')
+                self.log.warning(restrict_msg + ' to {0}'.format(', '.join(restrict_to_hosts)), tag=servicename)
+                hosts = restrict_to_hosts
+            else:
+                if set.issuperset(set(restrict_to_hosts),set(hosts)):
+                    self.log.debug(restrict_msg, tag=servicename)
+                elif set.issubset(set(restrict_to_hosts),set(hosts)):
+                    self.log.debug(restrict_msg, tag=servicename)
+                    hosts = restrict_to_hosts
+                elif set.isdisjoint(set(restrict_to_hosts),set(hosts)):
+                        hosts = []
+                        restrict_msg += '. Force using --force'
+                        self.log.info(restrict_msg.format(', '.join(restrict_to_hosts)), tag=servicename)
+                else:
+                    self.log.debug(restrict_msg, tag=servicename)
+                    hosts = list(set.intersection(set(restrict_to_hosts),set(hosts)))
+
+        if hosts and restrict_to_hosts:
+            self.log.info('Will attempt to deploy on {0}'.format(', '.join(hosts)), tag=servicename)
 
         return hosts
 

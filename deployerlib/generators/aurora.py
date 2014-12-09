@@ -36,7 +36,7 @@ class AuroraGenerator(Generator):
             deploy_info = 'component(s) {0}'.format(','.join(self.config.component))
 
         if self.config.hosts:
-            deploy_info += ', to hosts {0}'.format(','.join(hosts))
+            deploy_info += ', to hosts {0}'.format(','.join(self.config.hosts))
         elif self.config.hostgroups:
             deploy_info += ', to hostgroups {0}'.format(','.join(self.config.hostgroups))
         elif self.config.categories:

@@ -37,6 +37,7 @@ class CommandLine(object):
         host_group.add_argument('--cluster', choices=['frontend', 'backend', 'scrubber', 'properties', 'ranking'],
             help='Cluster to deploy to (deprecated, use --hosts, --hostgroups, or --categories)', dest='categories')
 
+        parser.add_argument('--force', action='store_true', help='Force deployment to given hosts, hostgroups, categories, or cluster')
         parser.add_argument('--redeploy', action='store_true', help='Redeploy services even if they exist on remote hosts')
         parser.add_argument('--parallel', type=int, default=3, help='Number of hosts to run in parallel')
 
