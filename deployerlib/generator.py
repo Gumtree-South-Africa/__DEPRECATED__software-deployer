@@ -120,14 +120,13 @@ class Generator(object):
             if res:
                 remote_version = res
         else:
-            res = host.execute_remote('/bin/readlink {0}'.format(os.path.join(
-              service_config.install_location, package.servicename)))
+            res = host.execute_remote('/bin/readlink {0}'.format(package.get_link_path(service_config.install_location)))
 
             if res:
-                installed_package = os.path.basename(res)
+                installed_package = package.get_packagename_from_path(res)
                 remote_version = package.get_version_from_packagename(installed_package)
 
-        self.log.debug('Current version is {0}'.format(remote_version), tag=package.servicename)
+        self.log.info('Current version is {0}'.format(remote_version), tag=package.servicename)
 
         self._remote_versions.append((package.servicename, host.hostname, remote_version))
 

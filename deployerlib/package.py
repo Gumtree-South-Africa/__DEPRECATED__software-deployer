@@ -48,10 +48,10 @@ class Package(object):
         """Trim the extension from a filename"""
 
         if filename.endswith('.tar.gz'):
-            packagename = filename.replace('.tar.gz', '')
+            packagename = os.path.splitext(os.path.splitext(filename)[0])[0]
             filetype = 'tar'
         elif filename.endswith('.war'):
-            packagename = filename.replace('.war', '')
+            packagename = os.path.splitext(filename)[0]
             filetype = 'war'
         else:
             raise DeployerException('Unsupported file type: {0}'.format(filename))
@@ -108,3 +108,28 @@ class Package(object):
             sha, timestamp = None, None
 
         return sha, timestamp
+
+    def get_install_path(self, location):
+        if self.filetype == 'war':
+            return os.path.join(location,self.filename)
+        else:
+            return os.path.join(location,self.packagename)
+
+    def get_link_path(self, location):
+        if self.filetype == 'war':
+            return os.path.join(location,self.servicename + '.war')
+        else:
+            return os.path.join(location,self.servicename)
+
+    def get_packagename_from_path(self, path):
+        basename = os.path.basename(path)
+        if self.filetype != 'tar':
+            filename, ext = os.path.splitext(basename)
+            if ext == '.' + self.filetype:
+                return filename
+            else:
+                raise DeployerException('Incorrect path extension {0} for path {1} found for {2} type package'.format(
+                    repr(ext),repr(path),repr(self.filetype)))
+        else:
+            return basename
+

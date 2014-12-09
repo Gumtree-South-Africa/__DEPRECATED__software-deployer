@@ -111,9 +111,9 @@ class AuroraGenerator(Generator):
                       'command': 'deploy_and_restart',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
-                      'destination': os.path.join(service_config.install_location, package.packagename),
-                      'link_target': os.path.join(service_config.install_location, servicename),
+                      'source': package.get_install_path(os.path.join(service_config.install_location, service_config.unpack_dir)),
+                      'destination': package.get_install_path(service_config.install_location),
+                      'link_target': package.get_link_path(service_config.install_location),
                     }
 
                     if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
