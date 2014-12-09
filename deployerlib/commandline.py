@@ -43,8 +43,8 @@ class CommandLine(object):
         parser.add_argument('--pipeline-start', action='store_true', help='Will inform pipeline that deployment was started')
         parser.add_argument('--pipeline-end', action='store_true', help='Will inform pipeline that deployment was ended')
 
-        parser.add_argument('--logdir',
-            help='Logging directory. If not specified logging is done to standard out only. Loglevel to file is always set to at least DEBUG.')
+        parser.add_argument('--logdir', default='/opt/log',
+            help='Logging directory. Default value: "/opt/log". Log filename is generated from command and current time. Loglevel to file is always set to at least DEBUG.')
 
         parser.parse_args(namespace=self)
 
