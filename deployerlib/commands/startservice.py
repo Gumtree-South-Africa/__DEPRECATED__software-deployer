@@ -4,7 +4,7 @@ from deployerlib.commands.checkservice import CheckService
 
 
 class StartService(Command):
-    """Start a service and check to make sure it has been startped successfully"""
+    """Start a service and check to make sure it has been started successfully"""
 
     def initialize(self, remote_host, start_command, check_command=None, timeout=60):
 
@@ -40,6 +40,6 @@ class StartService(Command):
         if not res:
             self.log.critical('Failed to start service')
         else:
-            self.log.debug('Service startped')
+            self.log.debug('Service started')
 
         return res

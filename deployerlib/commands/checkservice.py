@@ -34,8 +34,8 @@ class CheckService(Command):
         msg = str(res).split('|', 1)[0].rstrip()
 
         if success:
-            self.log.info('Service is in the correct state: {0}'.format(msg))
+            self.log.info('Service is in the correct state within configured timeout of {0} seconds: {1}'.format(self.timeout, msg))
             return True
         else:
-            self.log.critical('Service is not in the correct state: {0}'.format(msg))
+            self.log.critical('Service is not in the correct state within configured timeout of {0} seconds. State found: {1}'.format(self.timeout, msg))
             return False
