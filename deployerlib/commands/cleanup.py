@@ -1,3 +1,5 @@
+import os
+
 from deployerlib.command import Command
 from deployerlib.exceptions import DeployerException
 
@@ -5,26 +7,18 @@ from deployerlib.exceptions import DeployerException
 class CleanUp(Command):
     """Clean up files named 'filespec' in the directory 'path'"""
 
-    def initialize(self, remote_host, path, filespec, keepversions, splitters=['_', '-']):
-        self.splitters = splitters
+    def initialize(self, remote_host, path, filespec, keepversions):
         return True
-
-    def split_recursive(self, s, splitters):
-
-        for splitter in splitters:
-            s = s.split(splitter)[-1]
-
-        return s
 
     def execute(self):
         res = self.remote_host.execute_remote(
-          "/usr/bin/find {0} -maxdepth 1 -name '{1}'".format(self.path, self.filespec))
+          "/bin/ls -1td {0}".format(os.path.join(self.path, self.filespec)))
 
         if res.failed:
             self.log.critical('Failed to list files in {0}: {1}'.format(self.path, res))
             return False
 
-        files = res.splitlines()
+        files = res.split()
 
         if not files:
             self.log.warning('No files found in {0} with pattern {1}'.format(
@@ -34,8 +28,6 @@ class CleanUp(Command):
         if len(files) < self.keepversions:
             self.log.debug('No old versions to clean up')
             return True
-
-        files.sort(key=lambda x: self.split_recursive(x, self.splitters), reverse=True)
 
         cleanup_files = files[self.keepversions:]
 
