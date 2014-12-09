@@ -27,6 +27,8 @@ class CommandLine(object):
         parser.add_argument('-c', '--config', required=require_config, help='Specify a platform config file')
         parser.add_argument('--verify-config', action='store_true', help='Verify config file syntax')
 
+        parser.add_argument('--ignore-lb', action='store_true', help='Ignore service state on loadbalancer')
+
         host_group = parser.add_mutually_exclusive_group(required=require_host)
         host_group.add_argument('--hosts', nargs='+', help='Specify a list of hosts to deploy to')
         host_group.add_argument('--hostgroups', nargs='+', metavar='HOSTGROUP', help='Specify one or more hostgroups to deploy to')
