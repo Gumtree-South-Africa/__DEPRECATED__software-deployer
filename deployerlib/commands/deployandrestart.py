@@ -1,16 +1,30 @@
 from deployerlib.command import Command
-from deployerlib.commands import disableloadbalancer, enableloadbalancer, stopservice, startservice, movefile, symlink
+from deployerlib.commands import disableloadbalancer, enableloadbalancer, stopservice, \
+     startservice, movefile, symlink, checkdaemontools
 
 
 class DeployAndRestart(Command):
     """Meta-command that includes load balancer control, service control and service activation"""
 
     def initialize(self, remote_host, source, destination=None, stop_command=None, start_command=None,
-      link_target=None, lb_hostname=None, lb_username=None, lb_password=None, lb_service=None,
-      check_command=None, control_timeout=60, lb_timeout=60):
+      link_target=None, check_command=None, control_timeout=60, check_daemontools=True, abort_on_failed_precheck=False,
+      lb_hostname=None, lb_username=None, lb_password=None, lb_service=None, lb_timeout=60):
 
         if not destination:
             destination = source
+
+        self.precommands = []
+        self.subcommands = []
+        self.abort_on_failed_precheck = abort_on_failed_precheck
+
+        if check_daemontools:
+            self.precommands.append(
+              checkdaemontools.CheckDaemontools(
+                remote_host=remote_host,
+                servicename=self.tag,
+                tag=self.tag,
+              )
+            )
 
         if lb_service:
 
@@ -25,8 +39,6 @@ class DeployAndRestart(Command):
 
         else:
             lb_args = None
-
-        self.subcommands = []
 
         if stop_command:
 
@@ -79,6 +91,20 @@ class DeployAndRestart(Command):
 
     def execute(self):
         """Execute the sub-commands"""
+
+        for precommand in self.precommands:
+            res = precommand.execute()
+
+            if not res:
+
+                if self.abort_on_failed_precheck:
+                    self.log.critical('{0} pre-check command failed: {1}'.format(
+                      self.__class__.__name__, precommand.__class__.__name__))
+                    return False
+                else:
+                    self.log.warning('{0} pre-check command failed: {1}, skipping deployment on this host'.format(
+                      self.__class__.__name__, precommand.__class__.__name__))
+                    return True
 
         for subcommand in self.subcommands:
             res = subcommand.execute()

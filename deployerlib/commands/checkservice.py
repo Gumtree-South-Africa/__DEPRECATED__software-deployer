@@ -26,7 +26,9 @@ class CheckService(Command):
                 break
 
             if self.notify_interval and (time.time() - last_notify) > self.notify_interval:
-                self.log.info('Waiting for service to enter correct state')
+                time_left = int(5 * round(max_time - time.time()) / 5)
+                self.log.info('Will wait up to {0} more seconds for service to enter correct state'.format(
+                  time_left))
                 last_notify = time.time()
 
             time.sleep(1)
