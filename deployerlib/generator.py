@@ -169,7 +169,7 @@ class Generator(object):
 
         task = {
           'command': 'send_graphite',
-          'carbon_host': self.config.graphite.carbon_host,
+          'carbon_host': self.config.get_full_hostname(self.config.graphite.carbon_host),
           'metric_name': '.'.join((self.config.graphite.metric_prefix, metric_suffix)),
         }
 
