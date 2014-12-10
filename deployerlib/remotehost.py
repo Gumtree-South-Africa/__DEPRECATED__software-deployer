@@ -55,10 +55,18 @@ class RemoteHost(object):
     def execute_remote(self, command, use_sudo=False, **fabric_settings):
         """Execute a command via fabric"""
 
-        self.log.debug('Executing command "{0}" with use_sudo={1}'.format(command, use_sudo))
+        if use_sudo:
+            self.log.debug('Executing command with sudo: {0}'.format(command))
+        else:
+            self.log.debug('Executing command: {0}'.format(command))
 
         with settings(**fabric_settings):
             if use_sudo:
-                return sudo(command, shell=False)
+                res = sudo(command, shell=False)
             else:
-                return run(command)
+                res = run(command)
+
+        if res:
+            self.log.debug('Output: {0}'.format(res))
+
+        return res

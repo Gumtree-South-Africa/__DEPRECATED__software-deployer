@@ -24,7 +24,12 @@ component_group.add_argument('--release', '--directory', nargs='+', help='Specif
 
 args = CommandLine(parents=parser)
 config = Config(args)
-tasklist_builder = Tasklist(config, config.platform)
+
+try:
+    tasklist_builder = Tasklist(config, config.platform)
+except DeployerException as e:
+    log.critical('Failed to generate task list: {0}'.format(e))
+    sys.exit(1)
 
 if config.dump:
     print json.dumps(tasklist_builder.tasklist, **json_opts)

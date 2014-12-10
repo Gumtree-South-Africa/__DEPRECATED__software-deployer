@@ -26,7 +26,12 @@ if args.tasklist:
 elif args.config:
     log.debug('Executing based on config file: {0}'.format(args.config))
     config = Config(args)
-    tasklist_builder = Tasklist(config, config.platform)
+
+    try:
+        tasklist_builder = Tasklist(config, config.platform)
+    except DeployerException as e:
+        log.critical('Failed to generate task list: {0}'.format(e))
+        sys.exit(1)
 
     if not tasklist_builder.tasklist:
         log.warning('Nothing to deploy')

@@ -60,19 +60,7 @@ class IcasGenerator(Generator):
             if not service_config:
                 raise DeployerException('Unknown service: {0}'.format(package.servicename))
 
-            configured_hosts = self.config.get_service_hosts(package.servicename)
-
-            if self.config.hosts:
-
-                if set(self.config.hosts) < set(configured_hosts):
-                    hosts = self.config.hosts
-                else:
-                    self.log.critical('Service {0} is not configured to run on host {1}'.format(
-                      package.servicename, ' or '.join(self.config.hosts)))
-                    sys.exit(1)
-
-            else:
-                hosts = configured_hosts
+            hosts = self.config.get_service_hosts(package.servicename)
 
             if not hosts:
                 self.log.warning('Service {0} is not configured to run on any hosts'.format(

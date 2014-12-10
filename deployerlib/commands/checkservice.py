@@ -25,6 +25,10 @@ class CheckService(Command):
                 success = True
                 break
 
+            if res.return_code > 3:
+                self.log.critical('Failed to execute {0}: {1}'.format(self.check_command, res))
+                return False
+
             if self.notify_interval and (time.time() - last_notify) > self.notify_interval:
                 time_left = int(5 * round(max_time - time.time()) / 5)
                 self.log.info('Will wait up to {0} more seconds for service to enter correct state'.format(
