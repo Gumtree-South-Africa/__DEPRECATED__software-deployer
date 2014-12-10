@@ -121,14 +121,17 @@ class AuroraGenerator(Generator):
 
                         self.log.info('Adding DB migrations to be run on {0}'.format(hostname), tag=servicename)
 
+                        dbmig_location = os.path.join(service_config.install_location, service_config.unpack_dir,
+                                package.packagename, 'db/migrations')
+
                         dbmig_tasks.append({
                           'tag': servicename,
                           'command': 'dbmigration',
+                          'if_exists': dbmig_location,
                           'remote_host': hostname,
                           'remote_user': self.config.user,
                           'source': service_config.migration_command.format(
-                              migration_location=os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename,
-                                  'db/migrations'),
+                              migration_location=dbmig_location,
                               migration_options='',
                               properties_location=service_config.properties_location,
                               ),
