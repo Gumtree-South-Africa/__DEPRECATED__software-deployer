@@ -402,7 +402,7 @@ class IcasGenerator(Generator):
                     self.log.info('cfp service is active on {0}'.format(hostname))
                     return hostname
 
-        self.log.warning('Unable to find active cfp host, will deploy cfp with concurrency'.format(hostlist[0]))
+        self.log.warning('Unable to find active cfp host, will deploy cfp with concurrency')
         return None
 
     def get_deploy_stage(self, tasklist, hostlist):
