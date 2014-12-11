@@ -1,13 +1,13 @@
 #! /usr/bin/python
 
 import sys
+import os
 import argparse
 import yaml
 from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
 from deployerlib.exceptions import DeployerException
-
 
 # Add command line option for components to deploy
 parser = argparse.ArgumentParser()
@@ -18,7 +18,6 @@ component_group = parser.add_mutually_exclusive_group(required=False)
 component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
 component_group.add_argument('--release', '--directory', nargs='+', help='Specify a directory of components to deploy')
 component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
-
 
 args = CommandLine(parents=parser)
 log = Log(os.path.basename(__file__))
