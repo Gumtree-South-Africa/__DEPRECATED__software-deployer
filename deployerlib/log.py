@@ -31,7 +31,6 @@ def set_logfile(new_logfile):
     global logfile
     logfile = new_logfile
 
-
 class Log(object):
 
     def __init__(self, instance='DEPLOYER', tag=''):
@@ -86,6 +85,10 @@ class Log(object):
             logger.addHandler(logfile_h)
 
         return logger
+
+    def get_logfile(self):
+        global logfile
+        return logfile
 
     def log(self, message, level, tag=''):
         """Pretty logger with levels and colors"""

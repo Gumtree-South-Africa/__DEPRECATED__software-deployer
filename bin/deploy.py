@@ -17,8 +17,8 @@ component_group.add_argument('--component', nargs='+', help='Specify a list of c
 component_group.add_argument('--release', '--directory', nargs='+', help='Specify a directory of components to deploy')
 component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
 
-log = Log(os.path.basename(__file__))
 args = CommandLine(parents=parser, require_config=False)
+log = Log(os.path.basename(__file__))
 
 if args.tasklist:
     log.debug('Executing based on tasklist: {0}'.format(args.tasklist))
@@ -52,3 +52,5 @@ try:
 except DeployerException as e:
     log.critical('Execution failed: {0}'.format(e))
     sys.exit(1)
+
+log.info('Deployment completed. More details in {0}'.format(log.get_logfile()))

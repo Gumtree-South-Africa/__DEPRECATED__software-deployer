@@ -8,7 +8,6 @@ from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
 from deployerlib.exceptions import DeployerException
 
-log = Log('config_verify')
 
 # Add command line option for components to deploy
 parser = argparse.ArgumentParser()
@@ -22,9 +21,7 @@ component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
 
 
 args = CommandLine(parents=parser)
+log = Log(os.path.basename(__file__))
 args.verify_config = True
 config = Config(args)
-#if config.config_ok():
-#    log.info('All tests passed, config ok')
-#else:
-#    log.error('Config verify found errors')
+log.info('Config Verify completed. More details in {0}'.format(log.get_logfile()))

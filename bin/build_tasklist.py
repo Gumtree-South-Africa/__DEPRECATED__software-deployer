@@ -13,7 +13,6 @@ from deployerlib.tasklist import Tasklist
 
 
 json_opts = {'indent': 4, 'sort_keys': True}
-log = Log(os.path.basename(__file__))
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dump', action='store_true', help='Dump the resulting task list')
@@ -23,6 +22,7 @@ component_group.add_argument('--component', nargs='+', help='Specify a list of c
 component_group.add_argument('--release', '--directory', nargs='+', help='Specify a directory of components to deploy')
 
 args = CommandLine(parents=parser)
+log = Log(os.path.basename(__file__))
 config = Config(args)
 
 try:
@@ -38,3 +38,5 @@ if tasklist_builder.verify_tasklist() and config.save:
     with open(config.save, 'w') as f:
         json.dump(tasklist_builder.tasklist, f, **json_opts)
         log.info('Saved task list to {0}'.format(config.save))
+
+log.info('Build tasklist completed. More details in {0}'.format(log.get_logfile()))

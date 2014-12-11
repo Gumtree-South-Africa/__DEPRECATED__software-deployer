@@ -1,3 +1,9 @@
+software-deployer (0.9.12) precise; urgency=low
+
+  * CLI commands: log a 'completed' line at the end
+
+ -- Arnoud Witt <awitt@ebay.com>  Thu, 11 Dec 2014 14:43:32 +0100
+
 software-deployer (0.9.11) precise; urgency=low
 
   * Bug fix for iCAS generator
