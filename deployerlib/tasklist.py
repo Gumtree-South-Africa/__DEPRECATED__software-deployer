@@ -17,7 +17,6 @@ class Tasklist(object):
         self.log = Log(self.__class__.__name__)
 
         generators = {
-          'pmcconnell': pmcconnell.DemoGenerator,
           'icas': icas.IcasGenerator,
           'aurora': aurora.AuroraGenerator,
           'test': testgenerator.TestGenerator,

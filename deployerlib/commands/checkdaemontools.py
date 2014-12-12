@@ -6,7 +6,7 @@ from deployerlib.command import Command
 class CheckDaemontools(Command):
     """Ensure daemontools service is configured for a service"""
 
-    def initialize(self, remote_host, servicename, path='/var/lib/supervise', ):
+    def initialize(self, remote_host, servicename, path='/var/lib/supervise'):
         self.path = path
         return True
 

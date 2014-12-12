@@ -3,11 +3,14 @@
 import sys
 import unittest
 
+import deployerlib.generators
+
 from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
 from deployerlib.generator import Generator
 from deployerlib.generators import *
+from deployerlib.executor import Executor
 from deployerlib.tests._fakepackage import FakePackage
 
 
@@ -29,6 +32,31 @@ class GeneratorTest(unittest.TestCase):
             self.fakepackages.append(fakepackage)
             self.config.component.append(fakepackage.fullpath)
 
+    def verifyTasklist(self, generator):
+        """Shared method to verify a generator object's task list"""
+        self.log.info('Verifying task list for {0}'.format(generator.__class__.__name__))
+
+        # Verify the generator is inheriting the Generator class
+        self.assertIsInstance(generator, Generator)
+
+        # Verify the generator returns a task list in dict form
+        tasklist = generator.generate()
+        self.assertIsInstance(tasklist, dict)
+
+        # Verify that Executor is able to parse the task list
+        executor = Executor(tasklist=tasklist)
+
+    def testAllAreTested(self):
+        self.log.info('Making sure there is a test for every generator')
+
+        prefix = 'testGenerator_'
+        methods = [x[len(prefix):] for x in dir(self) if x.startswith(prefix)]
+
+        missing = set(deployerlib.generators.__all__) - set(methods)
+
+        if missing:
+            self.fail('Missing generator tests: {0}'.format(', '.join(missing)))
+
     def testGenerator(self):
         self.log.info('Testing Generator parent class')
 
@@ -36,7 +64,7 @@ class GeneratorTest(unittest.TestCase):
         tasklist = generator.generate()
         self.assertIsInstance(tasklist, dict)
 
-    def testIcasGenerator(self):
+    def testGenerator_icas(self):
         self.log.info('Testing iCAS generator')
 
         self.config.deployment_order = {
@@ -45,16 +73,28 @@ class GeneratorTest(unittest.TestCase):
         }
 
         generator = icas.IcasGenerator(self.config)
-        tasklist = generator.generate()
+        self.verifyTasklist(generator)
 
-    def testAuroraGenerator(self):
+    def testGenerator_aurora(self):
         self.log.info('Testing Aurora generator')
 
         self.config.platform = 'aurora'
         self.config.deployment_order = ['be-backend', 'fe-frontend']
 
         generator = aurora.AuroraGenerator(self.config)
-        tasklist = generator.generate()
+        self.verifyTasklist(generator)
+
+    @unittest.skip('Skipping ServiceControl test')
+    def testGenerator_servicecontrol(self):
+        self.log.info('Testing ServiceControl generator')
+        # This class is not yet implemented
+        pass
+
+    def testGenerator_testgenerator(self):
+        self.log.info('Testing TestGenerator')
+
+        generator = testgenerator.TestGenerator(self.config)
+        self.verifyTasklist(generator)
 
 
 def get_config():
