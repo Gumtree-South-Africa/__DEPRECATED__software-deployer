@@ -13,7 +13,8 @@ def get_suite():
 def run_all():
     suite = get_suite()
     runner = unittest.TextTestRunner()
-    runner.run(suite)
+    res = runner.run(suite)
+    return res.wasSuccessful()
 
 
 __all__ = []
@@ -25,4 +26,9 @@ for dirent in os.listdir(os.path.dirname(__file__)):
 
 
 if __name__ == '__main__':
-    run_all()
+    res = run_all()
+
+    if res:
+        sys.exit(0)
+    else:
+        sys.exit(1)

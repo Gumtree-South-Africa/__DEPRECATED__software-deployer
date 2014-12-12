@@ -143,7 +143,7 @@ class AuroraGenerator(Generator):
                         if '.' in servicename:
                             shortservicename = servicename.rsplit(".", 1)[1].replace("-server", "")
                         else:
-                            shortservicename = service
+                            shortservicename = servicename
 
                         if '.' in hostname:
                             shorthostname = hostname.split(".", 1)[0]
