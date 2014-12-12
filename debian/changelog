@@ -1,3 +1,22 @@
+software-deployer (0.9.13) precise; urgency=low
+
+  * Add support for min_nodes_up service parameter
+
+  Includes:
+
+    * build_tasklist.py: import sys, otherwise sys.exit() will not work
+    * config: determine 'restict_to_hosts' only once after loading config
+    * config: add attribute restrict_to_hostgroups
+    * config: add method get_num_hosts_in_hostgroup()
+    * config: config_verify: make *concurrency* global parameters mandatory
+    * AuroraGenerator: get_remote_versions is called with concurrency params set
+      from config
+    * AuroraGenerator: implementation of min_nodes_up service parameter
+    * AuroraGenerator: add/fix some logging
+
+
+ -- Arnoud Witt <awitt@ebay.com>  Thu, 11 Dec 2014 15:31:11 +0100
+
 software-deployer (0.9.12) precise; urgency=low
 
   * CLI commands: log a 'completed' line at the end

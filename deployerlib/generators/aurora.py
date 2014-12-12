@@ -14,7 +14,9 @@ class AuroraGenerator(Generator):
 
         packages = self.get_packages()
         if not self.config.redeploy:
-            remote_versions = self.get_remote_versions(packages)
+            remote_versions = self.get_remote_versions(packages,
+                    concurrency=self.config.non_deploy_concurrency,
+                    concurrency_per_host=self.config.non_deploy_concurrency_per_host)
 
         if self.config.release:
             if type(self.config.release) is list:
@@ -55,7 +57,7 @@ class AuroraGenerator(Generator):
         unpack_tasks = []
         props_tasks = []
         dbmig_tasks = []
-        deploy_tasks = []
+        deploy_tasks = {}
         remove_temp_tasks = []
 
         for package in packages:
@@ -66,153 +68,182 @@ class AuroraGenerator(Generator):
                 self.log.critical('No service config found for service {0}'.format(repr(servicename)))
                 raise DeployerException('No service config found for service {0}'.format(repr(servicename)))
 
-            hosts = self.config.get_service_hosts(servicename)
+            hostgroups = [None]
+            if self.config.restrict_to_hostgroups:
+                        hostgroups = self.config.restrict_to_hostgroups
+            else:
+                if 'hostgroups' in service_config:
+                    hostgroups = service_config.hostgroups
+                else:
+                    raise DeployerException('No hostgroups specified in config where to deploy service {0}'.format(repr(servicename)))
 
-            for hostname in hosts:
+            for hostgroup in hostgroups:
+                hosts = self.config.get_service_hosts(servicename, hostgroup)
 
-                if not self.config.redeploy and remote_versions.get(servicename).get(hostname) \
-                  == package.version:
-                    self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=servicename)
-                    continue
+                if hostgroup and hasattr(service_config, 'min_nodes_up') and service_config.min_nodes_up > 0:
+                    num_nodes_in_group = self.config.get_num_hosts_in_hostgroup(hostgroup)
+                    max_nodes_down = num_nodes_in_group - service_config.min_nodes_up
+                    num_div_max = num_nodes_in_group / max_nodes_down
+                    num_mod_max = num_nodes_in_group % max_nodes_down
+                    if num_mod_max > 0:
+                        num_sub_stages = num_div_max + 1
+                    else:
+                        num_sub_stages = num_div_max
+                else:
+                    num_sub_stages = 1
 
-                upload_tasks.append({
-                  'tag': servicename,
-                  'command': 'upload',
-                  'remote_host': hostname,
-                  'remote_user': self.config.user,
-                  'source': package.fullpath,
-                  'destination': service_config.destination,
-                })
+                host_no = -1
+                for hostname in hosts:
 
-                unpack_tasks.append({
-                  'tag': servicename,
-                  'command': 'unpack',
-                  'remote_host': hostname,
-                  'remote_user': self.config.user,
-                  'source': os.path.join(service_config.destination, package.filename),
-                  'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
-                })
+                    host_no += 1
+                    if not self.config.redeploy and remote_versions.get(servicename).get(hostname) == package.version:
+                        self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=servicename)
+                        continue
 
-                if service_config.control_type == 'props':
-                    props_tasks.append({
+                    self.log.info('Will deploy version {0} to {1}'.format(package.version, hostname), tag=servicename)
+
+                    upload_tasks.append({
                       'tag': servicename,
-                      'command': 'deploy_properties',
+                      'command': 'upload',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': '{0}/*'.format(os.path.join(service_config.install_location,
-                          service_config.unpack_dir, package.packagename, self.config.environment)),
-                      'destination': '{0}/'.format(service_config.properties_location),
-                      'version': package.version,
+                      'source': package.fullpath,
+                      'destination': service_config.destination,
                     })
 
-                if service_config.control_type == 'daemontools':
-                    deploy_task = {
+                    unpack_tasks.append({
                       'tag': servicename,
-                      'command': 'deploy_and_restart',
+                      'command': 'unpack',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
-                      'source': package.get_install_path(os.path.join(service_config.install_location, service_config.unpack_dir)),
-                      'destination': package.get_install_path(service_config.install_location),
-                      'link_target': package.get_link_path(service_config.install_location),
-                    }
+                      'source': os.path.join(service_config.destination, package.filename),
+                      'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
+                    })
 
-                    if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
-                      if x['tag'] == servicename]:
-
-                        self.log.info('Adding DB migrations to be run on {0}'.format(hostname), tag=servicename)
-
-                        dbmig_location = os.path.join(service_config.install_location, service_config.unpack_dir,
-                                package.packagename, 'db/migrations')
-
-                        dbmig_tasks.append({
+                    if service_config.control_type == 'props':
+                        props_tasks.append({
                           'tag': servicename,
-                          'command': 'dbmigration',
-                          'if_exists': dbmig_location,
+                          'command': 'deploy_properties',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
-                          'source': service_config.migration_command.format(
-                              migration_location=dbmig_location,
-                              migration_options='',
-                              properties_location=service_config.properties_location,
-                              ),
-                          })
+                          'source': '{0}/*'.format(os.path.join(service_config.install_location,
+                              service_config.unpack_dir, package.packagename, self.config.environment)),
+                          'destination': '{0}/'.format(service_config.properties_location),
+                          'version': package.version,
+                        })
 
-                    if self.config.ignore_lb:
-                        self.log.info('Not doing lb control because of ignore_lb option', tag=servicename)
-                    else:
-                        if '.' in servicename:
-                            shortservicename = servicename.rsplit(".", 1)[1].replace("-server", "")
+                    if service_config.control_type == 'daemontools':
+                        deploy_task = {
+                          'tag': servicename,
+                          'command': 'deploy_and_restart',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'source': package.get_install_path(os.path.join(service_config.install_location, service_config.unpack_dir)),
+                          'destination': package.get_install_path(service_config.install_location),
+                          'link_target': package.get_link_path(service_config.install_location),
+                        }
+
+                        if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \
+                          if x['tag'] == servicename]:
+
+                            self.log.info('Adding DB migrations to be run on {0}'.format(hostname), tag=servicename)
+
+                            dbmig_location = os.path.join(service_config.install_location, service_config.unpack_dir,
+                                    package.packagename, 'db/migrations')
+
+                            dbmig_tasks.append({
+                              'tag': servicename,
+                              'command': 'dbmigration',
+                              'if_exists': dbmig_location,
+                              'remote_host': hostname,
+                              'remote_user': self.config.user,
+                              'source': service_config.migration_command.format(
+                                  migration_location=dbmig_location,
+                                  migration_options='',
+                                  properties_location=service_config.properties_location,
+                                  ),
+                              })
+
+                        if self.config.ignore_lb:
+                            self.log.info('Not doing lb control because of ignore_lb option', tag=servicename)
                         else:
-                            shortservicename = servicename
-
-                        if '.' in hostname:
-                            shorthostname = hostname.split(".", 1)[0]
-                        else:
-                            shorthostname = hostname
-
-                        if hasattr(service_config, 'lb_service'):
-                            lb_service = service_config.lb_service.format(
-                                    hostname=shorthostname,
-                                    servicename=shortservicename,
-                                    )
-                        else:
-
-                            if self.config.environment == "production":
-                                lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0] + "." + self.config.platform
-                            elif self.config.environment == "lp":
-                                lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0] + "." + self.config.platform + self.config.environment
+                            if '.' in servicename:
+                                shortservicename = servicename.rsplit(".", 1)[1].replace("-server", "")
                             else:
-                                lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0]
+                                shortservicename = servicename
 
-                            self.log.info('Generated lb_service={0}'.format(repr(lb_service)))
+                            if '.' in hostname:
+                                shorthostname = hostname.split(".", 1)[0]
+                            else:
+                                shorthostname = hostname
 
-                        lb_hostname, lb_username, lb_password = self.config.get_lb(servicename, hostname)
+                            if hasattr(service_config, 'lb_service'):
+                                lb_service = service_config.lb_service.format(
+                                        hostname=shorthostname,
+                                        servicename=shortservicename,
+                                        )
+                            else:
 
-                        if lb_hostname and lb_username and lb_password:
-                            deploy_task['lb_service'] = lb_service
+                                if self.config.environment == "production":
+                                    lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0] + "." + self.config.platform
+                                elif self.config.environment == "lp":
+                                    lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0] + "." + self.config.platform + self.config.environment
+                                else:
+                                    lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0]
 
-                            deploy_task.update({
-                              'lb_hostname': lb_hostname,
-                              'lb_username': lb_username,
-                              'lb_password': lb_password,
-                            })
+                                self.log.info('Generated lb_service={0}'.format(repr(lb_service)), tag=servicename)
 
-                        else:
-                            self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=servicename)
+                            lb_hostname, lb_username, lb_password = self.config.get_lb(servicename, hostname)
 
-                    for option in ('control_timeout', 'lb_timeout'):
-                        if hasattr(service_config, option):
-                            deploy_task[option] = getattr(service_config, option)
+                            if lb_hostname and lb_username and lb_password:
+                                deploy_task['lb_service'] = lb_service
 
-                    for cmd in ['stop_command', 'start_command', 'check_command']:
+                                deploy_task.update({
+                                  'lb_hostname': lb_hostname,
+                                  'lb_username': lb_username,
+                                  'lb_password': lb_password,
+                                })
 
-                        if hasattr(service_config, cmd):
-                            deploy_task[cmd] = service_config[cmd].format(
-                              servicename=servicename,
-                              port=service_config['port'],
-                            )
-                        else:
-                            self.log.warning('No {0} configured'.format(cmd), tag=servicename)
+                            else:
+                                self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=servicename)
 
-                    deploy_tasks.append(deploy_task)
+                        for option in ('control_timeout', 'lb_timeout'):
+                            if hasattr(service_config, option):
+                                deploy_task[option] = getattr(service_config, option)
 
-                if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
-                  x['source'] == os.path.join(service_config.install_location, service_config.unpack_dir)]:
-                    create_temp_tasks.append({
-                      'command': 'createdirectory',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
-                      'clobber': True,
-                    })
+                        for cmd in ['stop_command', 'start_command', 'check_command']:
 
-                    remove_temp_tasks.append({
-                      'command': 'removefile',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'source': os.path.join(service_config.install_location, service_config.unpack_dir),
-                    })
-            # end for hostname in hosts:
+                            if hasattr(service_config, cmd):
+                                deploy_task[cmd] = service_config[cmd].format(
+                                  servicename=servicename,
+                                  port=service_config['port'],
+                                )
+                            else:
+                                self.log.warning('No {0} configured'.format(cmd), tag=servicename)
+
+                        sub_stage = repr(host_no % num_sub_stages)
+                        if sub_stage not in deploy_tasks:
+                            deploy_tasks[sub_stage] = []
+                        deploy_tasks[sub_stage].append(deploy_task)
+
+                    if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
+                      x['source'] == os.path.join(service_config.install_location, service_config.unpack_dir)]:
+                        create_temp_tasks.append({
+                          'command': 'createdirectory',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'source': os.path.join(service_config.install_location, service_config.unpack_dir),
+                          'clobber': True,
+                        })
+
+                        remove_temp_tasks.append({
+                          'command': 'removefile',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'source': os.path.join(service_config.install_location, service_config.unpack_dir),
+                        })
+                # end for hostname in hosts:
+            # end for hg in hostgroups:
         # end for package in packages:
 
         if not upload_tasks and not unpack_tasks and not deploy_tasks:
@@ -227,24 +258,24 @@ class AuroraGenerator(Generator):
         if upload_tasks:
             task_list['stages'].append({
               'name': 'Upload',
-              'concurrency': 10,
-              'concurrency_per_host': 5,
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': upload_tasks,
             })
 
         if create_temp_tasks:
             task_list['stages'].append({
               'name': 'Create temp directories',
-              'concurrency': 10,
-              'concurrency_per_host': 5,
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': create_temp_tasks,
             })
 
         if unpack_tasks:
             task_list['stages'].append({
               'name': 'Unpack',
-              'concurrency': 10,
-              'concurrency_per_host': 3,
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': unpack_tasks,
             })
 
@@ -261,7 +292,7 @@ class AuroraGenerator(Generator):
         if props_tasks:
             task_list['stages'].append({
               'name': 'Deploy properties for environment {0}'.format(self.config.environment),
-              'concurrency': 10,
+              'concurrency': self.config.non_deploy_concurrency,
               'tasks': props_tasks,
             })
 
@@ -277,24 +308,48 @@ class AuroraGenerator(Generator):
             if isinstance(servicenames, basestring):
                 servicenames = [servicenames]
 
-            this_stage = [x for x in deploy_tasks if x['tag'] in servicenames]
+            for sub_stage in sorted(deploy_tasks.keys()):
+                this_stage = [x for x in deploy_tasks[sub_stage] if x['tag'] in servicenames]
 
-            if not this_stage:
-                self.log.debug('No deployment tasks for service(s) {0}'.format(', '.join(servicenames)))
-                continue
+                if not this_stage:
+                    self.log.debug('No deployment tasks for service(s) {0} in sub_stage {1}'.format(', '.join(servicenames), sub_stage))
+                    continue
 
-            deploy_tasks = [x for x in deploy_tasks if not x in this_stage]
+                deploy_tasks[sub_stage] = [x for x in deploy_tasks[sub_stage] if not x in this_stage]
 
-            to_deploy = []
-            for x in this_stage:
-                if x['tag'] not in to_deploy:
-                    to_deploy.append(x['tag'])
+                to_deploy_to = {}
+                for x in this_stage:
+                    s = x['tag']
+                    h = x['remote_host']
+                    if s not in to_deploy_to:
+                        to_deploy_to[s] = []
+                    to_deploy_to[s].append(h)
 
-            task_list['stages'].append({
-              'name': 'Deploy {0}'.format(', '.join(to_deploy)),
-              'concurrency': 3,
-              'tasks': this_stage,
-            })
+                sh_lists = []
+                for (s,hlist) in to_deploy_to.items():
+                    found = 0
+                    for (sl,hl) in sh_lists:
+                        if set(hl) == set(hlist):
+                            sh_lists.remove((sl,hl))
+                            sl.append(s)
+                            sh_lists.append((sl,hl))
+                            found = 1
+                            break
+                    if not found:
+                        sh_lists.append(([s],hlist))
+
+                to_deploy = []
+                for (slist,hlist) in sh_lists:
+                    to_deploy.append(','.join(slist) + ' to hosts ' + ','.join(hlist))
+
+
+                self.log.info('Adding stage to deploy {0}'.format(', '.join(to_deploy)))
+                task_list['stages'].append({
+                  'name': 'Deploy {0}'.format(', '.join(to_deploy)),
+                  'concurrency': self.config.deploy_concurrency,
+                  'concurrency_per_host': self.config.deploy_concurrency_per_host,
+                  'tasks': this_stage,
+                })
 
         if doing_deploy_tasks and self.config.release:
             if hasattr(self.config, 'pipeline_url'):
@@ -311,12 +366,15 @@ class AuroraGenerator(Generator):
         if remove_temp_tasks:
             task_list['stages'].append({
               'name': 'Remove temp directories',
-              'concurrency': 10,
+              'concurrency': self.config.non_deploy_concurrency,
               'tasks': remove_temp_tasks,
             })
 
-        if deploy_tasks:
-            leftovers = set([x['tag'] for x in deploy_tasks])
+        leftovers = set()
+        for sub_stage in deploy_tasks.keys():
+            if deploy_tasks[sub_stage]:
+                leftovers = leftovers.union(set([x['tag'] for x in deploy_tasks[sub_stage]]))
+        if leftovers:
             raise DeployerException('Leftover tasks - services not specified in deployment order? {0}'.format(
               ', '.join(leftovers)))
 

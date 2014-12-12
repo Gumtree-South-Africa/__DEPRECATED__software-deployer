@@ -30,12 +30,60 @@ class Config(AttrDict):
 
         super(self.__class__, self).__init__(mapping, *args, **kwargs)
 
-        if loaded and self.verify_config:
-            if self.ok():
-                self.log.info('Config verified: OK')
-            else:
-                self.log.critical('Config verify found errors, exiting.')
-                exit(1)
+        if loaded:
+            if self.verify_config:
+                if self.ok():
+                    self.log.info('Config verified: OK')
+                else:
+                    self.log.critical('Config verify found errors, exiting.')
+                    exit(1)
+            self.determine_restrict_to_hosts()
+
+    def determine_restrict_to_hosts(self):
+        if not hasattr(self, 'restrict_to_hosts'):
+            restrict_to_hosts = []
+            hostgroups = []
+            restrict_msg = 'Skipping because of '
+            if self.hosts:
+                restrict_to_hosts = self.hosts
+                restrict_msg += '"--hosts {0}"'.format(' '.join(self.hosts))
+            elif self.hostgroups:
+                hostgroups = self.hostgroups
+                for hg in hostgroups:
+                    if not hg in self.hostgroup:
+                        raise DeployerException('Hostgroup {0}, as supplied with commandline option --hostgroups, was not found in config'.format(hg))
+                restrict_msg += '"--hostgroups {0}"'.format(' '.join(self.hostgroups))
+            elif self.categories:
+                if type(self.categories) is str:
+                    categories = [self.categories]
+                    restrict_msg += '"--cluster {0}"'.format(self.categories)
+                else:
+                    categories = self.categories
+                    restrict_msg += '"--categories {0}"'.format(' '.join(self.categories))
+
+                for cat in categories:
+                    cat_defaults = AttrDict(dict(self.get_defaults(cat)))
+                    if hasattr(cat_defaults, 'hostgroups'):
+                        hostgroups += cat_defaults.hostgroups
+                    else:
+                        raise DeployerException('Cluster or category {0} supplied on commandline does not have any hostgroups associated'.format(repr(cat)))
+
+                hostgroups = list(set(hostgroups))
+
+                for hg in hostgroups:
+                    if not hg in self.hostgroup:
+                        raise DeployerException('Hostgroup {0}, as associated with cluster or categories supplied on the commandline, was not found in config'.format(hg))
+
+
+            if hostgroups:
+                for hg in hostgroups:
+                    for h in self.hostgroup[hg]['hosts']:
+                        restrict_to_hosts.append(h)
+
+            self.restrict_to_hostgroups = hostgroups
+            restrict_to_hosts = list(set([self.get_full_hostname(h) for h in restrict_to_hosts]))
+            self.restrict_to_hosts = restrict_to_hosts
+            self.restrict_msg = restrict_msg
 
     def get_defaults(self, item, recurse=True):
         d = {}
@@ -101,62 +149,35 @@ class Config(AttrDict):
         self.log.debug('Returning {0} with username {1} and password'.format(lb_hostname, lb_username), tag=servicename)
         return lb_hostname, lb_username, lb_password
 
-    def get_service_hosts(self, servicename):
-        """Get the list of hosts this service should be deployed to"""
+    def get_num_hosts_in_hostgroup(self, hg):
+        """Get number of hosts in a hostgroup as found in config"""
+        if hg in self.hostgroup:
+            return len(self.hostgroup[hg]['hosts'])
+        else:
+            return 0
 
-        restrict_to_hosts = []
-        hostgroups = []
-        restrict_msg = 'Skipping because of '
-        if self.hosts:
-            restrict_to_hosts = self.hosts
-            restrict_msg += '"--hosts {0}"'.format(' '.join(self.hosts))
-        elif self.hostgroups:
-            hostgroups = self.hostgroups
-            for hg in hostgroups:
-                if not hg in self.hostgroup:
-                    raise DeployerException('Hostgroup {0}, as supplied with commandline option --hostgroups, was not found in config'.format(hg))
-            restrict_msg += '"--hostgroups {0}"'.format(' '.join(self.hostgroups))
-        elif self.categories:
-            if type(self.categories) is str:
-                categories = [self.categories]
-                restrict_msg += '"--cluster {0}"'.format(self.categories)
-            else:
-                categories = self.categories
-                restrict_msg += '"--categories {0}"'.format(' '.join(self.categories))
+    def get_service_hosts(self, servicename, in_hostgroup=None):
+        """Get the list of hosts this service should be deployed to,
+            optionally restricted by in_hostgroup argument or commandline parameters"""
 
-            for cat in categories:
-                cat_defaults = AttrDict(dict(self.get_defaults(cat)))
-                if hasattr(cat_defaults, 'hostgroups'):
-                    hostgroups += cat_defaults.hostgroups
-                else:
-                    raise DeployerException('Cluster or category {0} supplied on commandline does not have any hostgroups associated'.format(repr(cat)))
-
-            hostgroups = list(set(hostgroups))
-
-            for hg in hostgroups:
-                if not hg in self.hostgroup:
-                    raise DeployerException('Hostgroup {0}, as associated with cluster or categories supplied on the commandline, was not found in config'.format(hg))
-
-
-        if hostgroups:
-            for hg in hostgroups:
-                for h in self.hostgroup[hg]['hosts']:
-                    restrict_to_hosts.append(self.get_full_hostname(h))
 
         service_config = self.get_with_defaults('service', servicename)
         hosts = []
 
         if 'hostgroups' in service_config:
             for hg in service_config.hostgroups:
-                hosts += self.hostgroup[hg]['hosts']
+                if not in_hostgroup or hg == in_hostgroup:
+                    hosts += self.hostgroup[hg]['hosts']
 
         if hosts:
             hosts = [self.get_full_hostname(h) for h in hosts]
 
-            self.log.info('Configured to run on: {0}'.format(', '.join(hosts)), tag=servicename)
+            if not in_hostgroup:
+                self.log.info('Configured to run on: {0}'.format(', '.join(hosts)), tag=servicename)
 
+        restrict_to_hosts = self.restrict_to_hosts
         if restrict_to_hosts:
-            restrict_to_hosts = [self.get_full_hostname(h) for h in restrict_to_hosts]
+            restrict_msg = self.restrict_msg
             if self.force:
                 restrict_msg = restrict_msg.replace('Skipping','--force was supplied, forcing')
                 self.log.warning(restrict_msg + ' to {0}'.format(', '.join(restrict_to_hosts)), tag=servicename)
@@ -175,7 +196,7 @@ class Config(AttrDict):
                     self.log.debug(restrict_msg, tag=servicename)
                     hosts = list(set.intersection(set(restrict_to_hosts),set(hosts)))
 
-        if hosts and restrict_to_hosts:
+        if hosts and restrict_to_hosts and not in_hostgroup:
             self.log.info('Will attempt to deploy on {0}'.format(', '.join(hosts)), tag=servicename)
 
         return hosts
@@ -349,6 +370,10 @@ class Config(AttrDict):
                     'type': int,
                     'allowed_range': (1,100),
                     },
+                'min_nodes_up': {
+                    'type': int,
+                    'allowed_range': (0,100),
+                    },
                 'hostgroups': {
                     'type': list,
                     'allowed_types': [str],
@@ -489,10 +514,12 @@ class Config(AttrDict):
                 'deploy_concurrency': {
                     'type': int,
                     'allowed_range': (0,30),
+                    'options': ['mandatory'],
                     },
                 'deploy_concurrency_per_host': {
                     'type': int,
                     'allowed_range': (0,30),
+                    'options': ['mandatory'],
                     },
                 'dont_start': {
                     'type': dict,
@@ -506,10 +533,12 @@ class Config(AttrDict):
                 'non_deploy_concurrency': {
                     'type': int,
                     'allowed_range': (0,30),
+                    'options': ['mandatory'],
                     },
                 'non_deploy_concurrency_per_host': {
                     'type': int,
                     'allowed_range': (0,30),
+                    'options': ['mandatory'],
                     },
                 'prep_concurrency': {
                     'type': int,
