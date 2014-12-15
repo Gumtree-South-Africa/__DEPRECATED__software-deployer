@@ -163,38 +163,72 @@ class Config(AttrDict):
 
         service_config = self.get_with_defaults('service', servicename)
         hosts = []
+        hostgroups = []
 
         if 'hostgroups' in service_config:
             for hg in service_config.hostgroups:
-                if not in_hostgroup or hg == in_hostgroup:
-                    hosts += self.hostgroup[hg]['hosts']
+                hostgroups.append(hg)
+                hosts += self.hostgroup[hg]['hosts']
 
-        if hosts:
-            hosts = [self.get_full_hostname(h) for h in hosts]
+            if hosts:
+                hosts = [self.get_full_hostname(h) for h in hosts]
+                self.log.info('Configured to run on: {0}, hostgroups: {1}'.format(', '.join(hosts), ', '.join(hostgroups)), tag=servicename)
 
-            if not in_hostgroup:
-                self.log.info('Configured to run on: {0}'.format(', '.join(hosts)), tag=servicename)
+            if in_hostgroup:
+                hosts = []
+                for hg in service_config.hostgroups:
+                    if hg == in_hostgroup:
+                        hosts += self.hostgroup[hg]['hosts']
+                if hosts:
+                    hosts = [self.get_full_hostname(h) for h in hosts]
+                    self.log.info('Selected hosts {0} in hostgroup {1}'.format(', '.join(hosts), in_hostgroup), tag=servicename)
+                else:
+                    self.log.warning('No configured hosts found in hostgroup {0}'.format(in_hostgroup))
 
-        restrict_to_hosts = self.restrict_to_hosts
+        if hasattr(self, 'restrict_to_hosts'):
+            restrict_to_hosts = self.restrict_to_hosts
+        else:
+            restrict_to_hosts = []
+
+        if hasattr(self, 'restrict_to_hostgroups'):
+            restrict_to_hostgroups = self.restrict_to_hostgroups
+        else:
+            restrict_to_hostgroups = []
+
         if restrict_to_hosts:
             restrict_msg = self.restrict_msg
-            if self.force:
-                restrict_msg = restrict_msg.replace('Skipping','--force was supplied, forcing')
-                self.log.warning(restrict_msg + ' to {0}'.format(', '.join(restrict_to_hosts)), tag=servicename)
+            if not hosts or set.isdisjoint(set(restrict_to_hosts),set(hosts)):
+                hosts = []
+                if self.force:
+                    restrict_msg = restrict_msg.replace('Skipping','--force was supplied, forcing')
+                    self.log.warning(restrict_msg + ' to {0}'.format(', '.join(restrict_to_hosts)), tag=servicename)
+                    if restrict_to_hostgroups:
+                        for hg in restrict_to_hostgroups:
+                            if not in_hostgroup or hg == in_hostgroup:
+                                hosts += self.hostgroup[hg]['hosts']
+                                hosts = [self.get_full_hostname(h) for h in hosts]
+                    else:
+                        if in_hostgroup:
+                            hg = self.hostgroup[in_hostgroup]
+                            for h in hg['hosts']:
+                                h = self.get_full_hostname(h)
+                                if h in restrict_to_hosts:
+                                    hosts.append(h)
+                        else:
+                            hosts = restrict_to_hosts
+                    if in_hostgroup:
+                        self.log.info('Selected hosts {0} in hostgroup {1}'.format(', '.join(hosts), in_hostgroup), tag=servicename)
+                else:
+                    restrict_msg += '. Force using --force'
+                    self.log.info(restrict_msg.format(', '.join(restrict_to_hosts)), tag=servicename)
+            elif set.issuperset(set(restrict_to_hosts),set(hosts)):
+                self.log.debug(restrict_msg, tag=servicename)
+            elif set.issubset(set(restrict_to_hosts),set(hosts)):
+                self.log.debug(restrict_msg, tag=servicename)
                 hosts = restrict_to_hosts
             else:
-                if set.issuperset(set(restrict_to_hosts),set(hosts)):
-                    self.log.debug(restrict_msg, tag=servicename)
-                elif set.issubset(set(restrict_to_hosts),set(hosts)):
-                    self.log.debug(restrict_msg, tag=servicename)
-                    hosts = restrict_to_hosts
-                elif set.isdisjoint(set(restrict_to_hosts),set(hosts)):
-                        hosts = []
-                        restrict_msg += '. Force using --force'
-                        self.log.info(restrict_msg.format(', '.join(restrict_to_hosts)), tag=servicename)
-                else:
-                    self.log.debug(restrict_msg, tag=servicename)
-                    hosts = list(set.intersection(set(restrict_to_hosts),set(hosts)))
+                self.log.debug(restrict_msg, tag=servicename)
+                hosts = list(set.intersection(set(restrict_to_hosts),set(hosts)))
 
         if hosts and restrict_to_hosts and not in_hostgroup:
             self.log.info('Will attempt to deploy on {0}'.format(', '.join(hosts)), tag=servicename)

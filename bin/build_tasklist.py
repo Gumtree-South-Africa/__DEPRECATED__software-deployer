@@ -22,11 +22,10 @@ component_group = parser.add_mutually_exclusive_group(required=True)
 component_group.add_argument('--component', nargs='+', help='Specify a list of components to deploy')
 component_group.add_argument('--release', '--directory', nargs='+', help='Specify a directory of components to deploy')
 
-args = CommandLine(parents=parser)
-log = Log(os.path.basename(__file__))
-config = Config(args)
-
 try:
+    args = CommandLine(parents=parser)
+    log = Log(os.path.basename(__file__))
+    config = Config(args)
     tasklist_builder = Tasklist(config, config.platform)
 except DeployerException as e:
     log.critical('Failed to generate task list: {0}'.format(e))

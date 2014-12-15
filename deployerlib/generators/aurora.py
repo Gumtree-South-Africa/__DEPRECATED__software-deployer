@@ -68,9 +68,10 @@ class AuroraGenerator(Generator):
                 self.log.critical('No service config found for service {0}'.format(repr(servicename)))
                 raise DeployerException('No service config found for service {0}'.format(repr(servicename)))
 
-            hostgroups = [None]
-            if self.config.restrict_to_hostgroups:
-                        hostgroups = self.config.restrict_to_hostgroups
+            if hasattr(self.config, 'restrict_to_hostgroups') and self.config.restrict_to_hostgroups and self.config.force:
+                hostgroups = self.config.restrict_to_hostgroups
+            elif hasattr(self.config, 'restrict_to_hosts') and self.config.restrict_to_hosts and self.config.force:
+                hostgroups = [None]
             else:
                 if 'hostgroups' in service_config:
                     hostgroups = service_config.hostgroups
@@ -80,17 +81,25 @@ class AuroraGenerator(Generator):
             for hostgroup in hostgroups:
                 hosts = self.config.get_service_hosts(servicename, hostgroup)
 
+                num_sub_stages = 1
                 if hostgroup and hasattr(service_config, 'min_nodes_up') and service_config.min_nodes_up > 0:
                     num_nodes_in_group = self.config.get_num_hosts_in_hostgroup(hostgroup)
                     max_nodes_down = num_nodes_in_group - service_config.min_nodes_up
-                    num_div_max = num_nodes_in_group / max_nodes_down
-                    num_mod_max = num_nodes_in_group % max_nodes_down
-                    if num_mod_max > 0:
-                        num_sub_stages = num_div_max + 1
+                    if max_nodes_down <= 0:
+                        if self.config.force:
+                            self.log.warning(
+                                    'min_nodes_up is set to {0}, but number of nodes in group {1} is {2}. Forcing deployment because of --force'.format(
+                                        service_config.min_nodes_up, hostgroup, num_nodes_in_group))
+                        else:
+                            raise DeployerException('min_nodes_up is set to {0}, but number of nodes in group {1} is {2}'.format(
+                                service_config.min_nodes_up, hostgroup, num_nodes_in_group))
                     else:
-                        num_sub_stages = num_div_max
-                else:
-                    num_sub_stages = 1
+                        num_div_max = num_nodes_in_group / max_nodes_down
+                        num_mod_max = num_nodes_in_group % max_nodes_down
+                        if num_mod_max > 0:
+                            num_sub_stages = num_div_max + 1
+                        else:
+                            num_sub_stages = num_div_max
 
                 host_no = -1
                 for hostname in hosts:
