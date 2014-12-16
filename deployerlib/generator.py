@@ -126,6 +126,7 @@ class Generator(object):
                 installed_package = package.get_packagename_from_path(res)
                 remote_version = package.get_version_from_packagename(installed_package)
 
+        self.log.hidebug('Result: {0}, {1}, {2}, {3}'.format(res, res.failed, res.succeeded, res.return_code))
         self.log.info('Current version is {0}'.format(remote_version), tag=package.servicename)
 
         self._remote_versions.append((package.servicename, host.hostname, remote_version))

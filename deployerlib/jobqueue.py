@@ -36,7 +36,7 @@ class JobQueue(object):
         ___________________________
                                 End
     """
-    def __init__(self, remote_results, max_running, max_per_host=None, config=None):
+    def __init__(self, remote_results, max_running, max_per_host=None):
         """
         Setup the class to resonable defaults.
         """
@@ -47,13 +47,13 @@ class JobQueue(object):
         self._queued = []
         self._running = []
         self._completed = []
+        self._aborted = []
         self._num_of_jobs = 0
         self._max = max_running
         self._max_per_host = max_per_host
         self._comms_queue = Queue.Queue()
         self._finished = False
         self._closed = False
-        self._debug = False
 
     def _all_alive(self):
         """
@@ -76,8 +76,7 @@ class JobQueue(object):
         A sanity check, so that the need to care about new jobs being added in
         the last throws of the job_queue's run are negated.
         """
-        if self._debug:
-            print("job queue closed.")
+        self.log.debug("job queue closed.")
 
         self._closed = True
 
@@ -163,28 +162,30 @@ class JobQueue(object):
 
             return False
 
-        def _abort_queue(jobs):
+        def _abort_queue(jobnames=[]):
             """Helper function to abort the queue cleanly"""
 
             msg = 'Aborting queue due to failed jobs'
 
-            if jobs:
-
-                if type(jobs) is list:
-                    msg += ': {0}'.format(', '.join(jobs))
-                else:
-                    msg += ': {0}'.format(jobs)
+            if jobnames:
+                msg += ': {0}'.format(', '.join(jobnames))
 
             self.log.critical(msg)
 
-            if len(self._running) > 1:
-                self.log.warning('Allowing {0} running jobs to finish before aborting'.format(len(self._running) - 1))
+            if len(self._running) > 0:
+                self.log.warning('Allowing {0} running jobs to finish before aborting the queue'.format(len(self._running)))
 
-            for job in self._running:
+            while self._running:
+                job = self._running.pop(0)
                 job.join()
+                self._completed.append(job)
 
-            self._fill_results(results)
-            time.sleep(ssh.io_sleep)
+            if len(self._queued) > 0:
+                self.log.warning('Aborting {0} queued jobs'.format(len(self._queued)))
+
+            while self._queued:
+                job = self._queued.pop(0)
+                self._aborted.append(job)
 
             return
 
@@ -198,37 +199,48 @@ class JobQueue(object):
 
         self.log.debug('Starting job queue')
 
-        while len(self._running) < self._max and len(self._running) > 0:
+        while len(self._running) < self._max and len(self._queued) > 0:
             if not _advance_the_queue():
                 break
 
         # Main loop!
+        abortflag = False
+        failedjobs_names = []
         while not self._finished:
             while len(self._running) < self._max and self._queued:
                 if not _advance_the_queue():
                     break
 
+            time.sleep(6)
             if not self._all_alive():
-                for id, job in enumerate(self._running):
+                running_jobs = list(enumerate(self._running))
+                # this is needed because the use of the pop() method below resets the indexes in self._running,
+                # if you do it in reverse order, the highest indexes have already been checked
+                running_jobs.reverse()
+                for id, job in running_jobs:
                     if not job.is_alive():
                         self.log.debug('Found finished job: {0}'.format(job._name))
-
-                        if not self.remote_results[job._name] or self.remote_results[job._name] == self.not_run:
-                            _abort_queue(job._name)
-                            return False
 
                         done = self._running.pop(id)
                         self._completed.append(done)
 
-                self.log.debug('{0} jobs running and {1} jobs queued'.format(
-                  len(self._running), len(self._queued)))
+                        if not self.remote_results[job._name] or self.remote_results[job._name] == self.not_run:
+                            abortflag = True
+                            failedjobs_names.append(job._name)
+
+                        time.sleep(ssh.io_sleep)
+
+                self.log.debug('{0} jobs running, {1} jobs queued, {2} jobs completed'.format(
+                  len(self._running), len(self._queued), len(self._completed)))
+
+            if abortflag:
+                _abort_queue(failedjobs_names)
 
             if not (self._queued or self._running):
-                self.log.debug('Finished job queue')
-
-                for job in self._completed:
-                    job.join()
-
+                if self._aborted:
+                    self.log.debug('Aborted job queue')
+                else:
+                    self.log.debug('Finished job queue')
                 self._finished = True
 
             # Each loop pass, try pulling results off the queue to keep its
@@ -247,7 +259,10 @@ class JobQueue(object):
         for job in self._completed:
             results[job.name]['exit_code'] = job.exitcode
 
-        return True
+        if self._aborted:
+            return False
+        else:
+            return True
 
     def _fill_results(self, results):
         """
