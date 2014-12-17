@@ -103,7 +103,7 @@ class Generator(object):
         failed = [x for x in remote_results.keys() if not remote_results[x]]
 
         if failed or not queue_result:
-            self.log.error('Failed stage: Check remote service versions')
+            raise DeployerException('Failed stage: Check remote service versions')
         else:
             self.log.info(green('Finished stage: Check remote service versions'))
 
