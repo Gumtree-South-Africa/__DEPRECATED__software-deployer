@@ -211,7 +211,6 @@ class JobQueue(object):
                 if not _advance_the_queue():
                     break
 
-            time.sleep(6)
             if not self._all_alive():
                 running_jobs = list(enumerate(self._running))
                 # this is needed because the use of the pop() method below resets the indexes in self._running,
@@ -227,8 +226,6 @@ class JobQueue(object):
                         if not self.remote_results[job._name] or self.remote_results[job._name] == self.not_run:
                             abortflag = True
                             failedjobs_names.append(job._name)
-
-                        time.sleep(ssh.io_sleep)
 
                 self.log.debug('{0} jobs running, {1} jobs queued, {2} jobs completed'.format(
                   len(self._running), len(self._queued), len(self._completed)))
