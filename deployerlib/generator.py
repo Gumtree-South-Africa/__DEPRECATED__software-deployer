@@ -68,16 +68,16 @@ class Generator(object):
 
         return packages
 
-    def get_remote_versions(self, packages, concurrency=10, concurrency_per_host=5):
+    def get_remote_versions(self, packages, concurrency=10, concurrency_per_host=5, abort_on_error=True):
         """Get the versions of services running on remote hosts"""
-
-        self.log.info(green('Starting stage: Check remote service versions'))
 
         job_list = []
 
         manager = Manager()
         remote_results = manager.dict()
-        self._remote_versions = manager.list()
+        self._remote_versions = manager.dict()
+        failed = []
+        queue_result = True
 
         for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
@@ -88,31 +88,49 @@ class Generator(object):
 
             hosts = [self.get_remote_host(x, self.config.user) for x in self.config.get_service_hosts(package.servicename)]
 
+            remote_versions_init = {}
             for host in hosts:
-                procname = 'RemoteVersions({0}/{1})'.format(host.hostname, package.servicename)
-                job = Process(target=self._get_remote_version, args=[package, service_config, host,
-                  procname, remote_results], name=procname)
-                job._host = host.hostname
-                job_list.append(job)
+                remote_versions_init.update({host.hostname: 'UNDETERMINED'})
+            self._remote_versions.update({package.servicename: remote_versions_init})
 
-        job_queue = JobQueue(remote_results, concurrency, concurrency_per_host)
-        job_queue.append(job_list)
+            if not self.config.redeploy:
+                for host in hosts:
+                    procname = 'RemoteVersions({0}/{1})'.format(host.hostname, package.servicename)
+                    job = Process(target=self._get_remote_version, args=[package, service_config, host,
+                      procname, remote_results], name=procname)
+                    job._host = host.hostname
+                    job_list.append(job)
 
-        job_queue.close()
-        queue_result = job_queue.run()
-        failed = [x for x in remote_results.keys() if not remote_results[x]]
 
-        if failed or not queue_result:
-            raise DeployerException('Failed stage: Check remote service versions')
+        if not self.config.redeploy:
+            self.log.info(green('Starting stage: Check remote service versions'))
+            #print '_remote_versions before jobqueue: {0}'.format(self._remote_versions)
+            job_queue = JobQueue(remote_results, concurrency, concurrency_per_host, abort_on_error=abort_on_error)
+            job_queue.append(job_list)
+
+            job_queue.close()
+            queue_result = job_queue.run()
+            #print 'remote_results: {0}'.format(remote_results)
+            #print 'queue_result: {0}'.format(queue_result)
+            failed = [x for x in remote_results.keys() if not remote_results[x]]
+
+            #print '_remote_versions after: {0}'.format(self._remote_versions)
+
+            if failed or not queue_result:
+                self.log.error('Failed stage: Check remote service versions')
+                #raise DeployerException('Failed stage: Check remote service versions')
+            else:
+                self.log.info(green('Finished stage: Check remote service versions'))
+
+        if (failed or not queue_result) and abort_on_error:
+            return None
         else:
-            self.log.info(green('Finished stage: Check remote service versions'))
-
-        return self._resolve_remote_versions()
+            return dict(self._remote_versions)
 
     def _get_remote_version(self, package, service_config, host, procname=None, remote_results={}):
         """Method passed to JobQueue to get a remote service version"""
 
-        remote_version = 'UNDETERMINED'
+        remote_version = 'NOT_INSTALLED'
 
         if hasattr(service_config, 'control_type') and service_config.control_type == 'props' and hasattr(service_config, 'properties_location'):
             res = host.execute_remote("/bin/cat %s/properties_version" % service_config.properties_location)
@@ -129,27 +147,11 @@ class Generator(object):
         self.log.hidebug('Result: {0}, {1}, {2}, {3}'.format(res, res.failed, res.succeeded, res.return_code))
         self.log.info('Current version is {0}'.format(remote_version), tag=package.servicename)
 
-        self._remote_versions.append((package.servicename, host.hostname, remote_version))
+        remote_versions_new = dict(self._remote_versions[package.servicename].items() + [(host.hostname, remote_version)])
+        self._remote_versions.update({ package.servicename: remote_versions_new })
 
         remote_results[procname] = remote_version
         return remote_version
-
-    def _resolve_remote_versions(self):
-        """Create a nested dict from the manager list
-           (workaround for lack of nested manager dicts)
-        """
-
-        remote_versions = {}
-
-        for l in self._remote_versions:
-            servicename, hostname, version = l
-
-            if not servicename in remote_versions:
-                remote_versions[servicename] = {}
-
-            remote_versions[servicename][hostname] = version
-
-        return remote_versions
 
     def get_remote_host(self, hostname, username=''):
         """Return a host object from a hostname"""

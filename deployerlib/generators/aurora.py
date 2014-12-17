@@ -13,10 +13,14 @@ class AuroraGenerator(Generator):
         """Build the task list"""
 
         packages = self.get_packages()
-        if not self.config.redeploy:
-            remote_versions = self.get_remote_versions(packages,
-                    concurrency=self.config.non_deploy_concurrency,
-                    concurrency_per_host=self.config.non_deploy_concurrency_per_host)
+        remote_versions = self.get_remote_versions(packages,
+                concurrency=self.config.non_deploy_concurrency,
+                concurrency_per_host=self.config.non_deploy_concurrency_per_host,
+                abort_on_error=True)
+        #print 'returned remote_versions: {0}'.format(remote_versions)
+
+        if not remote_versions:
+            raise DeployerException('Errors with determining remote versions')
 
         if self.config.release:
             if type(self.config.release) is list:
@@ -105,11 +109,12 @@ class AuroraGenerator(Generator):
                 for hostname in hosts:
 
                     host_no += 1
-                    if not self.config.redeploy and remote_versions.get(servicename).get(hostname) == package.version:
+                    remote_version = remote_versions.get(servicename).get(hostname)
+                    if remote_version == package.version:
                         self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=servicename)
                         continue
 
-                    self.log.info('Will deploy version {0} to {1}'.format(package.version, hostname), tag=servicename)
+                    self.log.info('Will replace version {0} with {1} on {2}'.format(remote_version, package.version, hostname), tag=servicename)
 
                     upload_tasks.append({
                       'tag': servicename,

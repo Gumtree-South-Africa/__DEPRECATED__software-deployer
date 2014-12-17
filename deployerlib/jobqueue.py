@@ -36,7 +36,7 @@ class JobQueue(object):
         ___________________________
                                 End
     """
-    def __init__(self, remote_results, max_running, max_per_host=None):
+    def __init__(self, remote_results, max_running, max_per_host=None, abort_on_error=True):
         """
         Setup the class to resonable defaults.
         """
@@ -54,6 +54,7 @@ class JobQueue(object):
         self._comms_queue = Queue.Queue()
         self._finished = False
         self._closed = False
+        self.abort_on_error=abort_on_error
 
     def _all_alive(self):
         """
@@ -231,7 +232,8 @@ class JobQueue(object):
                   len(self._running), len(self._queued), len(self._completed)))
 
             if abortflag:
-                _abort_queue(failedjobs_names)
+                if self.abort_on_error:
+                    _abort_queue(failedjobs_names)
 
             if not (self._queued or self._running):
                 if self._aborted:
