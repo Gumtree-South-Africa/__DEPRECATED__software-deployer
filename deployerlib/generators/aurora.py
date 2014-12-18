@@ -12,6 +12,40 @@ class AuroraGenerator(Generator):
     def generate(self):
         """Build the task list"""
 
+        # helper function:
+        def generate_to_deploy_list(tasklist):
+            """ Extracts from a tasklist for each tag the remote_host and generates
+                a list of strings like '<taglist> to hosts <hostlist>'
+            """
+            to_deploy_to = {}
+            for x in tasklist:
+                s = x['tag']
+                h = x['remote_host']
+                if s not in to_deploy_to:
+                    to_deploy_to[s] = []
+                to_deploy_to[s].append(h)
+
+            sh_lists = []
+            for (s,hlist) in to_deploy_to.items():
+                found = 0
+                for (sl,hl) in sh_lists:
+                    if set(hl) == set(hlist):
+                        sh_lists.remove((sl,hl))
+                        sl.append(s)
+                        sh_lists.append((sl,hl))
+                        found = 1
+                        break
+                if not found:
+                    sh_lists.append(([s],hlist))
+
+            to_deploy = []
+            for (slist,hlist) in sh_lists:
+                to_deploy.append(','.join(slist) + ' to hosts ' + ','.join(hlist))
+
+            return to_deploy
+
+
+        # main part of generate
         packages = self.get_packages()
         remote_versions = self.get_remote_versions(packages,
                 concurrency=self.config.non_deploy_concurrency,
@@ -304,6 +338,8 @@ class AuroraGenerator(Generator):
                     task_list['stages'].append(self.get_graphite_stage('start'))
 
         if props_tasks:
+            to_deploy = generate_to_deploy_list(props_tasks)
+            self.log.info('Adding stage to deploy {0}'.format(', '.join(to_deploy)))
             task_list['stages'].append({
               'name': 'Deploy properties for environment {0}'.format(self.config.environment),
               'concurrency': self.config.non_deploy_concurrency,
@@ -311,6 +347,8 @@ class AuroraGenerator(Generator):
             })
 
         if dbmig_tasks:
+            #to_run = generate_to_deploy_list(dbmig_tasks)
+            #self.log.info('Adding stage with dbmigrations for {0}'.format(', '.join(to_run).replace('to hosts','to be run on hosts')))
             task_list['stages'].append({
               'name': 'Database migrations',
               'concurrency': 1,
@@ -331,31 +369,7 @@ class AuroraGenerator(Generator):
 
                 deploy_tasks[sub_stage] = [x for x in deploy_tasks[sub_stage] if not x in this_stage]
 
-                to_deploy_to = {}
-                for x in this_stage:
-                    s = x['tag']
-                    h = x['remote_host']
-                    if s not in to_deploy_to:
-                        to_deploy_to[s] = []
-                    to_deploy_to[s].append(h)
-
-                sh_lists = []
-                for (s,hlist) in to_deploy_to.items():
-                    found = 0
-                    for (sl,hl) in sh_lists:
-                        if set(hl) == set(hlist):
-                            sh_lists.remove((sl,hl))
-                            sl.append(s)
-                            sh_lists.append((sl,hl))
-                            found = 1
-                            break
-                    if not found:
-                        sh_lists.append(([s],hlist))
-
-                to_deploy = []
-                for (slist,hlist) in sh_lists:
-                    to_deploy.append(','.join(slist) + ' to hosts ' + ','.join(hlist))
-
+                to_deploy = generate_to_deploy_list(this_stage)
 
                 self.log.info('Adding stage to deploy {0}'.format(', '.join(to_deploy)))
                 task_list['stages'].append({
