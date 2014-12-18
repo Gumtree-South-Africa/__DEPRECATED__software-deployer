@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 
 import sys
+import os
+import pwd
 import unittest
 
 import deployerlib.generators
@@ -136,7 +138,7 @@ def get_config():
       'non_deploy_concurrency': 1,
       'non_deploy_concurrency_per_host': 1,
       'keep_versions': 5,
-      'user': None,
+      'user': 'mpdeploy' if pwd.getpwuid(os.geteuid())[0] == 'jenkins' else None,
       'environment': None,
       # Command line options added by the top-level deploy script
       'component': [],
