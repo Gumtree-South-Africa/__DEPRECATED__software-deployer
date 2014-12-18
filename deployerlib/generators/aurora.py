@@ -47,13 +47,15 @@ class AuroraGenerator(Generator):
 
         # main part of generate
         packages = self.get_packages()
-        remote_versions = self.get_remote_versions(packages,
-                concurrency=self.config.non_deploy_concurrency,
-                concurrency_per_host=self.config.non_deploy_concurrency_per_host,
-                abort_on_error=True)
-        #print 'returned remote_versions: {0}'.format(remote_versions)
+        if not self.config.redeploy:
+            remote_versions = self.get_remote_versions(packages,
+                    concurrency=self.config.non_deploy_concurrency,
+                    concurrency_per_host=self.config.non_deploy_concurrency_per_host,
+                    abort_on_error=True)
 
-        if not remote_versions:
+            #print 'returned remote_versions: {0}'.format(remote_versions)
+
+        if not self.config.redeploy and not remote_versions:
             raise DeployerException('Errors with determining remote versions')
 
         if self.config.release:
@@ -143,7 +145,11 @@ class AuroraGenerator(Generator):
                 for hostname in hosts:
 
                     host_no += 1
-                    remote_version = remote_versions.get(servicename).get(hostname)
+                    if not self.config.redeploy:
+                        remote_version = remote_versions.get(servicename).get(hostname)
+                    else:
+                        remote_version = 'UNDETERMINED'
+
                     if remote_version == package.version:
                         self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=servicename)
                         continue

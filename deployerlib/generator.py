@@ -93,34 +93,27 @@ class Generator(object):
                 remote_versions_init.update({host.hostname: 'UNDETERMINED'})
             self._remote_versions.update({package.servicename: remote_versions_init})
 
-            if not self.config.redeploy:
-                for host in hosts:
-                    procname = 'RemoteVersions({0}/{1})'.format(host.hostname, package.servicename)
-                    job = Process(target=self._get_remote_version, args=[package, service_config, host,
-                      procname, remote_results], name=procname)
-                    job._host = host.hostname
-                    job_list.append(job)
+            for host in hosts:
+                procname = 'RemoteVersions({0}/{1})'.format(host.hostname, package.servicename)
+                job = Process(target=self._get_remote_version, args=[package, service_config, host,
+                  procname, remote_results], name=procname)
+                job._host = host.hostname
+                job_list.append(job)
 
 
-        if not self.config.redeploy:
-            self.log.info(green('Starting stage: Check remote service versions'))
-            #print '_remote_versions before jobqueue: {0}'.format(self._remote_versions)
-            job_queue = JobQueue(remote_results, concurrency, concurrency_per_host, abort_on_error=abort_on_error)
-            job_queue.append(job_list)
+        self.log.info(green('Starting stage: Check remote service versions'))
+        job_queue = JobQueue(remote_results, concurrency, concurrency_per_host, abort_on_error=abort_on_error)
+        job_queue.append(job_list)
 
-            job_queue.close()
-            queue_result = job_queue.run()
-            #print 'remote_results: {0}'.format(remote_results)
-            #print 'queue_result: {0}'.format(queue_result)
-            failed = [x for x in remote_results.keys() if not remote_results[x]]
+        job_queue.close()
+        queue_result = job_queue.run()
+        failed = [x for x in remote_results.keys() if not remote_results[x]]
 
-            #print '_remote_versions after: {0}'.format(self._remote_versions)
-
-            if failed or not queue_result:
-                self.log.error('Failed stage: Check remote service versions')
-                #raise DeployerException('Failed stage: Check remote service versions')
-            else:
-                self.log.info(green('Finished stage: Check remote service versions'))
+        if failed or not queue_result:
+            self.log.error('Failed stage: Check remote service versions')
+            #raise DeployerException('Failed stage: Check remote service versions')
+        else:
+            self.log.info(green('Finished stage: Check remote service versions'))
 
         if (failed or not queue_result) and abort_on_error:
             return None
