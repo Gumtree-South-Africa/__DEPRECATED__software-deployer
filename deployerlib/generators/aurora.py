@@ -99,6 +99,7 @@ class AuroraGenerator(Generator):
         dbmig_tasks = []
         deploy_tasks = {}
         remove_temp_tasks = []
+        cleanup_tasks = []
 
         for package in packages:
 
@@ -172,6 +173,30 @@ class AuroraGenerator(Generator):
                       'remote_user': self.config.user,
                       'source': os.path.join(service_config.destination, package.filename),
                       'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
+                    })
+
+                    # cleanup upload directory
+                    cleanup_tasks.append({
+                      'command': 'cleanup',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'path': service_config.destination,
+                      'filespec': '{0}_*'.format(package.servicename),
+                      'keepversions': self.config.keep_versions,
+                      'currentversion': package.version,
+                      'tag': package.servicename,
+                    })
+
+                    # cleanup webapps directory
+                    cleanup_tasks.append({
+                      'command': 'cleanup',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'path': service_config.install_location,
+                      'filespec': '{0}_*'.format(package.servicename),
+                      'keepversions': self.config.keep_versions,
+                      'currentversion': package.version,
+                      'tag': package.servicename,
                     })
 
                     if service_config.control_type == 'props':
@@ -402,6 +427,14 @@ class AuroraGenerator(Generator):
               'name': 'Remove temp directories',
               'concurrency': self.config.non_deploy_concurrency,
               'tasks': remove_temp_tasks,
+            })
+
+        if cleanup_tasks:
+            task_list['stages'].append({
+              'name': 'Cleanup',
+              'concurrency': self.config.non_deploy_concurrency,
+              'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
+              'tasks': cleanup_tasks,
             })
 
         leftovers = set()
