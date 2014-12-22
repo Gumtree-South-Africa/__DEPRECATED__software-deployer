@@ -155,6 +155,10 @@ class AuroraGenerator(Generator):
                         self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=servicename)
                         continue
 
+                    if remote_version == 'NOT_INSTALLED':
+                        self.log.info('Service has been found to be not installed/configured on {0}, skipping'.format(hostname), tag=servicename)
+                        continue
+
                     self.log.info('Will replace version {0} with {1} on {2}'.format(remote_version, package.version, hostname), tag=servicename)
 
                     upload_tasks.append({
