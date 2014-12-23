@@ -191,18 +191,6 @@ class AuroraGenerator(Generator):
                       'tag': package.servicename,
                     })
 
-                    # cleanup webapps directory
-                    cleanup_tasks.append({
-                      'command': 'cleanup',
-                      'remote_host': hostname,
-                      'remote_user': self.config.user,
-                      'path': service_config.install_location,
-                      'filespec': '{0}_*'.format(package.servicename),
-                      'keepversions': self.config.keep_versions,
-                      'currentversion': package.version,
-                      'tag': package.servicename,
-                    })
-
                     if service_config.control_type == 'props':
                         props_tasks.append({
                           'tag': servicename,
@@ -216,6 +204,18 @@ class AuroraGenerator(Generator):
                         })
 
                     if service_config.control_type == 'daemontools':
+                        # cleanup webapps directory
+                        cleanup_tasks.append({
+                          'command': 'cleanup',
+                          'remote_host': hostname,
+                          'remote_user': self.config.user,
+                          'path': service_config.install_location,
+                          'filespec': '{0}_*'.format(package.servicename),
+                          'keepversions': self.config.keep_versions,
+                          'currentversion': package.version,
+                          'tag': package.servicename,
+                        })
+
                         deploy_task = {
                           'tag': servicename,
                           'command': 'deploy_and_restart',
