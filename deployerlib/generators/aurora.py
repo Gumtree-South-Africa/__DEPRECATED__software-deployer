@@ -155,7 +155,7 @@ class AuroraGenerator(Generator):
                         self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=servicename)
                         continue
 
-                    if remote_version == 'NOT_INSTALLED':
+                    if remote_version == 'NOT_INSTALLED_NOT_IN_DAEMONTOOLS':
                         self.log.info('Service has been found to be not installed/configured on {0}, skipping'.format(hostname), tag=servicename)
                         continue
 
@@ -224,6 +224,7 @@ class AuroraGenerator(Generator):
                           'source': package.get_install_path(os.path.join(service_config.install_location, service_config.unpack_dir)),
                           'destination': package.get_install_path(service_config.install_location),
                           'link_target': package.get_link_path(service_config.install_location),
+                          'check_registered': True,
                         }
 
                         if hasattr(service_config, 'migration_command') and not [x for x in dbmig_tasks \

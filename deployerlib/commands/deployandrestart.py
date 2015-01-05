@@ -7,7 +7,8 @@ class DeployAndRestart(Command):
     """Meta-command that includes load balancer control, service control and service activation"""
 
     def initialize(self, remote_host, source, destination=None, stop_command=None, start_command=None,
-      link_target=None, check_command=None, control_timeout=60, check_daemontools=True, abort_on_failed_precheck=False,
+      link_target=None, check_command=None, control_timeout=60, check_daemontools=True,
+      check_registered=False, abort_on_failed_precheck=False,
       lb_hostname=None, lb_username=None, lb_password=None, lb_service=None, lb_timeout=60):
 
         if not destination:
@@ -22,6 +23,7 @@ class DeployAndRestart(Command):
               checkdaemontools.CheckDaemontools(
                 remote_host=remote_host,
                 servicename=self.tag,
+                check_registered=check_registered,
                 tag=self.tag,
               )
             )

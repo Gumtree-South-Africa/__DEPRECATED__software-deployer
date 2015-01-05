@@ -8,6 +8,7 @@ from deployerlib.jobqueue import JobQueue
 from deployerlib.package import Package
 from deployerlib.remotehost import RemoteHost
 from deployerlib.exceptions import DeployerException
+from deployerlib.commands import checkdaemontools
 
 
 class Generator(object):
@@ -136,6 +137,15 @@ class Generator(object):
             if res:
                 installed_package = package.get_packagename_from_path(res)
                 remote_version = package.get_version_from_packagename(installed_package)
+            else:
+                checkdaemontools_command = checkdaemontools.CheckDaemontools(
+                        remote_host=host,
+                        servicename=package.servicename,
+                        check_registered=True,
+                        tag=package.servicename,
+                        )
+                if not checkdaemontools_command.execute():
+                    remote_version += '_NOT_IN_DAEMONTOOLS'
 
         self.log.hidebug('Result: {0}, {1}, {2}, {3}'.format(res, res.failed, res.succeeded, res.return_code))
         self.log.info('Current version is {0}'.format(remote_version), tag=package.servicename)
