@@ -13,7 +13,10 @@ software-deployer (0.9.13) precise; urgency=low
       from config
     * AuroraGenerator: implementation of min_nodes_up service parameter
     * AuroraGenerator: add/fix some logging
-
+    * generator._get_remote_version() checks whether service is configured in
+      daemontools using the CheckDaemontools command
+    * CheckDaemontools command: added option to check if service is registered
+      in /etc/service
 
  -- Arnoud Witt <awitt@ebay.com>  Thu, 11 Dec 2014 15:31:11 +0100
 
