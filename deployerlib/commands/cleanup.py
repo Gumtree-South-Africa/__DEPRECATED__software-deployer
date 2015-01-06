@@ -7,7 +7,8 @@ from deployerlib.exceptions import DeployerException
 class CleanUp(Command):
     """Clean up files named 'filespec' in the directory 'path'"""
 
-    def initialize(self, remote_host, path, filespec, keepversions, currentversion=''):
+    def initialize(self, remote_host, path, filespec, keepversions, exclude=''):
+        self.exclude = exclude
         return True
 
     def execute(self):
@@ -25,8 +26,11 @@ class CleanUp(Command):
               self.path, self.filespec))
             return True
 
-        if hasattr(self, 'currentversion') and self.currentversion:
-            files = [f for f in files if self.currentversion not in f]
+        if self.exclude:
+            files = [f for f in files if self.exclude not in f]
+        elif self.keepversions < 1:
+            self.log.warning('keepversions is {0}, less than 1 and exclude is not set. Will set keep versions to 1'.format(self.keepversions))
+            self.keepversions = 1
 
         if not files or len(files) < self.keepversions:
             self.log.debug('No old versions to clean up')

@@ -187,7 +187,7 @@ class AuroraGenerator(Generator):
                       'path': service_config.destination,
                       'filespec': '{0}_*'.format(package.servicename),
                       'keepversions': self.config.keep_versions,
-                      'currentversion': package.version,
+                      'exclude': package.version,
                       'tag': package.servicename,
                     })
 
@@ -212,7 +212,7 @@ class AuroraGenerator(Generator):
                           'path': service_config.install_location,
                           'filespec': '{0}_*'.format(package.servicename),
                           'keepversions': self.config.keep_versions,
-                          'currentversion': package.version,
+                          'exclude': package.version,
                           'tag': package.servicename,
                         })
 
