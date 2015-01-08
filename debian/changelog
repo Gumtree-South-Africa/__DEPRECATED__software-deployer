@@ -1,8 +1,11 @@
 software-deployer (0.9.15) precise; urgency=low
 
-  *
+  * Fixes for cleanup
+      - cleanup command improvements in logging and small bugfix
+      - AuroraGenerator: add service specific cleanup for unpack_dir
 
- -- Arnoud Witt <awitt@ebay.com>  Thu, 08 Jan 2015 10:02:14 +0100
+
+ -- Arnoud Witt <awitt@ebay.com>  Thu, 08 Jan 2015 16:15:24 +0100
 
 software-deployer (0.9.14) precise; urgency=low
 

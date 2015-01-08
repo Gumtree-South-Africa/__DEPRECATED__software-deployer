@@ -16,34 +16,35 @@ class CleanUp(Command):
           "/bin/ls -1td {0}".format(os.path.join(self.path, self.filespec)))
 
         if res.failed:
-            self.log.critical('Failed to list files in {0}: {1}'.format(self.path, res))
+            self.log.critical('{0}: Failed to list files: {1}'.format(self.path, res))
             return False
 
         files = res.split()
 
         if not files:
-            self.log.warning('No files found in {0} with pattern {1}'.format(
+            self.log.warning('{0}: No files found in with pattern {1}'.format(
               self.path, self.filespec))
             return True
 
         if self.exclude:
+            self.log.debug('{0}: excluding files matching pattern {1}'.format(self.path, repr(self.exclude)))
             files = [f for f in files if self.exclude not in f]
         elif self.keepversions < 1:
-            self.log.warning('keepversions is {0}, less than 1 and exclude is not set. Will set keep versions to 1'.format(self.keepversions))
+            self.log.warning('{0}: keepversions is {1}, less than 1 and exclude is not set. Setting keepversions to 1'.format(self.path, self.keepversions))
             self.keepversions = 1
 
-        if not files or len(files) < self.keepversions:
-            self.log.debug('No old versions to clean up')
+        if not files or len(files) <= self.keepversions:
+            self.log.debug('{0}: No old versions to clean up'.format(self.path))
             return True
 
         cleanup_files = files[self.keepversions:]
 
         for file in cleanup_files:
-            self.log.info('Cleaning up old version: {0}'.format(file))
+            self.log.info('{0}: Cleaning up old version: {1}'.format(self.path, os.path.basename(file)))
             res = self.remote_host.execute_remote('rm -rf {0}'.format(file))
 
             if res.failed:
-                self.log.critical('Failed to remove {0}: {1}'.format(file, res))
+                self.log.critical('{0}: Failed to remove {1}: {2}'.format(self.path, os.path.basename(file), res))
                 return False
 
         return True

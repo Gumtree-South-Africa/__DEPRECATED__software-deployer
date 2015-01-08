@@ -108,6 +108,8 @@ class AuroraGenerator(Generator):
                 self.log.critical('No service config found for service {0}'.format(repr(servicename)))
                 raise DeployerException('No service config found for service {0}'.format(repr(servicename)))
 
+            service_config.unpack_location = os.path.join(service_config.install_location, service_config.unpack_dir)
+
             if hasattr(self.config, 'restrict_to_hostgroups') and self.config.restrict_to_hostgroups and self.config.force:
                 hostgroups = self.config.restrict_to_hostgroups
             elif hasattr(self.config, 'restrict_to_hosts') and self.config.restrict_to_hosts and self.config.force:
@@ -175,7 +177,7 @@ class AuroraGenerator(Generator):
                       'remote_host': hostname,
                       'remote_user': self.config.user,
                       'source': os.path.join(service_config.destination, package.filename),
-                      'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
+                      'destination': service_config.unpack_location,
                     })
 
                     # cleanup upload directory
@@ -190,14 +192,25 @@ class AuroraGenerator(Generator):
                       'tag': package.servicename,
                     })
 
+                    # cleanup unpack directory
+                    cleanup_tasks.append({
+                      'command': 'cleanup',
+                      'remote_host': hostname,
+                      'remote_user': self.config.user,
+                      'path': service_config.unpack_location,
+                      'filespec': '{0}_*'.format(package.servicename),
+                      'keepversions': 0,
+                      'exclude': 'XXXXXXX', # deliberately setting to a string that will never match
+                      'tag': package.servicename,
+                    })
+
                     if service_config.control_type == 'props':
                         props_tasks.append({
                           'tag': servicename,
                           'command': 'deploy_properties',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
-                          'source': '{0}/*'.format(os.path.join(service_config.install_location,
-                              service_config.unpack_dir, package.packagename, self.config.environment)),
+                          'source': '{0}/*'.format(os.path.join(service_config.unpack_location, package.packagename, self.config.environment)),
                           'destination': '{0}/'.format(service_config.properties_location),
                           'version': package.version,
                         })
@@ -220,7 +233,7 @@ class AuroraGenerator(Generator):
                           'command': 'deploy_and_restart',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
-                          'source': package.get_install_path(os.path.join(service_config.install_location, service_config.unpack_dir)),
+                          'source': package.get_install_path(service_config.unpack_location),
                           'destination': package.get_install_path(service_config.install_location),
                           'link_target': package.get_link_path(service_config.install_location),
                           'check_registered': True,
@@ -231,8 +244,7 @@ class AuroraGenerator(Generator):
 
                             self.log.info('Adding DB migrations to be run on {0}'.format(hostname), tag=servicename)
 
-                            dbmig_location = os.path.join(service_config.install_location, service_config.unpack_dir,
-                                    package.packagename, 'db/migrations')
+                            dbmig_location = os.path.join(service_config.unpack_location, package.packagename, 'db/migrations')
 
                             dbmig_tasks.append({
                               'tag': servicename,
@@ -310,12 +322,12 @@ class AuroraGenerator(Generator):
                         deploy_tasks[sub_stage].append(deploy_task)
 
                     if not [x for x in create_temp_tasks if x['remote_host'] == hostname and \
-                      x['source'] == os.path.join(service_config.install_location, service_config.unpack_dir)]:
+                      x['source'] == service_config.unpack_location]:
                         create_temp_tasks.append({
                           'command': 'createdirectory',
                           'remote_host': hostname,
                           'remote_user': self.config.user,
-                          'source': os.path.join(service_config.install_location, service_config.unpack_dir),
+                          'source': service_config.unpack_location,
                           'clobber': False,
                         })
 
