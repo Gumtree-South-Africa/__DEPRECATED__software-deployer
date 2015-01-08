@@ -98,7 +98,6 @@ class AuroraGenerator(Generator):
         props_tasks = []
         dbmig_tasks = []
         deploy_tasks = {}
-        remove_temp_tasks = []
         cleanup_tasks = []
 
         for package in packages:
@@ -317,15 +316,9 @@ class AuroraGenerator(Generator):
                           'remote_host': hostname,
                           'remote_user': self.config.user,
                           'source': os.path.join(service_config.install_location, service_config.unpack_dir),
-                          'clobber': True,
+                          'clobber': False,
                         })
 
-                        remove_temp_tasks.append({
-                          'command': 'removefile',
-                          'remote_host': hostname,
-                          'remote_user': self.config.user,
-                          'source': os.path.join(service_config.install_location, service_config.unpack_dir),
-                        })
                 # end for hostname in hosts:
             # end for hg in hostgroups:
         # end for package in packages:
@@ -426,13 +419,6 @@ class AuroraGenerator(Generator):
             if hasattr(self.config, 'graphite'):
                 if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
                     task_list['stages'].append(self.get_graphite_stage('end'))
-
-        if remove_temp_tasks:
-            task_list['stages'].append({
-              'name': 'Remove temp directories',
-              'concurrency': self.config.non_deploy_concurrency,
-              'tasks': remove_temp_tasks,
-            })
 
         if cleanup_tasks:
             task_list['stages'].append({

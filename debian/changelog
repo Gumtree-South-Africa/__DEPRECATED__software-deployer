@@ -1,8 +1,9 @@
 software-deployer (0.9.14) precise; urgency=low
 
-  * change me
+  * AuroraGenerator: do not remove temporary unpack dir so that multiple
+    deploy jobs for different components can run in parallel
 
- -- Arnoud Witt <awitt@ebay.com>  Wed, 07 Jan 2015 07:45:51 +0100
+ -- Arnoud Witt <awitt@ebay.com>  Thu, 08 Jan 2015 09:48:37 +0100
 
 software-deployer (0.9.13) precise; urgency=low
 
