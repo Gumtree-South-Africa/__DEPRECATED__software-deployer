@@ -1,3 +1,9 @@
+software-deployer (0.9.15) precise; urgency=low
+
+  *
+
+ -- Arnoud Witt <awitt@ebay.com>  Thu, 08 Jan 2015 10:02:14 +0100
+
 software-deployer (0.9.14) precise; urgency=low
 
   * AuroraGenerator: do not remove temporary unpack dir so that multiple
