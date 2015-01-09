@@ -1,3 +1,8 @@
+software-deployer (0.9.17) precise; urgency=low
+
+
+ -- Arnoud Witt <awitt@ebay.com>  Fri, 09 Jan 2015 16:50:10 +0100
+
 software-deployer (0.9.16) precise; urgency=low
 
   * Fixes for cleanup:
