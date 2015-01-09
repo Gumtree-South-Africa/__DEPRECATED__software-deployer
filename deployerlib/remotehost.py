@@ -52,7 +52,7 @@ class RemoteHost(object):
         with settings(**fabric_settings):
             return files.exists(remote_file)
 
-    def execute_remote(self, command, use_sudo=False, **fabric_settings):
+    def execute_remote(self, command, use_sudo=False, output_hidebug=False, **fabric_settings):
         """Execute a command via fabric"""
 
         if use_sudo:
@@ -67,6 +67,10 @@ class RemoteHost(object):
                 res = run(command)
 
         if res:
-            self.log.debug('Output: {0}'.format(res))
+            msg = 'Output: {0}'.format(res)
+            if output_hidebug:
+                self.log.hidebug(msg)
+            else:
+                self.log.debug(msg)
 
         return res

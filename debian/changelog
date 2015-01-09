@@ -1,7 +1,11 @@
 software-deployer (0.9.16) precise; urgency=low
 
+  * Fixes for cleanup:
+    - do not fail when no files found in path
+    - do fail when listing path results in an error
+    - improvements in logging
 
- -- Arnoud Witt <awitt@ebay.com>  Thu, 08 Jan 2015 16:33:14 +0100
+ -- Arnoud Witt <awitt@ebay.com>  Fri, 09 Jan 2015 16:43:17 +0100
 
 software-deployer (0.9.15) precise; urgency=low
 
