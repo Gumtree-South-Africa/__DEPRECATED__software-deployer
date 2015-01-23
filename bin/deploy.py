@@ -19,6 +19,7 @@ component_group.add_argument('--tasklist', help='A list of pre-generated tasks')
 
 args = CommandLine(parents=parser, require_config=False)
 log = Log(os.path.basename(__file__))
+more_details_msg = 'More details in {0}'.format(log.get_logfile())
 
 if args.tasklist:
     log.debug('Executing based on tasklist: {0}'.format(args.tasklist))
@@ -30,17 +31,17 @@ elif args.config:
     try:
         tasklist_builder = Tasklist(config, config.platform)
     except DeployerException as e:
-        log.critical('Failed to generate task list: {0}'.format(e))
+        log.critical('Failed to generate task list: {0}. {1}'.format(e, more_details_msg))
         sys.exit(1)
 
     if not tasklist_builder.tasklist:
-        log.warning('Nothing to deploy')
+        log.warning('Nothing to deploy. {0}'.format(more_details_msg))
         sys.exit(1)
 
     executor = Executor(tasklist=tasklist_builder.tasklist)
 
     if config.dry_run:
-        log.info('Dry run, not executing any tasks')
+        log.info('Dry run, not executing any tasks. {0}'.format(more_details_msg))
         sys.exit(0)
 
 else:
@@ -50,7 +51,7 @@ else:
 try:
     executor.run()
 except DeployerException as e:
-    log.critical('Execution failed: {0}'.format(e))
+    log.critical('Execution failed: {0}. {1}'.format(e, more_details_msg))
     sys.exit(1)
 
-log.info('Deployment completed. More details in {0}'.format(log.get_logfile()))
+log.info('Deployment completed. {0}'.format(more_details_msg))

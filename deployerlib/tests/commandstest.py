@@ -161,9 +161,6 @@ class CommandsTest(unittest.TestCase):
         command = symlink.SymLink(remote_host=self.remote_host, source='/tmp/NO_SUCH_FILE_1',
           destination='/tmp/NO_SUCH_FILE_2')
 
-        command = symlink.SymLink(remote_host=self.remote_host, source='/tmp/NO_SUCH_FILE_1',
-          destination='/tmp/NO_SUCH_FILE_2', clobber=False)
-
         self.verifyCommand(command)
 
     def testCommand_upload(self):

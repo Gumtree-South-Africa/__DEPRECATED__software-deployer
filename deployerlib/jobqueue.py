@@ -258,7 +258,7 @@ class JobQueue(object):
         for job in self._completed:
             results[job.name]['exit_code'] = job.exitcode
 
-        if self._aborted:
+        if abortflag and self.abort_on_error:
             return False
         else:
             return True

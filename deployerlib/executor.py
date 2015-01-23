@@ -44,6 +44,7 @@ class Executor(object):
           'pipeline_notify': pipeline_notify.PipelineNotify,
           'pipeline_upload': pipeline_upload.PipelineUpload,
           'cleanup': cleanup.CleanUp,
+          'archive': archive.Archive,
           'test_command': testcommand.TestCommand,
         }
 

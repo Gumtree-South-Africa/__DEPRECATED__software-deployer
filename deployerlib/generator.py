@@ -244,3 +244,32 @@ class Generator(object):
         }
 
         return stage
+
+    def get_archive_stage(self):
+        """Return a task for handling the history of releases/hotfixes in the archive"""
+
+        if hasattr(self.config, 'history'):
+            history = self.config.history
+        else:
+            self.log.debug('No history config found. Not adding an archive stage')
+            return {}
+
+        if self.config.release and (self.config.categories or self.config.hosts or self.config.hostgroups):
+            self.log.debug('Not adding an archive stage, because categories (cluster), hosts, or hostgroups was supplied')
+            return {}
+
+        task = {
+          'command': 'archive',
+          'archivedir': history.archivedir,
+          'archivedepth': history.depth,
+          'release': self.config.release,
+          'components': self.config.component,
+        }
+
+        stage = {
+          'name': 'Archive',
+          'concurrency': 1,
+          'tasks': [task],
+        }
+
+        return stage

@@ -188,7 +188,7 @@ class AuroraGenerator(Generator):
                       'path': service_config.destination,
                       'filespec': '{0}_*'.format(package.servicename),
                       'keepversions': self.config.keep_versions,
-                      'exclude': package.version,
+                      'exclude': package.filename,
                       'tag': package.servicename,
                     })
 
@@ -224,7 +224,7 @@ class AuroraGenerator(Generator):
                           'path': service_config.install_location,
                           'filespec': '{0}_*'.format(package.servicename),
                           'keepversions': self.config.keep_versions,
-                          'exclude': package.version,
+                          'exclude': package.packagename,
                           'tag': package.servicename,
                         })
 
@@ -344,6 +344,16 @@ class AuroraGenerator(Generator):
         else:
             doing_deploy_tasks = False
 
+        if doing_deploy_tasks and self.config.release:
+            if hasattr(self.config, 'pipeline_url'):
+                if self.config.platform == 'aurora':
+                    if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_start:
+                        task_list['stages'].append(self.get_pipeline_notify_stage('deploying', deploy_release))
+
+            if hasattr(self.config, 'graphite'):
+                if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_start:
+                    task_list['stages'].append(self.get_graphite_stage('start'))
+
         if upload_tasks:
             task_list['stages'].append({
               'name': 'Upload',
@@ -367,16 +377,6 @@ class AuroraGenerator(Generator):
               'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': unpack_tasks,
             })
-
-        if doing_deploy_tasks and self.config.release:
-            if hasattr(self.config, 'pipeline_url'):
-                if self.config.platform == 'aurora':
-                    if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_start:
-                        task_list['stages'].append(self.get_pipeline_notify_stage('deploying', deploy_release))
-
-            if hasattr(self.config, 'graphite'):
-                if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_start:
-                    task_list['stages'].append(self.get_graphite_stage('start'))
 
         if props_tasks:
             to_deploy = generate_to_deploy_list(props_tasks)
@@ -420,18 +420,6 @@ class AuroraGenerator(Generator):
                   'tasks': this_stage,
                 })
 
-        if doing_deploy_tasks and self.config.release:
-            if hasattr(self.config, 'pipeline_url'):
-                if self.config.platform == 'aurora':
-                    if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
-                        task_list['stages'].append(self.get_pipeline_notify_stage('deployed', deploy_release))
-                        if self.config.environment == 'demo':
-                            task_list['stages'].append(self.get_pipeline_upload_stage(deploy_release))
-
-            if hasattr(self.config, 'graphite'):
-                if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
-                    task_list['stages'].append(self.get_graphite_stage('end'))
-
         if cleanup_tasks:
             task_list['stages'].append({
               'name': 'Cleanup',
@@ -439,6 +427,23 @@ class AuroraGenerator(Generator):
               'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
               'tasks': cleanup_tasks,
             })
+
+        if doing_deploy_tasks:
+            archive_stage = self.get_archive_stage()
+            if archive_stage:
+                task_list['stages'].append(archive_stage)
+
+            if self.config.release:
+                if hasattr(self.config, 'pipeline_url'):
+                    if self.config.platform == 'aurora':
+                        if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
+                            task_list['stages'].append(self.get_pipeline_notify_stage('deployed', deploy_release))
+                            if self.config.environment == 'demo':
+                                task_list['stages'].append(self.get_pipeline_upload_stage(deploy_release))
+
+                if hasattr(self.config, 'graphite'):
+                    if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
+                        task_list['stages'].append(self.get_graphite_stage('end'))
 
         leftovers = set()
         for sub_stage in deploy_tasks.keys():

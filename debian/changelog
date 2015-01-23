@@ -1,7 +1,31 @@
 software-deployer (0.9.17) precise; urgency=low
 
+  * new Archive command:
+    - add the functionality as copied from aurora-deployment
+    - includes improvements
+    - added get_archive_stage() method to base Generator class
 
- -- Arnoud Witt <awitt@ebay.com>  Fri, 09 Jan 2015 16:50:10 +0100
+  * AuroraGenerator:
+    - moved the pipeline and graphite notify stages to the actual
+    start and end of the stages list
+    - make use of new archive command
+    - cleanup fixes
+
+  * deploy.py:
+    - Log the 'More details in ...' message whenever the command exits
+
+  * PipelineUpload:
+    - comment out debug print
+
+  * JobQueue:
+    - bugfix for return value when jobqueue is aborted
+
+  * Symlink:
+    - point symlink to relative target if possible
+    - check if target exists on remote host
+    - remove unused clobber parameter
+
+ -- Arnoud Witt <awitt@ebay.com>  Fri, 23 Jan 2015 23:27:48 +0100
 
 software-deployer (0.9.16) precise; urgency=low
 
