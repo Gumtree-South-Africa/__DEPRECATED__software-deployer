@@ -25,7 +25,10 @@ software-deployer (0.9.17) precise; urgency=low
     - check if target exists on remote host
     - remove unused clobber parameter
 
- -- Arnoud Witt <awitt@ebay.com>  Fri, 23 Jan 2015 23:27:48 +0100
+  * DBmigration:
+    - raising some debug level messages to info level
+
+ -- Arnoud Witt <awitt@ebay.com>  Mon, 26 Jan 2015 10:28:39 +0100
 
 software-deployer (0.9.16) precise; urgency=low
 

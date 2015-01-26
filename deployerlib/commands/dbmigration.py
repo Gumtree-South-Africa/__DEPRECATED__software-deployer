@@ -15,7 +15,7 @@ class DBMigration(Command):
         if self.if_exists:
 
             if not self.remote_host.file_exists(self.if_exists):
-                self.log.debug('Skipping migrations, file does not exist: {0}'.format(
+                self.log.info('Skipping migrations, file does not exist: {0}'.format(
                   self.if_exists))
                 return True
 
@@ -25,7 +25,7 @@ class DBMigration(Command):
         res = self.remote_host.execute_remote(self.source)
 
         if res.succeeded:
-            self.log.debug(res)
+            self.log.info(res)
         else:
             self.log.critical('Database migration failed: {0}'.format(res))
 
