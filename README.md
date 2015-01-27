@@ -175,10 +175,12 @@ This functionality allows a user or developer to see exactly which tasks would b
 
 JobQueue and concurrent execution
 --
-Concurrency is configured via two keywords provided in a stage:
+Concurrency is configured via four keywords provided in a stage:
 
-- concurrency: The total number of tasks that can be executed in parallel
-- concurrency_per_host: The maximum number of tasks that can be running at once on a single host
+- deploy_concurrency: The total number of deploy tasks that can be executed in parallel
+- deploy_concurrency_per_host: The maximum number of deploy tasks that can be running at once on a single host
+- non_deploy_concurrency: The total number of non-deploy tasks that can be executed in parallel
+- non_deploy_concurrency_per_host: The maximum number of non-deploy tasks that can be running at once on a single host
 
 The JobQueue class is responsbile for managing the execution of tasks. A JobQueue is created by providing a list of Command objects which have been instantiated from a task list. JobQueue will start spawning jobs until it reaches one of the limits specified by concurrency or concurrency_per_host. As jobs complete, JobQueue will continue spawning new jobs, within the specified limits of concurrency, until no jobs are left in the queue.
 
