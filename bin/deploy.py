@@ -36,7 +36,7 @@ elif args.config:
 
     if not tasklist_builder.tasklist:
         log.warning('Nothing to deploy. {0}'.format(more_details_msg))
-        sys.exit(1)
+        sys.exit(0)
 
     executor = Executor(tasklist=tasklist_builder.tasklist)
 
