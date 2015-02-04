@@ -1,3 +1,10 @@
+software-deployer (0.9.18) precise; urgency=low
+
+  [ Harm Kolk ]
+  * Don't break the build when there is nothing new
+
+ -- Arnoud Witt <awitt@ebay.com>  Wed, 04 Feb 2015 11:56:11 +0100
+
 software-deployer (0.9.17) precise; urgency=low
 
   [ Arnoud Witt ]
