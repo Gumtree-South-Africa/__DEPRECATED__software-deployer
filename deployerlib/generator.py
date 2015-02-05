@@ -76,7 +76,7 @@ class Generator(object):
 
         manager = Manager()
         remote_results = manager.dict()
-        self._remote_versions = manager.dict()
+        remote_versions = {}
         failed = []
         queue_result = True
 
@@ -92,10 +92,10 @@ class Generator(object):
             remote_versions_init = {}
             for host in hosts:
                 remote_versions_init.update({host.hostname: 'UNDETERMINED'})
-            self._remote_versions.update({package.servicename: remote_versions_init})
+            remote_versions.update({package.servicename: remote_versions_init})
 
             for host in hosts:
-                procname = 'RemoteVersions({0}/{1})'.format(host.hostname, package.servicename)
+                procname = '{0}/{1}'.format(host.hostname, package.servicename)
                 job = Process(target=self._get_remote_version, args=[package, service_config, host,
                   procname, remote_results], name=procname)
                 job._host = host.hostname
@@ -108,6 +108,13 @@ class Generator(object):
 
         job_queue.close()
         queue_result = job_queue.run()
+
+        # Update remote_versions dict with actual versions from remote_results
+        for item in remote_results.keys():
+            ver = remote_results[item]
+            host_service = item.split('/')
+            remote_versions[host_service[1]].update( { host_service[0]: ver } )
+
         failed = [x for x in remote_results.keys() if not remote_results[x]]
 
         if failed or not queue_result:
@@ -119,7 +126,7 @@ class Generator(object):
         if (failed or not queue_result) and abort_on_error:
             return None
         else:
-            return dict(self._remote_versions)
+            return remote_versions
 
     def _get_remote_version(self, package, service_config, host, procname=None, remote_results={}):
         """Method passed to JobQueue to get a remote service version"""
@@ -149,9 +156,6 @@ class Generator(object):
 
         self.log.hidebug('Result: {0}, {1}, {2}, {3}'.format(res, res.failed, res.succeeded, res.return_code))
         self.log.info('Current version is {0}'.format(remote_version), tag=package.servicename)
-
-        remote_versions_new = dict(self._remote_versions[package.servicename].items() + [(host.hostname, remote_version)])
-        self._remote_versions.update({ package.servicename: remote_versions_new })
 
         remote_results[procname] = remote_version
         return remote_version
