@@ -26,7 +26,7 @@ class Archive(Command):
 
         if self.release or self.components:
             ctime = lambda f: os.stat(os.path.join(self.archivedir, f)).st_ctime
-            dlist = list(sorted(os.listdir(self.archivedir), key = ctime))
+            dlist = [d for d in list(sorted(os.listdir(self.archivedir), key = ctime)) if os.path.isdir(os.path.join(self.archivedir, d))]
             if dlist:
                 last_deployed = dlist[-1]
             else:
