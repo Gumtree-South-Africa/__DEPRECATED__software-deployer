@@ -120,6 +120,10 @@ class AuroraGenerator(Generator):
                 else:
                     raise DeployerException('No hostgroups specified in config where to deploy service {0}'.format(repr(servicename)))
 
+            if hasattr(service_config, 'enabled_on_hosts') and service_config.enabled_on_hosts == 'none' and not self.config.force:
+                self.log.info('Service disabled in config', tag=package.servicename)
+                continue
+
             for hostgroup in hostgroups:
                 hosts = self.config.get_service_hosts(servicename, hostgroup)
 
@@ -156,7 +160,7 @@ class AuroraGenerator(Generator):
                         self.log.info('version is up to date on {0}, skipping'.format(hostname), tag=servicename)
                         continue
 
-                    if remote_version == 'NOT_INSTALLED_NOT_IN_DAEMONTOOLS':
+                    if remote_version in ['NOT_INSTALLED_NOT_IN_DAEMONTOOLS']:
                         self.log.info('Service has been found to be not installed/configured on {0}, skipping'.format(hostname), tag=servicename)
                         continue
 

@@ -79,6 +79,7 @@ class Generator(object):
         remote_versions = {}
         failed = []
         queue_result = True
+        init_version = 'UNDETERMINED'
 
         for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
@@ -87,11 +88,15 @@ class Generator(object):
                 self.log.debug('Service not found in config: {0}'.format(package.servicename))
                 continue
 
+            if hasattr(service_config, 'enabled_on_hosts') and service_config.enabled_on_hosts == 'none' and not self.config.force:
+                self.log.debug('Service disabled in config', tag=package.servicename)
+                continue
+
             hosts = [self.get_remote_host(x, self.config.user) for x in self.config.get_service_hosts(package.servicename)]
 
             remote_versions_init = {}
             for host in hosts:
-                remote_versions_init.update({host.hostname: 'UNDETERMINED'})
+                remote_versions_init.update({host.hostname: init_version})
             remote_versions.update({package.servicename: remote_versions_init})
 
             for host in hosts:
