@@ -1,3 +1,12 @@
+software-deployer (0.9.20ubuntu2) UNRELEASED; urgency=low
+
+  [ Yevgen Flerko ]
+  * added posibility to disable package from deployment by adding key enabled_on_hosts and value as string 'none'
+
+  [ Jenkins Marktplaats ]
+
+ -- Jenkins Marktplaats <jenkins@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Wed, 11 Feb 2015 12:57:43 +0100
+
 software-deployer (0.9.20ubuntu1) precise; urgency=low
 
   [ Vladimir Lazarenko ]
