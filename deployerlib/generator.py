@@ -1,6 +1,6 @@
 import os
 
-from fabric.colors import green
+from fabric.colors import green,yellow
 from multiprocessing import Process, Manager
 
 from deployerlib.log import Log
@@ -81,6 +81,12 @@ class Generator(object):
         queue_result = True
         init_version = 'UNDETERMINED'
 
+        if hasattr(self.config, 'ignore_packages'):
+            if not hasattr(self.config.ignore_packages, '__iter__'):
+                self.config.ignore_packages = [self.config.ignore_packages]
+        else:
+            self.config.ignore_packages = []
+
         for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
 
@@ -88,8 +94,9 @@ class Generator(object):
                 self.log.debug('Service not found in config: {0}'.format(package.servicename))
                 continue
 
-            if hasattr(service_config, 'enabled_on_hosts') and service_config.enabled_on_hosts == 'none' and not self.config.force:
-                self.log.debug('Service disabled in config', tag=package.servicename)
+            if package.servicename in self.config.ignore_packages:
+                self.log.info(yellow('Skipping package {0} because it is in "ignore_packages"'.format(
+                    package.servicename), bold=True))
                 continue
 
             hosts = [self.get_remote_host(x, self.config.user) for x in self.config.get_service_hosts(package.servicename)]
@@ -105,7 +112,6 @@ class Generator(object):
                   procname, remote_results], name=procname)
                 job._host = host.hostname
                 job_list.append(job)
-
 
         self.log.info(green('Starting stage: Check remote service versions'))
         job_queue = JobQueue(remote_results, concurrency, concurrency_per_host, abort_on_error=abort_on_error)

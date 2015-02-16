@@ -43,17 +43,9 @@ class IcasGenerator(Generator):
         else:
             active_cfp_host = None
 
-        for package in packages:
+        for servicename in remote_versions.keys():
 
-            if hasattr(self.config, 'ignore_packages'):
-
-                if not hasattr(self.config.ignore_packages, '__iter__'):
-                    self.config.ignore_packages = [self.config.ignore_packages]
-
-                if package.servicename in self.config.ignore_packages:
-                    self.log.info('Skipping package {0} because it is in "ignore_packages"'.format(
-                      package.servicename))
-                    continue
+	    package = filter(lambda pkg: pkg.servicename == servicename, packages)[0]
 
             service_config = self.config.get_with_defaults('service', package.servicename)
 

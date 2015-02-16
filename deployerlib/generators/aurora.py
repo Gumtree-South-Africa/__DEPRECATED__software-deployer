@@ -100,9 +100,10 @@ class AuroraGenerator(Generator):
         deploy_tasks = {}
         cleanup_tasks = []
 
-        for package in packages:
+        for servicename in remote_versions.keys():
 
-            servicename = package.servicename
+            package = filter(lambda pkg: pkg.servicename == servicename, packages)[0]
+
             service_config = self.config.get_with_defaults('service', servicename)
             if not service_config:
                 self.log.critical('No service config found for service {0}'.format(repr(servicename)))
@@ -119,10 +120,6 @@ class AuroraGenerator(Generator):
                     hostgroups = service_config.hostgroups
                 else:
                     raise DeployerException('No hostgroups specified in config where to deploy service {0}'.format(repr(servicename)))
-
-            if hasattr(service_config, 'enabled_on_hosts') and service_config.enabled_on_hosts == 'none' and not self.config.force:
-                self.log.info('Service disabled in config', tag=package.servicename)
-                continue
 
             for hostgroup in hostgroups:
                 hosts = self.config.get_service_hosts(servicename, hostgroup)
