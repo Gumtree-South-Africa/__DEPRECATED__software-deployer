@@ -607,7 +607,7 @@ class Config(AttrDict):
                         'type': str,
                         'allowed_re': path_re,
                         'options': ['mandatory'],
-                        },
+                    },
                 'graphite': {
                         'type': dict,
                         'allowed_struct': {
@@ -624,7 +624,7 @@ class Config(AttrDict):
                                 'allowed_re': domain_re,
                                 },
                             },
-                        },
+                    },
                 'history': {
                         'type': dict,
                         'allowed_struct': {
@@ -637,12 +637,12 @@ class Config(AttrDict):
                                 'allowed_range': (1,10000),
                                 },
                             },
-                        },
+                    },
                 'user': {
                         'type': str,
                         'allowed_re': simple_re,
                         'options': ['mandatory'],
-                        },
+                    },
                 'deployment_order': {
                         'types': [
                             {
@@ -662,7 +662,7 @@ class Config(AttrDict):
                                 },
                             ],
                         'options': ['mandatory'],
-                        },
+                    },
                 'hostgroup': {
                         'type': dict,
                         'options': ['mandatory'],
@@ -672,12 +672,12 @@ class Config(AttrDict):
                                 'allowed_struct': dict(hostgroup_struct.items() + lb_params_struct.items()),
                                 },
                             },
-                        },
+                    },
                 're/^[a-zA-Z][a-zA-Z0-9_]*_defaults$/': {
                         'type': dict,
                         'allowed_struct': dict(service_params_struct.items() + lb_params_struct.items()),
                         'options': ['skip_mandatory']
-                        },
+                    },
                 'service': {
                         'type': dict,
                         'options': ['mandatory'],
@@ -702,7 +702,10 @@ class Config(AttrDict):
                                     ]),
                                 },
                             },
-                        },
+                    },
+                'ignore_packages':{
+                        'type': list,
+                    }
                 }
         return config_structure
 

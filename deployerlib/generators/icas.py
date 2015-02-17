@@ -43,9 +43,7 @@ class IcasGenerator(Generator):
         else:
             active_cfp_host = None
 
-        for servicename in remote_versions.keys():
-
-	    package = filter(lambda pkg: pkg.servicename == servicename, packages)[0]
+        for package in packages:
 
             service_config = self.config.get_with_defaults('service', package.servicename)
 

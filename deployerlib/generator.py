@@ -67,7 +67,16 @@ class Generator(object):
         else:
             raise DeployerException('Invalid configuration: no components to deploy')
 
-        return packages
+        return self.filter_ignored_packages(packages)
+
+    def filter_ignored_packages(self, packages):
+        """Strip packages which is in ignore_packages list/str if it exist"""
+
+        if hasattr(self.config, 'ignore_packages'):
+            filtered = [ fp for fp in packages if not fp.servicename in self.config.ignore_packages]
+            ignored_packages = [ignored.servicename for ignored in (set(packages) - set(filtered))]
+            self.log.warning('Ignored packages: {0}'.format( ", ".join(ignored_packages)))
+        return filtered
 
     def get_remote_versions(self, packages, concurrency=10, concurrency_per_host=5, abort_on_error=True):
         """Get the versions of services running on remote hosts"""
@@ -81,22 +90,11 @@ class Generator(object):
         queue_result = True
         init_version = 'UNDETERMINED'
 
-        if hasattr(self.config, 'ignore_packages'):
-            if not hasattr(self.config.ignore_packages, '__iter__'):
-                self.config.ignore_packages = [self.config.ignore_packages]
-        else:
-            self.config.ignore_packages = []
-
         for package in packages:
             service_config = self.config.get_with_defaults('service', package.servicename)
 
             if not service_config:
                 self.log.debug('Service not found in config: {0}'.format(package.servicename))
-                continue
-
-            if package.servicename in self.config.ignore_packages:
-                self.log.info(yellow('Skipping package {0} because it is in "ignore_packages"'.format(
-                    package.servicename), bold=True))
                 continue
 
             hosts = [self.get_remote_host(x, self.config.user) for x in self.config.get_service_hosts(package.servicename)]

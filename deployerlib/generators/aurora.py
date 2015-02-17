@@ -100,9 +100,9 @@ class AuroraGenerator(Generator):
         deploy_tasks = {}
         cleanup_tasks = []
 
-        for servicename in remote_versions.keys():
+        for package in packages:
 
-            package = filter(lambda pkg: pkg.servicename == servicename, packages)[0]
+            servicename = package.servicename
 
             service_config = self.config.get_with_defaults('service', servicename)
             if not service_config:
