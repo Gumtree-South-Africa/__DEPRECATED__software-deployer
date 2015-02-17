@@ -73,10 +73,12 @@ class Generator(object):
         """Strip packages which is in ignore_packages list/str if it exist"""
 
         if hasattr(self.config, 'ignore_packages'):
-            filtered = [ fp for fp in packages if not fp.servicename in self.config.ignore_packages]
-            ignored_packages = [ignored.servicename for ignored in (set(packages) - set(filtered))]
+            not_filtered = packages
+            packages = [ fp for fp in not_filtered if not fp.servicename in self.config.ignore_packages]
+            ignored_packages = [ignored.servicename for ignored in (set(not_filtered) - set(packages))]
             self.log.warning('Ignored packages: {0}'.format( ", ".join(ignored_packages)))
-        return filtered
+
+        return packages
 
     def get_remote_versions(self, packages, concurrency=10, concurrency_per_host=5, abort_on_error=True):
         """Get the versions of services running on remote hosts"""

@@ -705,8 +705,11 @@ class Config(AttrDict):
                     },
                 'ignore_packages':{
                         'type': list,
+                        'allowed_types': [str],
+                        'allowed_re': service_re,
                     }
                 }
+
         return config_structure
 
 
