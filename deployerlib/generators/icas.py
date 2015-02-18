@@ -121,6 +121,8 @@ class IcasGenerator(Generator):
                         properties_config = self.config.get_with_defaults('service', 'cas-properties')
                     elif package.servicename.startswith('dba-'):
                         properties_config = self.config.get_with_defaults('service', 'dba-cas-properties')
+                    elif package.servicename.startswith('ecg-'):
+                        properties_config = self.config.get_with_defaults('service', 'ecg-cas-properties')
                     else:
                         raise DeployerException('Unable to determine properties path for service: {0}'.format(
                           package.servicename))
@@ -143,7 +145,9 @@ class IcasGenerator(Generator):
                     })
 
                 # handle properties package
-                if package.servicename == 'cas-properties' or package.servicename == 'dba-cas-properties':
+                if package.servicename == 'cas-properties' \
+                        or package.servicename == 'dba-cas-properties' \
+                        or package.servicename == 'ecg-cas-properties':
 
                     if not (hostname, package.servicename) in properties_done:
                         properties_done.append((hostname, package.servicename))
