@@ -1,4 +1,18 @@
-software-deployer (0.9.20ubuntu2) UNRELEASED; urgency=low
+software-deployer (0.9.21) precise; urgency=low
+
+  [ Yevgen Flerko ]
+  * Functional improvements:
+    - ignore_packages moved to generator.py as shared feature across all possible platforms generators
+    - packages loop for platform generators logic changed - instead of rely on get_packages() list, loop rely now on remote_versions dict.
+      and used return of get_packages() only to fetch required data per service, this mean that platform generators will recive only
+      list of packages which passed all conditions to be marked as deployable packages, also this allow move most of conditions which should be platform
+      independent to generator.py, instead of duplicate code inside each platform specific generator.
+  * same as previous, just moved to get_config() function
+  * some fixes to 2 previous commits
+
+ -- Arnoud Witt <awitt@ebay.com>  Tue, 17 Feb 2015 17:15:36 +0100
+
+software-deployer (0.9.20ubuntu2) precise; urgency=low
 
   [ Yevgen Flerko ]
   * added posibility to disable package from deployment by adding key enabled_on_hosts and value as string 'none'
