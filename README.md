@@ -204,15 +204,7 @@ Building a new package
 --
 
 ```sh
-$ git checkout master
-$ git pull --rebase
-$ git-dch --auto --release
-# an editor is opened with the debian/changelog
-# edit the version and optionally the changelog body
-$ VERSION=$( dpkg-parsechangelog | awk '/^Version: / { print $NF; }' )
-$ git commit -a -m "Release version $VERSION"
-$ git tag debian/$VERSION
-$ git push -v --tags origin master
+$ ./bump_version.sh
 ```
 
 Now go to http://dpkgbuilder.qa-mp.so/job/software-deployer/ and click 'Build now'
