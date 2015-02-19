@@ -1,3 +1,11 @@
+software-deployer (0.9.22) precise; urgency=low
+
+  [ Frank Schroeder ]
+  * Ignore .idea/
+  * Support ecg-cas-properties
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Thu, 19 Feb 2015 09:10:01 +0100
+
 software-deployer (0.9.21) precise; urgency=low
 
   [ Yevgen Flerko ]
