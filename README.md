@@ -199,3 +199,23 @@ $ ./test.py --config test.conf
 2014-12-03 15:29:01,891 [INFO    ] [TestCommand    ] [local] [*] Executing test command: Hello World / None
 2014-12-03 15:29:01,909 [INFO    ] [Executor       ] [*] [*] Finished stage: Test stage
 ```
+
+Building a new package
+--
+
+```sh
+$ git checkout master
+$ git pull --rebase
+$ git-dch --auto --release
+# an editor is opened with the debian/changelog
+# edit the version and optionally the changelog body
+$ VERSION=$( dpkg-parsechangelog | awk '/^Version: / { print $NF; }' )
+$ git commit -a -m "Release version $VERSION"
+$ git tag debian/$VERSION
+$ git push -v --tags origin master
+```
+
+Now go to http://dpkgbuilder.qa-mp.so/job/software-deployer/ and click 'Build now'
+A new package will be built and uploaded to repositories.ecg.so/platforms/mp
+
+Re-running the job after a new package is built and successfully uploaded will not create a new package because it will check latest version on repo.
