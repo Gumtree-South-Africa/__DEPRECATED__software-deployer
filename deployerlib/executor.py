@@ -46,6 +46,7 @@ class Executor(object):
           'cleanup': cleanup.CleanUp,
           'archive': archive.Archive,
           'test_command': testcommand.TestCommand,
+          'listdirectory': listdirectory.ListDirectory,
         }
 
         manager = Manager()
