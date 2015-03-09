@@ -149,7 +149,8 @@ class AuroraGenerator(Generator):
 
                     host_no += 1
                     if not self.config.redeploy:
-                        remote_version = remote_versions.get(servicename).get(hostname)
+                        service_versions = remote_versions.get(servicename)
+                        remote_version = service_versions.get(hostname)
                     else:
                         remote_version = 'UNDETERMINED'
 

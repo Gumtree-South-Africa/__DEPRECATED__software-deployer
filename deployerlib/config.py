@@ -242,6 +242,21 @@ class Config(AttrDict):
             h = host
         return h
 
+    def get_all_properties(self):
+        # will return a tuple of (properties names, location path)
+        properties_names = [x for x in self.service if self.service[x].get('category') == 'properties']
+        tpl_list = []
+        for item in properties_names:
+             properties_def = self.get_with_defaults('service', item)
+             tpl_list.append((item, properties_def.get('properties_location')))
+        return tpl_list
+
+    def get_all_hosts(self):
+        hosts = []
+        for hg in self.hostgroup:
+            hosts += [self.get_full_hostname(x) for x in self.hostgroup[hg]['hosts']]
+        return hosts
+
     def ok(self):
         struct = self._get_config_struct()
         return self.vrfy_w_recurse(self, struct) == 0
