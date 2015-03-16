@@ -23,14 +23,19 @@ parser.add_argument('--skip-lb', action='store_true', help='Do not do load balan
 args = CommandLine(parents=parser)
 log = Log(os.path.basename(__file__))
 config = Config(args)
-listservices = ListServices(config)
-tasklist = listservices.generate()
-executor = Executor(tasklist=tasklist)
-
 if config.dry_run:
     log.info('Dry run, not executing any tasks')
     print json.dumps(tasklist, indent=4, sort_keys=True)
     sys.exit(0)
 
+if config.listservices:
+    listservices = ListServices(config)
+    tasklist = listservices.generate()
+
+if config.restartservice:
+    restartservices = ServiceControl(config)
+    tasklist = restartservices.generate()
+
+executor = Executor(tasklist=tasklist)
 executor.run()
 log.info('ServiceControl completed. More details in {0}'.format(log.get_logfile()))
