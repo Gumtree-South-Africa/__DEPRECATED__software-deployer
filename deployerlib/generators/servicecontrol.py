@@ -18,6 +18,9 @@ class ServiceControl(Generator):
         elif self.config.enableservice:
             self.services = self.config.enableservice
             self.action = 'enable'
+        elif self.config.listservices:
+            self.services = []
+            self.action = 'list'
         else:
             raise DeployerException('No control method was specified')
 
@@ -33,6 +36,9 @@ class ServiceControl(Generator):
 
             if not type(hosts) == list:
                 hosts = [hosts]
+
+        if self.action == 'list':
+            this_task['command'] = 'list_services'
 
         for servicename in self.services:
             service_config = self.config.get_with_defaults('service', servicename)
