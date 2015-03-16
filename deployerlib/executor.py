@@ -47,6 +47,7 @@ class Executor(object):
           'archive': archive.Archive,
           'test_command': testcommand.TestCommand,
           'listdirectory': listdirectory.ListDirectory,
+          'getremoteversions': getremoteversions.GetRemoteVersions,
         }
 
         manager = Manager()
