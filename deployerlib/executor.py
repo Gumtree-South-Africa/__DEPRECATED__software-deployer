@@ -12,6 +12,7 @@ from deployerlib.log import Log
 from deployerlib.remotehost import RemoteHost
 from deployerlib.jobqueue import JobQueue
 from deployerlib.exceptions import DeployerException
+from deployerlib.executor import Executor
 
 
 class Executor(object):
