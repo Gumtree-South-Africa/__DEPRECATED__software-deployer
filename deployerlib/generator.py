@@ -1,6 +1,6 @@
 import os
 
-from fabric.colors import green,yellow
+from fabric.colors import green, yellow
 from multiprocessing import Process, Manager
 
 from deployerlib.log import Log
