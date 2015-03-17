@@ -9,6 +9,7 @@ from deployerlib.package import Package
 from deployerlib.remotehost import RemoteHost
 from deployerlib.exceptions import DeployerException
 from deployerlib.commands import checkdaemontools
+from deployerlib.executor import Executor
 
 
 class Generator(object):
