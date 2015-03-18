@@ -149,6 +149,22 @@ class Config(AttrDict):
         self.log.debug('Returning {0} with username {1} and password'.format(lb_hostname, lb_username), tag=servicename)
         return lb_hostname, lb_username, lb_password
 
+    def get_lb_servicename(self, servicename, hostname, lb_service):
+        """Return servicename for loadbalancer configuration"""
+
+        platform = self.platform if hasattr(self, 'platform') else None
+        environment = self.environment if hasattr(self, 'environment') else None
+
+        if '.' in servicename:
+            servicename = servicename.rsplit(".", 1)[1].replace("-server", "")
+
+        if '.' in hostname:
+            hostname = hostname.split(".", 1)[0]
+
+        lb_service = lb_service.format(hostname=hostname, servicename=servicename, platform=platform, environment=environment)
+        self.log.info('Generated lb_service={0}'.format(repr(lb_service)), tag=servicename)
+        return lb_service
+
     def get_num_hosts_in_hostgroup(self, hg):
         """Get number of hosts in a hostgroup as found in config"""
         if hg in self.hostgroup:
@@ -159,7 +175,6 @@ class Config(AttrDict):
     def get_service_hosts(self, servicename, in_hostgroup=None):
         """Get the list of hosts this service should be deployed to,
             optionally restricted by in_hostgroup argument or commandline parameters"""
-
 
         service_config = self.get_with_defaults('service', servicename)
         hosts = []
