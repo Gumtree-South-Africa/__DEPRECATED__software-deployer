@@ -93,16 +93,11 @@ class ServiceControl(Generator):
                 if not self.config.skip_lb and lb_hostname and lb_username and lb_password:
 
                     if hasattr(service_config, 'lb_service'):
-
-                        this_task['lb_service'] = service_config.lb_service.format(
-                          hostname=hostname.split('.', 1)[0],
-                          servicename=servicename,
-                        )
-
+                        this_task['lb_service'] = self.config.get_lb_servicename(servicename, hostname, service_config.lb_service)
                         this_task.update({
-                          'lb_hostname': lb_hostname,
-                          'lb_username': lb_username,
-                          'lb_password': lb_password,
+                            'lb_hostname': lb_hostname,
+                            'lb_username': lb_username,
+                            'lb_password': lb_password,
                         })
 
                     else:

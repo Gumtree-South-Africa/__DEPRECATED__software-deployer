@@ -261,48 +261,25 @@ class AuroraGenerator(Generator):
                                   ),
                               })
 
-                        if self.config.ignore_lb:
-                            self.log.info('Not doing lb control because of ignore_lb option', tag=servicename)
-                        else:
-                            if '.' in servicename:
-                                shortservicename = servicename.rsplit(".", 1)[1].replace("-server", "")
-                            else:
-                                shortservicename = servicename
+                        lb_hostname, lb_username, lb_password = self.config.get_lb(servicename, hostname)
 
-                            if '.' in hostname:
-                                shorthostname = hostname.split(".", 1)[0]
-                            else:
-                                shorthostname = hostname
+                        if not self.config.ignore_lb and lb_hostname and lb_username and lb_password:
 
                             if hasattr(service_config, 'lb_service'):
-                                lb_service = service_config.lb_service.format(
-                                        hostname=shorthostname,
-                                        servicename=shortservicename,
-                                        )
-                            else:
 
-                                if self.config.environment == "production":
-                                    lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0] + "." + self.config.platform
-                                elif self.config.environment == "lp":
-                                    lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0] + "." + self.config.platform + self.config.environment
-                                else:
-                                    lb_service = self.config.platform + "_" +  shortservicename + "_" +  hostname.split(".", 1)[0]
-
-                                self.log.info('Generated lb_service={0}'.format(repr(lb_service)), tag=servicename)
-
-                            lb_hostname, lb_username, lb_password = self.config.get_lb(servicename, hostname)
-
-                            if lb_hostname and lb_username and lb_password:
-                                deploy_task['lb_service'] = lb_service
+                                deploy_task['lb_service'] = self.config.get_lb_servicename(servicename, hostname, service_config.lb_service)
 
                                 deploy_task.update({
-                                  'lb_hostname': lb_hostname,
-                                  'lb_username': lb_username,
-                                  'lb_password': lb_password,
+                                    'lb_hostname': lb_hostname,
+                                    'lb_username': lb_username,
+                                    'lb_password': lb_password,
                                 })
 
                             else:
                                 self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=servicename)
+
+                        else:
+                            self.log.info('Not doing lb control because of ignore_lb option or loadbalancer configuration is absent', tag=servicename)
 
                         for option in ('control_timeout', 'lb_timeout'):
                             if hasattr(service_config, option):
