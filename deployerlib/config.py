@@ -159,9 +159,13 @@ class Config(AttrDict):
 
         if '.' in servicename:
             shortservicename = servicename.rsplit(".", 1)[1].replace("-server", "")
+        else:
+            shortservicename = servicename
 
         if '.' in hostname:
             shorthostname = hostname.split(".", 1)[0]
+        else:
+            shorthostname = hostname
 
         lb_service = lb_service.format(
             hostname=hostname,
