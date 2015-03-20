@@ -163,6 +163,20 @@ Here is an example of a deploy command that will execute a pre-generated task li
 deploy.py --tasklist ~/tasklist.json
 ```
 
+LB Service Names
+--
+_get_lb_servicename_ now uses templates for service names, depending on environment/platform, like "aurora\_{shortservicename}\_{shorthostname}.{platform}"
+```sh
+    - lb_service - template definition for loadbalancer name convention
+	- {shortservicename} - suitable for aurora services and mock services
+    - {shorthostname} - get short hostname from FQDN (like mp-be001) for All platforms
+	- {platform} - platform name, used mostly only for aurora (config.platofrm value) used on Prod and LnP
+	- {environment} - environment for platform , lp,demo,integration,
+	- {hostname} - FQDN hostname
+	- {servicename} - full serviceman , used for icas
+```
+
+
 Dry run
 --
 It is possible to test the syntax of a task list by instantiating the Executor class. This is presented externally using the _build_tasklist.py_ top-level script. It requires the same arguments as deploy.py, namely --config and --component or --directory. Without additional commands it will symply end with "Syntax ok" if the Executor was able to parse the task list. It is also possible to view the task list by specifying --dump, or save the task list by specifying --save _filename_.
