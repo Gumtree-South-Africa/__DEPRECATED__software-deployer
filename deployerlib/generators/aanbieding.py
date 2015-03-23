@@ -274,7 +274,7 @@ class AanbiedingGenerator(Generator):
                         if hasattr(service_config, option):
                             deploy_task[option] = getattr(service_config, option)
 
-                    for cmd in ['stop_command', 'start_command', 'check_command']:
+                    for cmd in ['stop_command', 'start_command', 'check_command', 'reload_command']:
 
                         if hasattr(service_config, cmd):
                             deploy_task[cmd] = service_config[cmd].format(
