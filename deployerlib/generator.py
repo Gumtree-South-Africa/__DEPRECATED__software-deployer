@@ -109,16 +109,14 @@ class Generator(object):
         executor = Executor(tasklist=tasklist)
         executor.run()
         results = {}
+        # pre populate the results with empty sets
+        for service in self.config.service:
+            results[service] = {}
         for item in remote_versions.keys():
             ver = remote_versions[item]
             host_service = item.split('/')
             host_string = host_service[0]
             service_string = host_service[1]
-            if not service_string in results.keys():
-                 # alternative to UNDETERMINED stuff
-                 results[service_string] = {}
-                 self.log.error('Failed stage: Service {0} does not seem to be configured on {1}; or maybe put it under ignore_packages in the configuration yaml'.format(service_string, host_string))
-                 raise DeployerException('Failed stage: Service {0} does not seem to be configured on {1}; or maybe put it under ignore_packages in the configuration yaml'.format(service_string, host_string))
             results[service_string][host_string]= ver
         return results
 
