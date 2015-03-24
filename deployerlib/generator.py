@@ -117,6 +117,8 @@ class Generator(object):
             if not service_string in results.keys():
                  # alternative to UNDETERMINED stuff
                  results[service_string] = {}
+                 self.log.error('Failed stage: Service {0} does not seem to be configured on {1}; or maybe put it under ignore_packages in the configuration yaml'.format(service_string, host_string))
+                 raise DeployerException('Failed stage: Service {0} does not seem to be configured on {1}; or maybe put it under ignore_packages in the configuration yaml'.format(service_string, host_string))
             results[service_string][host_string]= ver
         return results
 
