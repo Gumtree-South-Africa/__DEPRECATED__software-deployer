@@ -35,6 +35,7 @@ class Executor(object):
           'stop_service': stopservice.StopService,
           'start_service': startservice.StartService,
           'restart_service': restartservice.RestartService,
+          'reload_service': reloadservice.ReloadService,
           'add_daemontools': adddaemontools.AddDaemontools,
           'remove_daemontools': removedaemontools.RemoveDaemontools,
           'disable_loadbalancer': disableloadbalancer.DisableLoadbalancer,

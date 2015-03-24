@@ -17,9 +17,10 @@ class Tasklist(object):
         self.log = Log(self.__class__.__name__)
 
         generators = {
-          'icas': icas.IcasGenerator,
-          'aurora': aurora.AuroraGenerator,
-          'test': testgenerator.TestGenerator,
+            'icas': icas.IcasGenerator,
+            'aurora': aurora.AuroraGenerator,
+            'aanbieding': aanbieding.AanbiedingGenerator,
+            'test': testgenerator.TestGenerator,
         }
 
         generator = generators.get(generator_name)

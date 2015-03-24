@@ -1,13 +1,13 @@
 from deployerlib.command import Command
 from deployerlib.commands import disableloadbalancer, enableloadbalancer, stopservice, \
-     startservice, movefile, symlink, checkdaemontools
+     startservice, reloadservice, movefile, symlink, checkdaemontools
 
 
 class DeployAndRestart(Command):
     """Meta-command that includes load balancer control, service control and service activation"""
 
     def initialize(self, remote_host, source, destination=None, stop_command=None, start_command=None,
-      link_target=None, check_command=None, control_timeout=60, check_daemontools=True,
+      reload_command=None, link_target=None, check_command=None, control_timeout=60, check_daemontools=True,
       check_registered=False, abort_on_failed_precheck=False,
       lb_hostname=None, lb_username=None, lb_password=None, lb_service=None, lb_timeout=60):
 
@@ -84,6 +84,16 @@ class DeployAndRestart(Command):
 
             if lb_args:
                 self.subcommands.append(enableloadbalancer.EnableLoadbalancer(**lb_args))
+
+        if reload_command:
+
+            self.subcommands.append(reloadservice.ReloadService(
+              remote_host=remote_host,
+              tag=self.tag,
+              reload_command=reload_command,
+              check_command=check_command,
+              timeout=control_timeout,
+            ))
 
         return True
 
