@@ -117,7 +117,8 @@ class Generator(object):
             host_service = item.split('/')
             host_string = host_service[0]
             service_string = host_service[1]
-            results[service_string][host_string]= ver
+            if service_string in results.keys():
+                results[service_string][host_string]= ver
         return results
 
     def get_remote_host(self, hostname, username=''):
