@@ -20,6 +20,7 @@ class Tasklist(object):
             'icas': icas.IcasGenerator,
             'aurora': aurora.AuroraGenerator,
             'aanbieding': aanbieding.AanbiedingGenerator,
+            'supermario': aurora.AuroraGenerator,
             'test': testgenerator.TestGenerator,
         }
 
