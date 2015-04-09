@@ -10,7 +10,7 @@ class ControlService(Command):
     def execute(self):
         """Control and check the service"""
 
-        self.log.debug('Controling service with: {0}'.format(self.control_command))
+        self.log.debug('Controlling service with: {0}'.format(self.control_command))
         res = self.remote_host.execute_remote(self.control_command, use_sudo=True)
 
         if not res.succeeded:
