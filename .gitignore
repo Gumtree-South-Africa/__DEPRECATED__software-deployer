@@ -1,6 +1,8 @@
 .idea/
 *.pyc
 *.egg-info
+logs/*
+logs
 build/
 debian/software-deployer/
 debian/files
