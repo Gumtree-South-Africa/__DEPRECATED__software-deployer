@@ -13,6 +13,15 @@ class Config(AttrDict):
     def __init__(self, mapping={}, *args, **kwargs):
 
         loaded = False
+        if type(mapping) is dict and 'config' in mapping:
+            self.__setattr__('log', Log(self.__class__.__name__), force=True)
+            self.log.info('Loading configuration from {0}'.format(mapping['config']))
+            with open(mapping['config'], 'r') as f:
+                config = yaml.safe_load(f)
+                mapping = dict(config.items() + mapping.items())
+
+            loaded = True
+
         if type(mapping) is CommandLine and hasattr(mapping, 'config'):
 
             self.__setattr__('log', Log(self.__class__.__name__), force=True)
