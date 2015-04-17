@@ -10,6 +10,7 @@ urlpatterns = patterns('',
         url(r'^[\/]?list_dir/(?P<directory>.*)[\/]?', 'deployerweb.views.list_dir_contents', name='list_dir_contents'),
         url(r'^[\/]?deploy_component/[\/]?', 'deployerweb.views.deploy_component', name='deploy_component'),
         url(r'^[\/]?deploy_release/[\/]?', 'deployerweb.views.deploy_release', name='deploy_release'),
+        url(r'^[\/]?progress/[\/]?', 'deployerweb.views.progress', name='progress'),
     # Examples:
     # url(r'^$', 'deployerweb.views.home', name='home'),
     # url(r'^deployerweb/', include('deployerweb.foo.urls')),

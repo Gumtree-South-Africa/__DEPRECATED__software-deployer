@@ -19,11 +19,13 @@ from deployerlib.exceptions import DeployerException
 
 logger = get_logger('view_logger')
 
+
 def list_configs(request):
     request_context = RequestContext(request)
     if request.method == 'GET':
         configs = [x for x in listdir('/etc/marktplaats') if x.endswith('.yaml')]
         return render_to_response('list_configs.html', {'configs': configs}, context_instance=request_context)
+
 
 def list_dirs(request):
     request_context = RequestContext(request)
@@ -87,10 +89,11 @@ def deploy_release(request):
         return HttpResponse('You\'re all set, there is nothing to deploy. I can take you <a href="/">home</a> instead')
 
     executor = Executor(tasklist=tasklist_builder.tasklist)
-    #executor.run()
+    # executor.run()
 
 
     return HttpResponse('Hey, I\'ve rendered all I could, now go <a href="/">home</a>')
+
 
 def deploy_component(request):
     request_context = RequestContext(request)
@@ -117,7 +120,6 @@ def deploy_component(request):
     except DeployerException as e:
         logger.critical('Failed to generate task list: {0}.'.format(e))
 
-
     if not tasklist_builder:
         return HttpResponse('Could not generate tasklist. I can take you <a href="/">home</a> instead')
 
@@ -125,8 +127,20 @@ def deploy_component(request):
         return HttpResponse('You\'re all set, there is nothing to deploy. I can take you <a href="/">home</a> instead')
 
     executor = Executor(tasklist=tasklist_builder.tasklist)
-    #executor.run()
-
+    # executor.run()
 
     return HttpResponse('Hey, I\'ve rendered all I could, now go <a href="/">home</a>')
 
+
+def progress(request):
+    request_context = RequestContext(request)
+    config_file = request.session.get('config_file')
+    logger.debug(request.POST)
+    logger.debug(request.GET)
+
+    if request.method == 'GET':
+        log_file = request.GET.get('file', None)
+
+    self_host = request.META['HTTP_HOST']
+
+    return render_to_response('progress.html', {'log_file': log_file, 'self_host': self_host}, context_instance=request_context)
