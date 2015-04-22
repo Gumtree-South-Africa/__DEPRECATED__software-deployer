@@ -11,7 +11,7 @@ from deployerlib.exceptions import DeployerException
 class CommandLine(object):
     """Handle the command line of front-end scripts"""
 
-    def __init__(self, parents=[], require_config=True, require_host=False, command_line=sys.argv[1:]):
+    def __init__(self, parents=[], require_config=True, require_host=False, command_line=sys.argv):
 
         if type(parents) is not list:
             parents = [parents]
@@ -47,7 +47,7 @@ class CommandLine(object):
         parser.add_argument('--logdir', default='/opt/log',
             help='Logging directory. Default value: "/opt/log". Log filename is generated from command and current time. Loglevel to file is always set to at least DEBUG.')
 
-        parser.parse_args(command_line, namespace=self)
+        parser.parse_args(command_line[1:], namespace=self)
 
         if self.hidebug:
             deployerlib.log.set_level(logging.HIDEBUG)
