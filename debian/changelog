@@ -1,3 +1,9 @@
+software-deployer (0.9.29) precise; urgency=low
+
+  * Add kjca support for iCAS
+
+ -- Frank Schroeder <frschroeder@ebay.com>  Tue, 28 Apr 2015 10:11:24 +0200
+
 software-deployer (0.9.28) precise; urgency=low
 
   * Revert accidental removal of supermario support
