@@ -10,3 +10,5 @@ debian/*.substvars
 debian/*.debhelper
 debian/*.debhelper.log
 *sublime*
+*_old*
+*_bkp*
