@@ -19,8 +19,9 @@ class Tasklist(object):
         generators = {
             'icas': icas.IcasGenerator,
             'aurora': aurora.AuroraGenerator,
-            'aanbieding': aanbieding.AanbiedingGenerator,
             'supermario': aurora.AuroraGenerator,
+            'aanbieding': aanbieding.AanbiedingGenerator,
+            'rbb': rbb.RbbGenerator,
             'test': testgenerator.TestGenerator,
         }
 
