@@ -1,0 +1,17 @@
+<html>
+	<head>
+		<title>Oh yeah</title>
+	</head>
+	<body>
+		<a href="/">Go break something else (home)</a><br /><br />
+		<form method="POST" action="/deploy_release/">
+		{% csrf_token %}
+		{% for dir in data %}
+		<input type=radio name="release_to_deploy" value="{{ dir }}"><a href="/list_dir/{{ dir }}/">{{ dir }}</a></input><br/>
+		{% endfor %}
+		<br />
+		<input type=checkbox name="redeploy">Redeploy</input><br /><br />
+		<input type=submit value="Deploy">
+		</form>
+	</body>
+</html>

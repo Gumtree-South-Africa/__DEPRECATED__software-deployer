@@ -1,0 +1,20 @@
+<html>
+	<head>
+		<title>Contents of {{directory}}</title>
+	</head>
+	<body>
+    <body>
+        <a href="/">Go break something else (home)</a><br /><br />
+        <form method="POST" action="/deploy_component/">
+        {% csrf_token %}
+        {% for file in data %}
+        <input type=radio name="component_to_deploy" value="{{ file }}">{{ file }}</input><br/>
+        {% endfor %}
+        <br />
+        <input type=checkbox name="redeploy">Redeploy</input><br /><br />
+		<input type="hidden" name="directory" value="{{ directory }}">
+        <input type=submit value="Deploy">
+        </form>
+    </body>
+	</body>
+</html>
