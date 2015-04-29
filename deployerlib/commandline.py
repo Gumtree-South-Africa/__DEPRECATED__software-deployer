@@ -80,6 +80,7 @@ class CommandLine(object):
 
         if logfile:
             log.info('Using logfile {0}'.format(repr(logfile)))
+            self.logfile = repr(logfile)
 
 
     def __str__(self):
