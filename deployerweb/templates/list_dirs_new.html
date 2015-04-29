@@ -45,18 +45,29 @@
     <div class="container">
       <div class="central-div config-div">
 
-      <form class="form-config" action="/releases/" method="post">
+      <form class="form-config" action="/deploy/" method="post">
         <div class="row">
           <div class="col-lg-4">
-          {% for config in configs %}
+          <a href="/" class="btn btn-xs btn-primary btn-block">Back To Configs</a>
+          {% for release in releases %}
             <div class="input-group input-group-sm">
               <span class="input-group-addon">
-                <input type="radio" aria-label="..." name='config' value="{{config}}">
+                <input type="radio" aria-label="..." name='release' value="{{release}}">
               </span>
-              <input type="text" class="form-control" aria-label="..." readonly="readonly" value="{{config}}">
+              <form class="form-config" action="/components/" method="post">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-default btn-block" type="submit" name='release' value="{{release}}">{{release}}</button>
+              </form>
             </div><!-- /input-group -->
           {% endfor %}
-            <button class="btn btn-sm btn-success btn-block" type="submit">Submit</button>
+            <div class="input-group input-group-sm">
+              <span class="input-group-addon">
+                <input type="checkbox" aria-label="..." name="redeploy">
+              </span>
+              <p type="text" class="form-control text-center" >Redeploy?</p>
+            </div><!-- /input-group -->
+            <input type="hidden" name="deployment_type" value="full">
+            <button class="btn btn-xs btn-success btn-block" type="submit">Deploy Release</button>
           </div><!-- /.col-lg-6 -->
         </div><!-- /.row -->
         {% csrf_token %}

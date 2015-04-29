@@ -14,3 +14,5 @@ debian/*.debhelper.log
 *_bkp*
 mp-conf
 mp-conf/*
+mp-tars
+mp-tars/*

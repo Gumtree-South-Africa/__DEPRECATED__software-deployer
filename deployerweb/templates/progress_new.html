@@ -17,7 +17,30 @@
 
     <!-- Custom styles for this template -->
     <link href="{% static "main/main_page.css" %}" rel="stylesheet">
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        function write_line(l) {
+            $('.deploy-div').append( l + "<br/>");
+        }
+ 
+        if ("MozWebSocket" in window) {
+            WebSocket = MozWebSocket;
+        }
+ 
+        if (WebSocket) {
+            var ws = new WebSocket("ws://localhost:8081/listen/?index=10");
+            ws.onopen = function() {
+                ws.send("We Trying to open Socket");
+            };
+            ws.onmessage = function (evt) {
+                write_line(evt.data);
+                $(window).scrollTop($('body').height()); // scroll page down on data write
+            };
+            ws.onclose = function() {};
+        } else {
+            alert("WebSocket not supported");
+        }
+    </script>
   </head>
 
   <body>
@@ -43,24 +66,7 @@
     </nav>
 
     <div class="container">
-      <div class="central-div config-div">
-
-      <form class="form-config" action="/releases/" method="post">
-        <div class="row">
-          <div class="col-lg-4">
-          {% for config in configs %}
-            <div class="input-group input-group-sm">
-              <span class="input-group-addon">
-                <input type="radio" aria-label="..." name='config' value="{{config}}">
-              </span>
-              <input type="text" class="form-control" aria-label="..." readonly="readonly" value="{{config}}">
-            </div><!-- /input-group -->
-          {% endfor %}
-            <button class="btn btn-sm btn-success btn-block" type="submit">Submit</button>
-          </div><!-- /.col-lg-6 -->
-        </div><!-- /.row -->
-        {% csrf_token %}
-      </form>
+      <div id="deploy-div" class="central-div deploy-div">
 
       </div> <!-- /.central-div -->
     </div><!-- /.container -->
@@ -69,7 +75,7 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
     <script src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
   </body>
 </html>

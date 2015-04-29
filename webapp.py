@@ -21,6 +21,7 @@ import tornado.web
 import tornado.wsgi
 import tornado.websocket
 import logging
+import deployerweb.deployhelper as Dhelper
 
 # Bypassing manage.py starts from Django 1.6 and newer
 # https://docs.djangoproject.com/en/1.8/intro/tutorial01/#playing-with-the-api
@@ -29,7 +30,7 @@ if django.VERSION[1] > 5:
 
 # Futures required for threading during deployment actions
 # import concurrent.futures
-# import signal
+import signal
 # import time
 # import random
 
@@ -41,12 +42,24 @@ options.log_file_max_size = (20*2**10*2**10)
 parse_command_line()
 
 
+MAIN_RUN = True
+
+
+def signal_handler(signum, frame):
+    global MAIN_RUN
+    logging.info('exiting...')
+    MAIN_RUN = False
+    tornado.ioloop.IOLoop.instance().stop()
+
+
 class Application(tornado.web.Application):
     ''' Main application definition '''
 
     def __init__(self):
         wsgi_app = tornado.wsgi.WSGIContainer(django.core.handlers.wsgi.WSGIHandler())
         handlers = [
+            (r'/start/', Dhelper.StartHandler),
+            (r'/listen/', Dhelper.Md2kHandler),
             ('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
         ]
         settings = dict()
@@ -59,7 +72,7 @@ def main():
     parse_command_line()
     logger = logging.getLogger(__name__)
     logger.info("Tornado server starting...")
-    # signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
     server = tornado.httpserver.HTTPServer(Application())
     server.listen(options.port)
     tornado.ioloop.IOLoop.instance().start()
