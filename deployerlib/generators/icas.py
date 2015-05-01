@@ -223,13 +223,13 @@ class IcasGenerator(Generator):
                         continue
 
                 # add LB tasks if configured for this service
-                lb_hostname, lb_username, lb_password = self.config.get_lb(servicename, hostname)
+                lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
 
                 if not self.config.ignore_lb and lb_hostname and lb_username and lb_password:
 
                     if hasattr(service_config, 'lb_service'):
 
-                        deploy_task['lb_service'] = self.config.get_lb_servicename(servicename, hostname, service_config.lb_service)
+                        deploy_task['lb_service'] = self.config.get_lb_servicename(package.servicename, hostname, service_config.lb_service)
 
                         deploy_task.update({
                             'lb_hostname': lb_hostname,
@@ -238,10 +238,10 @@ class IcasGenerator(Generator):
                         })
 
                     else:
-                        self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=servicename)
+                        self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=package.servicename)
 
                 else:
-                    self.log.info('Not doing lb control because of ignore_lb option or loadbalancer configuration is absent', tag=servicename)
+                    self.log.info('Not doing lb control because of ignore_lb option or loadbalancer configuration is absent', tag=package.servicename)
 
                 # add timeout options to deploy task
                 for option in ('control_timeout', 'lb_timeout'):
