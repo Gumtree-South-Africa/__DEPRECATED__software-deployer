@@ -74,13 +74,14 @@ class CommandLine(object):
 
 
         log = deployerlib.log.Log(self.__class__.__name__)
+        print self.__class__.__name__
         log.info('Command: {0}'.format(sys.argv[0]))
         log.info('Command arguments: {0}'.format(' '.join(command_line_args)))
         log.hidebug('CommandLine object: {0}'.format(self))
 
         if logfile:
             log.info('Using logfile {0}'.format(repr(logfile)))
-            self.logfile = repr(logfile)
+            self.logfile = logfile
 
 
     def __str__(self):

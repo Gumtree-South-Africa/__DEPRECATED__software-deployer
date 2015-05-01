@@ -3,6 +3,7 @@
 import os
 import simplejson
 import yaml
+import json
 
 from django.shortcuts import render, render_to_response, redirect
 from django.http import HttpResponse
@@ -142,8 +143,8 @@ def deploy_it(request):
 
     components = request.POST.getlist('components', None)
     if request.POST.get('deployment_type', None) == 'component' and (type(components) is list and len(components) > 0):
-        print len(components)
-        print request.POST.getlist('components', None)
+        # print len(components)
+        # print request.POST.getlist('components', None)
         params.update(components=components, deployment_type=request.POST.get('deployment_type'))
 
     if request.POST.get('deployment_type', None) == 'full':
@@ -152,8 +153,8 @@ def deploy_it(request):
     if not request.session['platform'] or not request.session['tarballs'] or not request.session['config_file']:
         return redirect(settings.LOGIN_REDIRECT_URL)
 
-    # Build parameters we want to pass into Tornado Deployment API
+    # Build parameters we want to pass into Tornado from deployment page
     params.update(self_host=request.META['HTTP_HOST'], config_file=request.session['config_file'], release=request.session['release'], tarballs=request.session['tarballs'])
-
+    # print json.dumps(params)
     # return render_to_response('progress.html', {'log_file': log_file, 'self_host': self_host}, context_instance=request_context)
-    return render_to_response('progress_new.html', context_instance=request_context)
+    return render_to_response('progress_new.html', {'data': json.dumps(params)}, context_instance=request_context)

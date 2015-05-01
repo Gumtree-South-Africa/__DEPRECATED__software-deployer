@@ -20,6 +20,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.wsgi
 import tornado.websocket
+
 import logging
 import deployerweb.deployhelper as Dhelper
 
@@ -59,6 +60,7 @@ class Application(tornado.web.Application):
         wsgi_app = tornado.wsgi.WSGIContainer(django.core.handlers.wsgi.WSGIHandler())
         handlers = [
             (r'/start/', Dhelper.StartHandler),
+            (r'/start_deploy/', Dhelper.DeployIt),
             (r'/listen/', Dhelper.Md2kHandler),
             ('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
         ]

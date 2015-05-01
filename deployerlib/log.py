@@ -10,6 +10,7 @@ from deployerlib.exceptions import DeployerException
 # Default level
 level = logging.INFO
 logfile = ''
+LogDict = {}
 
 # Add level VERBOSE
 logging.VERBOSE = 15
@@ -18,6 +19,8 @@ logging.addLevelName(logging.VERBOSE, 'VERBOSE')
 # Add level HIDEBUG
 logging.HIDEBUG = 5
 logging.addLevelName(logging.HIDEBUG, 'HIDEBUG')
+
+myloggerDict = logging.Manager
 
 
 def set_level(new_level):
@@ -30,6 +33,7 @@ def set_logfile(new_logfile):
 
     global logfile
     logfile = new_logfile
+
 
 class Log(object):
 
@@ -84,6 +88,8 @@ class Log(object):
             logfile_h.setFormatter(formatter)
             logger.addHandler(logfile_h)
 
+        global LogDict
+        LogDict.update({instance: logger})
         return logger
 
     def get_logfile(self):
