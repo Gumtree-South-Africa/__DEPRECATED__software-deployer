@@ -63,13 +63,13 @@ class Log(object):
         logger = logging.getLogger(instance)
         logger.setLevel(1)
 
-        console = logging.StreamHandler(sys.stdout)
-        console.setLevel(level)
+        # console = logging.StreamHandler(sys.stdout)
+        # console.setLevel(level)
 
         formatter = logging.Formatter('%(asctime)s [%(levelname)-8s] [%(name)-15s] [%(remote)s] [%(tag)s] %(message)s')
 
-        console.setFormatter(formatter)
-        logger.addHandler(console)
+        # console.setFormatter(formatter)
+        # logger.addHandler(console)
 
         if logfile:
 

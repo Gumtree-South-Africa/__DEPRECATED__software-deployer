@@ -73,7 +73,11 @@
 
             } else if (data.success == false) {
               // Need to do soe nasty handling of error messages
-              alert("API Call return false, operation not succeed!")
+              if (data.data){
+                alert(data.data);
+              } else {
+                alert("API Call return false, operation not succeed!");
+              }
             } else {
               // Need some handling in case we revive not json at all
               // or json but some shitty payload inside

@@ -87,12 +87,12 @@ def run_deployment(data, timeout=5):
             msg = {'logfile': args.logfile, 'releaseid': data['release'], 'method': 'run_tail'}
             thread_to_wsockets(data['release'], format_to_json(calltype='api', data=msg))
 
-            if data['components'] and data['deployment_type'] == 'component':
+            if 'components' in data and 'deployment_type' in data and data['deployment_type'] == 'component':
                 config.component = []
                 for component in data['components']:
                     config.component.append(settings.DEPLOYER_TARS + '/' + data['release'] + '/' + component)
-            elif data['deployment_type'] == 'full':
-                config.release = [settings.DEPLOYER_TARS + '/' + data['release'] + '/']
+            elif 'deployment_type' in data and data['deployment_type'] == 'full':
+                config.release = [(settings.DEPLOYER_TARS + '/' + data['release'] + '/').encode('utf-8')]
             else:
                 msg = "Looks like we got from you wrong parameters set and we unable build correct arguments for Deployer\n"
                 thread_to_wsockets(data['release'], format_to_json(data=msg))
@@ -120,11 +120,11 @@ def run_deployment(data, timeout=5):
     # Destroy Deployment Loggers
     if deployerlib.log.LogDict:
         for logname in deployerlib.log.LogDict.keys():
-            print "Destroying logger {}".format(logname)
+            # print "Destroying logger {}".format(logname)
             del logging.Logger.manager.loggerDict[logname]
             del deployerlib.log.LogDict[logname]
-    print deployerlib.log.LogDict
-    print logging.Logger.manager.loggerDict
+    # print deployerlib.log.LogDict
+    # print logging.Logger.manager.loggerDict
     return "Index {} Return: Blah".format(data['release'])
 
 
@@ -170,14 +170,18 @@ def before_deploy():
 
 # with concurrent.futures.ProcessPoolExecutor() as executor:
 def run_thread(data):
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=5)
-    th_data = {
-        data['release']: {
-            'process': executor.submit(run_deployment, data),
-            'logfile': None
+    if len(EXECPOOL) < 1:
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+        th_data = {
+            data['release']: {
+                'process': executor.submit(run_deployment, data),
+                'logfile': None
+            }
         }
-    }
-    EXECPOOL.update(th_data)
+        EXECPOOL.update(th_data)
+        return True
+    else:
+        return False
 
 
 def check_process_alive():
@@ -196,7 +200,7 @@ def print_variables():
     print "Threads: ", EXECPOOL
     check_process_alive()
 
-
+# Print to console each 5 seconds Listeners and Thread stats
 prnt_vars = tornado.ioloop.PeriodicCallback(print_variables, 5000)
 prnt_vars.start()
 
@@ -236,16 +240,20 @@ class DeployIt(tornado.web.RequestHandler):
 
         else:
             self.data = data['deployit']
-            self.runthread()
-            payload.update(type='api', success=True)
-            payload.update({'data': {'release': self.data['release']}})
-            self.write(json.dumps(payload, default=None))
+            if self.runthread():
+                payload.update(type='api', success=True)
+                payload.update({'data': {'release': self.data['release']}})
+                self.write(json.dumps(payload, default=None))
+            else:
+                msg = "Other Deployment in progress, visit deployment status page for details."
+                payload.update(type='text', success=False, data=msg)
+                self.write(json.dumps(payload, default=None))
 
         self.set_header('Content-Type', 'application/json; charset=UTF-8')
 
     def runthread(self):
         ''' call globally defined function run_thread() '''
-        run_thread(self.data)
+        return run_thread(self.data)
 
 
 # Example of Tail handler
