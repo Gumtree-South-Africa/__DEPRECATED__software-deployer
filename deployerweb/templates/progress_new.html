@@ -47,7 +47,7 @@
               }
 
               if (WebSocket) {
-                var ws = new WebSocket("ws://localhost:8081/listen/?release=" + data.release);
+                var ws = new WebSocket("ws://localhost:8081/listen/?release=" + data.data.release);
                 ws.onopen = function() {
                   ws.send("We Trying to open Socket");
                 };
@@ -57,11 +57,11 @@
                 // if Json we do additional processing and sending request to Tornado over WebSocet
                 // as Json for additional Server side processing
                 ws.onmessage = function (evt) {
-                  if (/^[\],:{}\s]*$/.test(evt.data.replace(/\\["\\\/bfnrtu]/g, '@').replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').replace(/(?:^|:|,)(?:\s*\[)+/g, ''))) {
-                    write_line("We got Json: " + evt.data);
-                    request_log(ws, evt.data)
-                  } else {
-                    write_line(evt.data);
+                  try {
+                    jsondata = jQuery.parseJSON(evt.data)
+                    processing_data(ws, jsondata)
+                  } catch (err) {
+                    console.log("Wrong json recived.")
                   }
 
                   $(window).scrollTop($('body').height()); // scroll page down on data write
@@ -84,6 +84,17 @@
         });
 
         // globally available functions
+        function processing_data(ws, message){
+          if (message['type'] == 'text'){
+            write_line(message['data']);
+          }
+          if (message['type'] == 'api'){
+              if (message['data']['method'] == 'run_tail'){
+                request_log(ws, JSON.stringify(message));
+              }
+          }
+        }
+
         function request_log(ws, data){
           ws.send(data);
         }

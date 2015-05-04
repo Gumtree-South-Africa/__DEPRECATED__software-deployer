@@ -59,7 +59,7 @@ class Application(tornado.web.Application):
     def __init__(self):
         wsgi_app = tornado.wsgi.WSGIContainer(django.core.handlers.wsgi.WSGIHandler())
         handlers = [
-            (r'/start/', Dhelper.StartHandler),
+            # (r'/start/', Dhelper.StartHandler),
             (r'/start_deploy/', Dhelper.DeployIt),
             (r'/listen/', Dhelper.Md2kHandler),
             ('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),

@@ -46,7 +46,7 @@ EXECPOOL = {}
 MAIN_RUN = True
 
 
-def run_deployment(data, timeout=10):
+def run_deployment(data, timeout=5):
     count = 0
     args = None
     while MAIN_RUN:
@@ -55,14 +55,14 @@ def run_deployment(data, timeout=10):
         time.sleep(1)
         msg = "My index {}: Current cycle {} / {}".format(data['release'], count, timeout)
         print msg
-        thread_to_wsockets(data['release'], msg)
+        thread_to_wsockets(data['release'], format_to_json(data=msg))
 
         if not args:
             print logging.Logger.manager.loggerDict
 
             msg = "My index {}: preparing for deployment.".format(data['release'])
             print msg
-            thread_to_wsockets(data['release'], msg)
+            thread_to_wsockets(data['release'], format_to_json(data=msg))
 
             # Checking arguments in 'data' and build CommandLine parameters
             cmd_params = []
@@ -75,7 +75,7 @@ def run_deployment(data, timeout=10):
             args = CommandLine(command_line_args=cmd_params)
 
             msg = "We complete build arguments for Deployment.\n"
-            thread_to_wsockets(data['release'], msg)
+            thread_to_wsockets(data['release'], format_to_json(data=msg))
 
             config = Config(args)
             config.component = None
@@ -83,8 +83,9 @@ def run_deployment(data, timeout=10):
 
             # Grab log file from args and pass it to our process information
             EXECPOOL[data['release']]['logfile'] = args.logfile
-            msg = json.dumps({'logfile': args.logfile, 'releaseid': data['release']})
-            thread_to_wsockets(data['release'], msg)
+            # msg = json.dumps({'logfile': args.logfile, 'releaseid': data['release'], 'method': 'run_tail'})
+            msg = {'logfile': args.logfile, 'releaseid': data['release'], 'method': 'run_tail'}
+            thread_to_wsockets(data['release'], format_to_json(calltype='api', data=msg))
 
             if data['components'] and data['deployment_type'] == 'component':
                 config.component = []
@@ -94,11 +95,11 @@ def run_deployment(data, timeout=10):
                 config.release = [settings.DEPLOYER_TARS + '/' + data['release'] + '/']
             else:
                 msg = "Looks like we got from you wrong parameters set and we unable build correct arguments for Deployer\n"
-                thread_to_wsockets(data['release'], msg)
+                thread_to_wsockets(data['release'], format_to_json(data=msg))
                 break
 
             msg = "We complete build configuration for Deployment.\n"
-            thread_to_wsockets(data['release'], msg)
+            thread_to_wsockets(data['release'], format_to_json(data=msg))
 
             config.tasklist = None
             tasklist_builder = None
@@ -110,11 +111,11 @@ def run_deployment(data, timeout=10):
     if timeout:
         msg = "My index {} passed {} counts, so i exiting....".format(data['release'], count)
         print msg
-        thread_to_wsockets(data['release'], msg)
+        thread_to_wsockets(data['release'], format_to_json(data=msg))
     else:
         msg = "My index {} and i exiting....".format(data['release'])
         print msg
-        thread_to_wsockets(data['release'], msg)
+        thread_to_wsockets(data['release'], format_to_json(data=msg))
 
     # Destroy Deployment Loggers
     if deployerlib.log.LogDict:
@@ -125,6 +126,24 @@ def run_deployment(data, timeout=10):
     print deployerlib.log.LogDict
     print logging.Logger.manager.loggerDict
     return "Index {} Return: Blah".format(data['release'])
+
+
+def format_to_json(calltype='text', data=False):
+    '''
+        Json formatter for messages.
+        Default calltype `text`, can be `api`
+        text - just messages which should be posted to screen
+        api  - data which should be treated as API calls between UI/Serverside
+               Api calls can be UI related and Server side related.
+        data - dict/json object with required data or simple message if calltype=text
+               or hold some data sets required for execution on server side or UI side if API call
+    '''
+    if calltype == 'text':
+        result = {'type': calltype, 'data': data}
+    elif calltype == 'api':
+        result = {'type': calltype, 'data': data}
+
+    return result
 
 
 def thread_to_wsockets(myid, message):
@@ -218,7 +237,8 @@ class DeployIt(tornado.web.RequestHandler):
         else:
             self.data = data['deployit']
             self.runthread()
-            payload.update(success=True, release=self.data['release'])
+            payload.update(type='api', success=True)
+            payload.update({'data': {'release': self.data['release']}})
             self.write(json.dumps(payload, default=None))
 
         self.set_header('Content-Type', 'application/json; charset=UTF-8')
@@ -226,30 +246,6 @@ class DeployIt(tornado.web.RequestHandler):
     def runthread(self):
         ''' call globally defined function run_thread() '''
         run_thread(self.data)
-
-
-# Development shit go from this point :D
-class StartHandler(tornado.web.RequestHandler):
-    def get(self):
-        index = self.get_argument('index', default=random.seed(999999))
-        timeout = self.get_argument('time', default=10)
-        if index in EXECPOOL and EXECPOOL[index].running() is True:
-            self.write("Process #{} already exist and still running.\n".format(index))
-        else:
-            run_thread(index, timeout)
-            self.write("Process #{} started with timeout of {} cycles.\n".format(index, timeout))
-
-
-class StatHandler(tornado.web.RequestHandler):
-    def get(self):
-        for ftr in EXECPOOL:
-            self.write("Future: {}".format(ftr.running()))
-
-
-class StopHandler(tornado.web.RequestHandler):
-    def get(self):
-        for ftr in EXECPOOL:
-            self.write("Future: {}".format(ftr.running()))
 
 
 # Example of Tail handler
@@ -265,28 +261,38 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
                 LISTENERS[self.sessionid].update(release=self.index, socket=self)
             else:
                 LISTENERS.update({self.sessionid: {'release': self.index, 'socket': self}})
+            # Tell on success connection that we connected
+            self.write_message(format_to_json(data=u"You successfully connected to socket and trying to listen from Sub-process index #{}".format(self.index)))
 
     def on_message(self, message):
 
         try:
             jsonmsg = json.loads(message.decode('utf8'))
         except ValueError:
-            print "AAAAAAAAAAAAAAAAAAAAAAAA:", message
-
+            pass
         else:
-            print "BBBBBBBBBBBBBBBBBBBBBBBB1: ", jsonmsg
-            print "BBBBBBBBBBBBBBBBBBBBBBBB2: ", message
-            self.run_tail(jsonmsg)
+            self.json_api_call(jsonmsg)
 
-        self.write_message(u"You successfully connected to socket and trying to listen from Sub-process index #{}".format(self.index))
-        pass
-
-    def on_close(self, *args):
+    def on_close(self):
         print "WebSocket close!!!!!"
         if LISTENERS[self.sessionid]:
-            del LISTENERS[self.index]
-            self.tailed_callback.stop()
+            del LISTENERS[self.sessionid]
+            try:
+                self.tailed_callback
+            except:
+                pass
+            else:
+                self.tailed_callback.stop()
         print "Current opened Socket connections: ", LISTENERS
+
+    def json_api_call(self, jdata):
+        ''' processing of json received from socket '''
+        if jdata['type'] == 'api':
+            method_call = getattr(self, jdata['data']['method'])
+            if method_call:
+                method_call(jdata['data'])
+            else:
+                self.write_message(format_to_json(data=u"Requested method not found: {}".format(jdata['data']['method'])))
 
     def run_tail(self, data):
         ''' Prepare and run Tail as part of Tornado Event loop '''
@@ -317,6 +323,6 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
             # print "File refresh"
             if sid in LISTENERS:
                 try:
-                    LISTENERS[sid]['socket'].write_message(line)
+                    LISTENERS[sid]['socket'].write_message(format_to_json(data=line))
                 except tornado.websocket.WebSocketClosedError:
                     print "Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket'])
