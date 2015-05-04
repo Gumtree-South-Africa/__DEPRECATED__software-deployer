@@ -159,3 +159,13 @@ def deploy_it(request):
     # print json.dumps(params)
     # return render_to_response('progress.html', {'log_file': log_file, 'self_host': self_host}, context_instance=request_context)
     return render_to_response('progress_new.html', {'data': json.dumps(params)}, context_instance=request_context)
+
+
+@login_required(redirect_field_name=None)
+def deploys_status(request):
+    ''' Render page with currently ongoing deployments '''
+
+    request_context = RequestContext(request)
+
+    params = {}
+    return render_to_response('deploys_status.html', {'data': json.dumps(params)}, context_instance=request_context)

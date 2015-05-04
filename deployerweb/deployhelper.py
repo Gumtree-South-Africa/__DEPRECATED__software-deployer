@@ -22,6 +22,7 @@ from deployerlib.exceptions import DeployerException
 import deployerlib.log
 
 import inspect
+import copy
 
 # Django User access
 from django.conf import settings
@@ -92,6 +93,7 @@ def run_deployment(data, timeout=5):
                 for component in data['components']:
                     config.component.append(settings.DEPLOYER_TARS + '/' + data['release'] + '/' + component)
             elif 'deployment_type' in data and data['deployment_type'] == 'full':
+                # Forced to use encode to UTF otherwise it throw critical error and exit
                 config.release = [(settings.DEPLOYER_TARS + '/' + data['release'] + '/').encode('utf-8')]
             else:
                 msg = "Looks like we got from you wrong parameters set and we unable build correct arguments for Deployer\n"
@@ -219,6 +221,27 @@ def get_django_user(session_key):
 class DummyObject:
     ''' we want have empty objects '''
     pass
+
+
+class AnyJobsWeHave(tornado.web.RequestHandler):
+    ''' Return Json object of currently running jobs '''
+
+    def post(self):
+        user = get_django_user(self.get_cookie('sessionid', default=None))
+        payload = {}
+        if not user.is_authenticated():
+            msg = "You should pass authorization first!"
+            payload.update(success=False, msg=msg)
+            self.write(json.dumps(payload, default=None))
+        else:
+            plist = {}
+            for process in EXECPOOL.keys():
+                plist[process] = {}
+                plist[process]['logfile'] = EXECPOOL[process]['logfile']
+            payload.update(success=True, data={'jobs': plist, 'method': 'print_jobs'}, type='api')
+            self.write(json.dumps(payload, default=None))
+
+        self.set_header('Content-Type', 'application/json; charset=UTF-8')
 
 
 class DeployIt(tornado.web.RequestHandler):

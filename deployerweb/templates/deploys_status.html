@@ -28,8 +28,8 @@
         jQuery( document ).ready(function( $ ) {
           $.ajax({
             type: "POST",
-            url: "/start_deploy/",
-            data: JSON.stringify({ deployit: data }),
+            url: "/get_running_jobs/",
+            data: false,
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             success: function(data){ on_success(data); },
@@ -41,36 +41,9 @@
             // Run WebSockets on Successful return
             // alert(JSON.stringify(data));
             if (data.success == true) {
-
-              if ("MozWebSocket" in window) {
-                WebSocket = MozWebSocket;
+              if (data.data['method'] == 'print_jobs'){
+                create_list(data.data.jobs)
               }
-
-              if (WebSocket) {
-                var ws = new WebSocket("ws://localhost:8081/listen/?release=" + data.data.release);
-                ws.onopen = function() {
-                  ws.send("We Trying to open Socket");
-                };
-
-                // Stolen from https://github.com/douglascrockford/JSON-js/blob/master/json2.js :D 
-                // We want to check if we get Json or no, 
-                // if Json we do additional processing and sending request to Tornado over WebSocet
-                // as Json for additional Server side processing
-                ws.onmessage = function (evt) {
-                  try {
-                    jsondata = jQuery.parseJSON(evt.data)
-                    processing_data(ws, jsondata)
-                  } catch (err) {
-                    console.log("Wrong json recived.")
-                  }
-
-                  $(window).scrollTop($('body').height()); // scroll page down on data write
-                };
-                ws.onclose = function() {};
-              } else {
-                alert("WebSocket not supported");
-              }
-
             } else if (data.success == false) {
               // Need to do soe nasty handling of error messages
               if (data.data){
@@ -87,24 +60,31 @@
 
         });
 
-        // globally available functions
-        function processing_data(ws, message){
-          if (message['type'] == 'text'){
-            write_line(message['data']);
-          }
-          if (message['type'] == 'api'){
-              if (message['data']['method'] == 'run_tail'){
-                request_log(ws, JSON.stringify(message));
-              }
-          }
-        }
+        function create_list(jobs) {
+          console.log(jobs, jQuery.isEmptyObject(jobs), jQuery.isPlainObject(jobs))
+          if (jQuery.isEmptyObject(jobs) == false ) {
+            html  = "<div class=\"row\">"
+            html += "<h4> Current Job(s):</h4>"
+            html += "<div class=\"col-lg-4\">"
 
-        function request_log(ws, data){
-          ws.send(data);
+            for (j in jobs) {
+              html += "<form class=\"form-config\" action=\"/logtail/\" method=\"post\">"
+              html += "<button class=\"btn btn-sm btn-default btn-block\" type=\"submit\" name='release' value=\"" + j + "\">" + j + "</button>"
+              html += "<input type=\"hidden\" name=\"logfile\" value=\"" + jobs[j]['logfile'] + "\">"
+              html += "{% csrf_token %}"
+              html += "</form>"
+            }
+            
+            html += "</div><!-- /.col-lg-4 -->";
+            html += "</div><!-- /.row -->";
+            write_line(html)
+          } else {
+            write_line("<h3>No Jobs currently running in background!</h3>")
+          }
         }
 
         function write_line(l) {
-            $('.deploy-div').append( l + "<br/>");
+            $('.joblist-div').append( l + "<br/>");
         }
     </script>
   </head>
@@ -134,7 +114,7 @@
     </nav>
 
     <div class="container">
-      <div id="deploy-div" class="central-div deploy-div">
+      <div id="joblist-div" class="central-div joblist-div">
 
       </div> <!-- /.central-div -->
     </div><!-- /.container -->

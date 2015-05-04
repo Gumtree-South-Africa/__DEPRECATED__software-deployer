@@ -61,6 +61,7 @@ class Application(tornado.web.Application):
         handlers = [
             # (r'/start/', Dhelper.StartHandler),
             (r'/start_deploy/', Dhelper.DeployIt),
+            (r'/get_running_jobs/', Dhelper.AnyJobsWeHave),
             (r'/listen/', Dhelper.Md2kHandler),
             ('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
         ]
