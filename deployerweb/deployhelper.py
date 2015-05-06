@@ -55,7 +55,6 @@ def run_deployment(data, timeout=5):
     while MAIN_RUN:
         if timeout and int(count) > int(timeout):
             break
-        time.sleep(1)
         msg = "My index {}: Current cycle {} / {}".format(data['release'], count, timeout)
         print msg
         thread_to_wsockets(data['release'], format_to_json(data=msg))
@@ -112,6 +111,7 @@ def run_deployment(data, timeout=5):
             # executor.run()
 
         count += 1
+        time.sleep(1)
     if timeout:
         msg = "My index {} passed {} counts, so i exiting....".format(data['release'], count)
         print msg
