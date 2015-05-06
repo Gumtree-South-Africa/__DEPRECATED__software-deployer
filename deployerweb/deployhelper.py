@@ -41,9 +41,11 @@ LISTENERS = {}
 #   releaseid: {
 #       'process': Future Object,
 #       'logfile': Full Log Path as String
+#       'buffer': [] List of lines before output to user
 #   }
 # }
 EXECPOOL = {}
+
 MAIN_RUN = True
 
 
@@ -288,10 +290,10 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
         print self.csrftoken, self.sessionid
         self.index = self.get_argument("release", default=None)
         if self.index:
-            if self.index in LISTENERS:
-                LISTENERS[self.sessionid].update(release=self.index, socket=self)
+            if self.sessionid in LISTENERS:
+                LISTENERS[self.sessionid].update(release=self.index, socket=self, buffer=[])
             else:
-                LISTENERS.update({self.sessionid: {'release': self.index, 'socket': self}})
+                LISTENERS.update({self.sessionid: {'release': self.index, 'socket': self, 'buffer': []}})
             # Tell on success connection that we connected
             self.write_message(format_to_json(data=u"You successfully connected to socket and trying to listen from Sub-process index #{}".format(self.index)))
 
@@ -311,6 +313,7 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
             try:
                 self.tailed_callback
             except:
+                print "Unable stop fucking LOOP! :D"  # need to remove
                 pass
             else:
                 self.tailed_callback.stop()
@@ -329,7 +332,8 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
         ''' Prepare and run Tail as part of Tornado Event loop '''
 
         tailed_file = self.open_file(data['logfile'])
-        self.tailed_callback = tornado.ioloop.PeriodicCallback(partial(self.check_file, tailed_file, self.sessionid), 1)
+        # self.tailed_callback = tornado.ioloop.PeriodicCallback(partial(self.check_file, tailed_file, self.sessionid), 10)
+        self.tailed_callback = tornado.ioloop.PeriodicCallback(partial(self.check_file_buffered, tailed_file, self.sessionid, self.index), 1)
         self.tailed_callback.start()
 
     def open_file(self, logfile):
@@ -342,6 +346,9 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
 
         print "Tail Descriptor: ", tailed_file
         tailed_file.seek(os.path.getsize(logfile))
+
+        # For test chunks
+
         return tailed_file
 
     def check_file(self, tailed_file, sid):
@@ -357,3 +364,46 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
                     LISTENERS[sid]['socket'].write_message(format_to_json(data=line))
                 except tornado.websocket.WebSocketClosedError:
                     print "Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket'])
+
+    def check_file_buffered(self, tailed_file, sid, index):
+        ''' Get Data from file and post it to Socket Stream '''
+
+        # check if process still exist and running if not then we set flag to True, default flag False
+        # process_done = False
+        if (index not in EXECPOOL or EXECPOOL[index]['process'].done() is True) and len(LISTENERS[sid]['buffer']) > 0:
+            # process_done = True
+            self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
+            # Close socket since thread done and we printed last amount of data to user
+            self.close(code=200, reason="Deployment job done all log entries printed. Socket Closed.")
+
+        where = tailed_file.tell()
+        line = tailed_file.readline()
+        if not line:
+            tailed_file.seek(where)
+        else:
+            if sid in LISTENERS:
+
+                # if len(LISTENERS[sid]['buffer']) <= 2 and process_done is False:
+                #     LISTENERS[sid]['buffer'].append(self.output_filter(line))
+                # else:
+                #     self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
+                LISTENERS[sid]['buffer'].append(self.output_filter(line))
+                if len(LISTENERS[sid]['buffer']) > 29:
+                    self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
+
+    def output_filter(self, line):
+        ''' Some kind of decoration for output before save it to buffer and return to user browser'''
+
+        # Replace \n with <br /> for html output
+        # line = line.replace('\n', '<br />')
+
+        return line
+
+    def send_buffer_socket(self, sid, logbuffer):
+        ''' Send log buffer to user socket, functionality written as method for more simple reuse '''
+        try:
+            LISTENERS[sid]['socket'].write_message(format_to_json(data="<br />".join(logbuffer)))
+        except tornado.websocket.WebSocketClosedError:
+            print "Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket'])
+        else:
+            LISTENERS[sid]['buffer'] = []
