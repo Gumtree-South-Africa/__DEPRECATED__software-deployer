@@ -34,14 +34,15 @@ import django.utils.importlib
 #   'sessionid': {
 #       'release': release ID string,
 #       'socket': WebSocket Object
+#       'buffer': [] List of lines before output to user
 #   }
 # }
 LISTENERS = {}
+
 # EXECPOOL = {
 #   releaseid: {
 #       'process': Future Object,
 #       'logfile': Full Log Path as String
-#       'buffer': [] List of lines before output to user
 #   }
 # }
 EXECPOOL = {}
@@ -60,7 +61,6 @@ def run_deployment(data, timeout=5):
         thread_to_wsockets(data['release'], format_to_json(data=msg))
 
         if not args:
-            print logging.Logger.manager.loggerDict
 
             msg = "My index {}: preparing for deployment.".format(data['release'])
             print msg
@@ -200,8 +200,12 @@ def check_process_alive():
 
 # Just for debug and learning
 def print_variables():
-    print "WebSockets:", LISTENERS
-    print "Threads: ", EXECPOOL
+    # print "WebSockets:"
+    for x in LISTENERS:
+        print "Socket {}: {}/{}/{}".format(x, LISTENERS[x]['release'], len(LISTENERS[x]['buffer']), LISTENERS[x]['socket'])
+    # print "Threads: "
+    for y in EXECPOOL:
+        print "Thread {}: {}/{}".format(y, EXECPOOL[y]['process'], EXECPOOL[y]['logfile'])
     check_process_alive()
 
 # Print to console each 5 seconds Listeners and Thread stats
@@ -284,11 +288,14 @@ class DeployIt(tornado.web.RequestHandler):
 # Example of Tail handler
 class Md2kHandler(tornado.websocket.WebSocketHandler):
     def open(self, *args):
-        print "WebSocket open"
+
         self.csrftoken = self.get_cookie('csrftoken', default=None)
         self.sessionid = self.get_cookie('sessionid', default=None)
         print self.csrftoken, self.sessionid
         self.index = self.get_argument("release", default=None)
+
+        print "WebSocket id {} opened".format(self.sessionid)
+
         if self.index:
             if self.sessionid in LISTENERS:
                 LISTENERS[self.sessionid].update(release=self.index, socket=self, buffer=[])
@@ -307,7 +314,7 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
             self.json_api_call(jsonmsg)
 
     def on_close(self):
-        print "WebSocket close!!!!!"
+        print "WebSocket id {} closed!".format(self.sessionid)
         if LISTENERS[self.sessionid]:
             del LISTENERS[self.sessionid]
             try:
@@ -317,7 +324,7 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
                 pass
             else:
                 self.tailed_callback.stop()
-        print "Current opened Socket connections: ", LISTENERS
+        # print "Current opened Socket connections: ", LISTENERS
 
     def json_api_call(self, jdata):
         ''' processing of json received from socket '''
@@ -383,10 +390,6 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
         else:
             if sid in LISTENERS:
 
-                # if len(LISTENERS[sid]['buffer']) <= 2 and process_done is False:
-                #     LISTENERS[sid]['buffer'].append(self.output_filter(line))
-                # else:
-                #     self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
                 LISTENERS[sid]['buffer'].append(self.output_filter(line))
                 if len(LISTENERS[sid]['buffer']) > 29:
                     self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])

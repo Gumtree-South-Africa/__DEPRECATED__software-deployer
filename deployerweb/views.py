@@ -155,10 +155,10 @@ def deploy_it(request):
         return redirect(settings.LOGIN_REDIRECT_URL)
 
     # Build parameters we want to pass into Tornado from deployment page
-    params.update(self_host=request.META['HTTP_HOST'], config_file=request.session['config_file'], release=request.session['release'], tarballs=request.session['tarballs'])
+    params.update(config_file=request.session['config_file'], release=request.session['release'], tarballs=request.session['tarballs'])
     # print json.dumps(params)
     # return render_to_response('progress.html', {'log_file': log_file, 'self_host': self_host}, context_instance=request_context)
-    return render_to_response('progress_new.html', {'data': json.dumps(params)}, context_instance=request_context)
+    return render_to_response('progress_new.html', {'data': json.dumps(params), 'host': request.META['HTTP_HOST']}, context_instance=request_context)
 
 
 @login_required(redirect_field_name=None)
@@ -169,3 +169,21 @@ def deploys_status(request):
 
     params = {}
     return render_to_response('deploys_status.html', {'data': json.dumps(params)}, context_instance=request_context)
+
+
+@login_required(redirect_field_name=None)
+def get_log(request):
+    ''' Get deployment log during deployment '''
+
+    request_context = RequestContext(request)
+    params = {}
+    payload = {}
+    releaseid = request.POST.get('release', None)
+    logfile = request.POST.get('logfile', None)
+
+    if 'POST' not in request.method or not releaseid or not logfile:
+        return deploys_status(request)
+
+    payload.update(data={'releaseid': releaseid, 'logfile': logfile, 'method': 'run_tail'}, type='api')
+
+    return render_to_response('progress_new2.html', {'data': json.dumps(payload), 'host': request.META['HTTP_HOST'], 'release': releaseid}, context_instance=request_context)
