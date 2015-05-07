@@ -26,6 +26,22 @@
         // As result will return us deployment # to where we want connect by WebSocket to see progress 
         jQuery( document ).ready(function( $ ) {
 
+          var scroll_enabled = true;
+          $( "#scroll_toggle" ).click(function() {
+            console.log("Clicked");
+            if(scroll_enabled == true){
+              $(this).text("Scroll OFF");
+              $(this).addClass( 'btn-danger' );
+              $(this).removeClass( 'btn-success' );
+              scroll_enabled = false;
+            } else {
+              $(this).text("Scroll ON");
+              $(this).removeClass( 'btn-danger' );
+              $(this).addClass( 'btn-success' );
+              scroll_enabled = true;
+            }
+          });
+
           if ("MozWebSocket" in window) {
             WebSocket = MozWebSocket;
           }
@@ -91,6 +107,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
+          <button id="scroll_toggle" type="button" class="btn btn-success navbar-btn" data-toggle="button">Scroll ON</button>
           <a class="navbar-brand" href="#">Web Deployer</a>
           <a class="navbar-brand" href="/">Home</a>
           <a class="navbar-brand" href="/status/">Current Jobs</a>
