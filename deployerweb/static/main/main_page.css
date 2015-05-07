@@ -5,3 +5,12 @@ body {
   padding: 40px 15px;
   text-align: center;
 }*/
+#deploy-div {
+    font-size: 12px;
+    /* background-color: #C2C2C2; */
+}
+
+.container {
+    width: 90%;
+    min-width:1200px;
+}

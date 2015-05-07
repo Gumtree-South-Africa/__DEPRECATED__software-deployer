@@ -8,6 +8,7 @@ import tornado.websocket
 import tornado.escape
 import json
 from functools import partial
+import re
 
 import argparse
 from loggers import get_logger
@@ -402,8 +403,33 @@ class Md2kHandler(tornado.websocket.WebSocketHandler):
     def output_filter(self, line):
         ''' Some kind of decoration for output before save it to buffer and return to user browser'''
 
-        # Replace \n with <br /> for html output
-        # line = line.replace('\n', '<br />')
+        # Replace \n with nothing
+        line = line.replace('\n', '')
+        # Remove ANSI escape sequences
+        ansi_escape = re.compile(r'\x1b[^m]*m')
+        line = ansi_escape.sub('', line)
+
+        # Warning/Critical and other type of colored decoration
+        levels = {
+            'WARNING': '<span style="color:blue; font-weight:bold">{}</span>',
+            'ERROR': '<span style="color:magenta; font-weight:bold">{}</span>',
+            'CRITICAL': '<span style="color:red; font-weight:bold">{}</span>'
+        }
+
+        # if any([x in line for x in levels.keys()]):
+        for x in levels.keys():
+            if x in line:
+                print x
+                line = levels[x].format(line)
+                print line
+
+        # Add background color to Time output to do more readable lines of logs
+        color_template = '<span style="background-color: #CCCCCC;">{}</span>'
+        strdate = re.match('(\d{4})[/.-](\d{2})[/.-](\d{2}) (\d{2})[:](\d{2})[:](\d{2})[,](\d{3})', line)
+        # date = re.match('(\d{4})[/.-](\d{2})[/.-](\d{2})', line)
+        if strdate:
+            tmpline = color_template.format(strdate.group())
+            line = line.replace(strdate.group(), tmpline)
 
         return line
 

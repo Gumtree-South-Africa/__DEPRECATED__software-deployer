@@ -142,7 +142,8 @@ def deploy_it(request):
     params = {}
 
     components = request.POST.getlist('components', None)
-    request.session['release'] = request.POST.get('release', None)
+    if not request.session['release']:
+        request.session['release'] = request.POST.get('release', None)
     if request.POST.get('deployment_type', None) == 'component' and (type(components) is list and len(components) > 0):
         # print len(components)
         # print request.POST.getlist('components', None)
