@@ -53,11 +53,16 @@ MAIN_RUN = True
 def run_deployment(data, timeout=5):
     count = 0
     args = None
+    # Wait for 5 seconds, time required to client side successfully connected to socket after API call
+    # TODO: need do this in more elegant way without unnecessary sleeps in thread
+    #       As possible variant do not trigger deployment itself over Ajax API Call, but over socket API call
+    #       After socket successfully connection established
+    time.sleep(5)
     while MAIN_RUN:
         if timeout and int(count) > int(timeout):
             break
         msg = "My index {}: Current cycle {} / {}".format(data['release'], count, timeout)
-        print msg
+        print "First message: ", msg
         thread_to_wsockets(data['release'], format_to_json(data=msg))
 
         if not args:
