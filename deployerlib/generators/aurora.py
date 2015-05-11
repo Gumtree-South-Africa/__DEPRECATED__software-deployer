@@ -417,12 +417,12 @@ class AuroraGenerator(Generator):
                 if self.config.platform == 'aurora':
                     if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
                         task_list['stages'].append(self.get_pipeline_notify_stage('deployed', deploy_release))
-                            if self.config.environment == 'demo':
-                                task_list['stages'].append(self.get_pipeline_upload_stage(deploy_release))
+                        if self.config.environment == 'demo':
+                            task_list['stages'].append(self.get_pipeline_upload_stage(deploy_release))
 
-                if hasattr(self.config, 'graphite'):
-                    if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
-                        task_list['stages'].append(self.get_graphite_stage('end'))
+            if hasattr(self.config, 'graphite'):
+                if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
+                    task_list['stages'].append(self.get_graphite_stage('end'))
 
         leftovers = set()
         for sub_stage in deploy_tasks.keys():
