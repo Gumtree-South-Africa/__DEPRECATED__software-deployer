@@ -323,7 +323,7 @@ class AuroraGenerator(Generator):
         else:
             doing_deploy_tasks = False
 
-        if doing_deploy_tasks and self.config.release:
+        if self.config.release:
             if hasattr(self.config, 'pipeline_url'):
                 if self.config.platform == 'aurora':
                     if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_start:
@@ -412,11 +412,11 @@ class AuroraGenerator(Generator):
             if archive_stage:
                 task_list['stages'].append(archive_stage)
 
-            if self.config.release:
-                if hasattr(self.config, 'pipeline_url'):
-                    if self.config.platform == 'aurora':
-                        if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
-                            task_list['stages'].append(self.get_pipeline_notify_stage('deployed', deploy_release))
+        if self.config.release:
+            if hasattr(self.config, 'pipeline_url'):
+                if self.config.platform == 'aurora':
+                    if not (self.config.categories or self.config.hosts or self.config.hostgroups) or self.config.pipeline_end:
+                        task_list['stages'].append(self.get_pipeline_notify_stage('deployed', deploy_release))
                             if self.config.environment == 'demo':
                                 task_list['stages'].append(self.get_pipeline_upload_stage(deploy_release))
 
