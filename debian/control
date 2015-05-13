@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 9)
 
 Package: software-deployer
 Architecture: all
-Depends: python, python-attrdict, python-pyyaml, python-nsnitro, fabric
+Depends: python (>= 2.7), python-attrdict (<= 1.0.0), python-pyyaml, python-nsnitro, fabric, python-futures, python-django (>= 1.8.0), python-tornado (>= 4.0)
 Conflicts: aurora-deployment (<= 2.5.40)
 Description: Software Deployer
 	A modular, extendable, configuration-driven deployment system.

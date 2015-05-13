@@ -23,12 +23,6 @@ DB_LOCATION = '/etc/marktplaats/'
 
 LOG_DIR = '/opt/log/'
 
-# Remove after development :)
-print BASE_DIR
-print PROJECT_ROOT
-print ROOT_PATH
-print SITE_ROOT
-
 # Directories Related to Deployment
 # Configuration files location
 DEPLOYER_CFGS = '/etc/marktplaats/'

@@ -12,27 +12,31 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-
 # Relative pass from current directory, just during development to allow run it from any location
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
+
+ROOT_PATH = '/Users/yflerko/git/eBay/'
+BASE_DIR = ROOT_PATH + '/web2_deployer'
+PROJECT_ROOT = BASE_DIR
+SITE_ROOT = ROOT_PATH + '/web2_deployer/deployerweb'
 
 DB_LOCATION = BASE_DIR + '/mp-db/'
 
 LOG_DIR = BASE_DIR + '/logs/'
+
+# Directories Related to Deployment
+# Configuration files location
+DEPLOYER_CFGS = BASE_DIR + '/mp-conf/'
+DEPLOYER_TARS = BASE_DIR + '/mp-tars/'
 
 # Remove after development :)
 print BASE_DIR
 print PROJECT_ROOT
 print ROOT_PATH
 print SITE_ROOT
-
-# Directories Related to Deployment
-# Configuration files location
-DEPLOYER_CFGS = BASE_DIR + '/mp-conf/'
-DEPLOYER_TARS = BASE_DIR + '/mp-tars/'
 
 ENV_DEV = True
 
