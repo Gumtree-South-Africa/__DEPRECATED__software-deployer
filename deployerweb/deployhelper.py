@@ -285,7 +285,7 @@ class DeployIt(tornado.web.RequestHandler):
 
 
 # Example of Tail handler
-class Md2kHandler(tornado.websocket.WebSocketHandler):
+class GetLogHandler(tornado.websocket.WebSocketHandler):
     def open(self, *args):
 
         self.csrftoken = self.get_cookie('csrftoken', default=None)

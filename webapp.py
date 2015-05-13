@@ -36,20 +36,14 @@ import signal
 # import random
 
 # Tornado options, need find better place for them later
-define('port', type=int, default=8081, help='server port number (default: 8080)')
-define('debug', type=bool, default=True, help='run in debug mode with autoreload (default: True)')
+define('port', type=int, default=8080, help='server port number (default: 8080)')
+define('debug', type=bool, default=False, help='run in debug mode with autoreload (default: True)')
 options.log_file_prefix = (settings.LOG_DIR + '/tornado_server.log')
 options.log_file_max_size = (20*2**10*2**10)
-parse_command_line()
-
-
-MAIN_RUN = True
-
+# parse_command_line()
 
 def signal_handler(signum, frame):
-    global MAIN_RUN
     logging.info('exiting...')
-    MAIN_RUN = False
     tornado.ioloop.IOLoop.instance().stop()
 
 
@@ -59,10 +53,9 @@ class Application(tornado.web.Application):
     def __init__(self):
         wsgi_app = tornado.wsgi.WSGIContainer(django.core.handlers.wsgi.WSGIHandler())
         handlers = [
-            # (r'/start/', Dhelper.StartHandler),
             (r'/start_deploy/', Dhelper.DeployIt),
             (r'/get_running_jobs/', Dhelper.AnyJobsWeHave),
-            (r'/listen/', Dhelper.Md2kHandler),
+            (r'/listen/', Dhelper.GetLogHandler),
             ('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
         ]
         settings = dict()
@@ -73,7 +66,7 @@ def main():
     ''' Main loop of application '''
 
     parse_command_line()
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('tornado')
     logger.info("Tornado server starting...")
     signal.signal(signal.SIGINT, signal_handler)
     server = tornado.httpserver.HTTPServer(Application())
