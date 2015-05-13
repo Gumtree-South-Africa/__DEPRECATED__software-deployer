@@ -16,3 +16,5 @@ mp-conf
 mp-conf/*
 mp-tars
 mp-tars/*
+mp-db
+mp-db/*

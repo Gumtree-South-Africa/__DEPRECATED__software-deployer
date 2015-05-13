@@ -20,9 +20,9 @@ import tornado.ioloop
 import tornado.web
 import tornado.wsgi
 import tornado.websocket
-
 import logging
 import deployerweb.deployhelper as Dhelper
+from django.conf import settings
 
 # Bypassing manage.py starts from Django 1.6 and newer
 # https://docs.djangoproject.com/en/1.8/intro/tutorial01/#playing-with-the-api
@@ -38,7 +38,7 @@ import signal
 # Tornado options, need find better place for them later
 define('port', type=int, default=8081, help='server port number (default: 8080)')
 define('debug', type=bool, default=True, help='run in debug mode with autoreload (default: True)')
-options.log_file_prefix = (__my_path__ + '/logs/tornado_server.log')
+options.log_file_prefix = (settings.LOG_DIR + '/tornado_server.log')
 options.log_file_max_size = (20*2**10*2**10)
 parse_command_line()
 

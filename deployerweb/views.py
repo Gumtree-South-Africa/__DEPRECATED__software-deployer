@@ -8,12 +8,15 @@ import json
 from django.shortcuts import render, render_to_response, redirect
 from django.http import HttpResponse
 from django.template import RequestContext
-from loggers import get_logger
+# from loggers import get_logger
+import logging
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout, get_user
 from django.conf import settings
 
-logger = get_logger('view_logger')
+logger = logging.getLogger('view_logger')
+
+print logging.config.dictConfig()
 
 
 def login_page(request, document_root=None):
@@ -73,7 +76,7 @@ def list_configs(request):
     # if request.method == 'GET':
     # configs = [x for x in os.listdir('/etc') if x.endswith('.yaml')]
     configs = [x for x in os.listdir(settings.DEPLOYER_CFGS) if x.endswith('')]
-    return render_to_response('list_configs_new.html', {'configs': configs}, context_instance=request_context)
+    return render_to_response('list_configs.html', {'configs': configs}, context_instance=request_context)
 
 
 @login_required(redirect_field_name=None)
@@ -106,7 +109,7 @@ def list_dirs(request):
 
     dirs = sorted([x[0].replace('{}'.format(request.session['tarballs']), '') for x in os.walk(request.session['tarballs']) if request.session['platform'] in x[0]])
     print dirs
-    return render_to_response('list_dirs_new.html', {'releases': dirs}, context_instance=request_context)
+    return render_to_response('list_dirs.html', {'releases': dirs}, context_instance=request_context)
 
 
 @login_required(redirect_field_name=None)
@@ -126,7 +129,7 @@ def list_dir_content(request):
 
     files = [f for f in os.listdir(request.session['tarballs'] + '{}'.format(request.session['release']))]
 
-    return render_to_response('list_dir_contents_new.html', {'components': files, 'release': request.session['release']}, context_instance=request_context)
+    return render_to_response('list_dir_contents.html', {'components': files, 'release': request.session['release']}, context_instance=request_context)
 
 
 @login_required(redirect_field_name=None)
@@ -155,11 +158,13 @@ def deploy_it(request):
     if not request.session['platform'] or not request.session['tarballs'] or not request.session['config_file']:
         return redirect(settings.LOGIN_REDIRECT_URL)
 
+    if request.POST.get('redeploy', None):
+        params.update(redeploy=True)
     # Build parameters we want to pass into Tornado from deployment page
     params.update(config_file=request.session['config_file'], release=request.session['release'], tarballs=request.session['tarballs'])
     # print json.dumps(params)
     # return render_to_response('progress.html', {'log_file': log_file, 'self_host': self_host}, context_instance=request_context)
-    return render_to_response('progress_new.html', {'data': json.dumps(params), 'host': request.META['HTTP_HOST']}, context_instance=request_context)
+    return render_to_response('progress.html', {'data': json.dumps(params), 'host': request.META['HTTP_HOST']}, context_instance=request_context)
 
 
 @login_required(redirect_field_name=None)
@@ -187,4 +192,4 @@ def get_log(request):
 
     payload.update(data={'releaseid': releaseid, 'logfile': logfile, 'method': 'run_tail'}, type='api')
 
-    return render_to_response('progress_new2.html', {'data': json.dumps(payload), 'host': request.META['HTTP_HOST'], 'release': releaseid}, context_instance=request_context)
+    return render_to_response('progress2.html', {'data': json.dumps(payload), 'host': request.META['HTTP_HOST'], 'release': releaseid}, context_instance=request_context)

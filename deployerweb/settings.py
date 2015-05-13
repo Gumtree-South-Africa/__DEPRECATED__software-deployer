@@ -19,6 +19,10 @@ ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__fi
 # Relative pass from current directory, just during development to allow run it from any location
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 
+DB_LOCATION = BASE_DIR + '/mp-db/'
+
+LOG_DIR = BASE_DIR + '/logs/'
+
 # Remove after development :)
 print BASE_DIR
 print PROJECT_ROOT
@@ -161,7 +165,7 @@ WSGI_APPLICATION = None
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'deployerweb.sqlite3'),
+        'NAME': os.path.join(DB_LOCATION, 'deployerweb.sqlite3'),
     }
 }
 
@@ -189,6 +193,11 @@ LOGGING = {
         'mail_admins': {
             'level': 'ERROR',
             'class': 'django.utils.log.AdminEmailHandler'
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR + '/debug.log',
         }
     },
     'loggers': {
@@ -197,5 +206,10 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+        'view_logger': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        }
     }
 }
