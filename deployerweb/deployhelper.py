@@ -1,8 +1,8 @@
+''' Deployment Helper '''
+
 import os
-import sys
 import concurrent.futures
 import time
-import random
 import logging
 import tornado.websocket
 import tornado.escape
@@ -10,20 +10,12 @@ import json
 from functools import partial
 import re
 
-import argparse
-from loggers import get_logger
-
-from attrdict import AttrDict
-
 from deployerlib.config import Config
 from deployerlib.commandline import CommandLine
 from deployerlib.tasklist import Tasklist
 from deployerlib.executor import Executor
 from deployerlib.exceptions import DeployerException
 import deployerlib.log
-
-import inspect
-import copy
 
 # Django User access
 from django.conf import settings
@@ -114,7 +106,8 @@ def run_deployment(data, timeout=5):
             tasklist_builder = None
             tasklist_builder = Tasklist(config, config.platform)
             executor = Executor(tasklist=tasklist_builder.tasklist)
-            # executor.run()
+            if not settings.ENV_DEV:
+                executor.run()
 
         count += 1
         time.sleep(1)

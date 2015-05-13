@@ -28,7 +28,12 @@ setup(
     install_requires=[
         "python",
         "python-nsnitro",
-        "argparse"
+        "argparse",
+        "django>=1.8.0",
+        "tornado>=4.0",
+        "futures>=2.2.0",
+        "functools",
+        "yaml"
     ],
     scripts=[
       'bin/deploy.py',

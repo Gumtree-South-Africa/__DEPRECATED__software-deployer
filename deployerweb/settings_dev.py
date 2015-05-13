@@ -34,6 +34,8 @@ print SITE_ROOT
 DEPLOYER_CFGS = BASE_DIR + '/mp-conf/'
 DEPLOYER_TARS = BASE_DIR + '/mp-tars/'
 
+ENV_DEV = True
+
 # The ID, as an integer, of the current site in the django_site database table.
 SITE_ID = 1
 

@@ -34,6 +34,8 @@ print SITE_ROOT
 DEPLOYER_CFGS = '/etc/marktplaats/'
 DEPLOYER_TARS = '/opt/tarballs/'
 
+ENV_DEV = False
+
 # The ID, as an integer, of the current site in the django_site database table.
 SITE_ID = 1
 

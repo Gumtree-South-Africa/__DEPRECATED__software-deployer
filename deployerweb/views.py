@@ -1,11 +1,10 @@
 ''' Django Views '''
 
 import os
-import simplejson
 import yaml
 import json
 
-from django.shortcuts import render, render_to_response, redirect
+from django.shortcuts import render_to_response, redirect
 from django.http import HttpResponse
 from django.template import RequestContext
 # from loggers import get_logger
@@ -143,8 +142,9 @@ def deploy_it(request):
     params = {}
 
     components = request.POST.getlist('components', None)
-    if not request.session['release']:
-        request.session['release'] = request.POST.get('release', None)
+
+    request.session['release'] = request.POST.get('release', None)
+
     if request.POST.get('deployment_type', None) == 'component' and (type(components) is list and len(components) > 0):
         # print len(components)
         # print request.POST.getlist('components', None)
@@ -180,7 +180,6 @@ def get_log(request):
     ''' Get deployment log during deployment '''
 
     request_context = RequestContext(request)
-    params = {}
     payload = {}
     releaseid = request.POST.get('release', None)
     logfile = request.POST.get('logfile', None)
