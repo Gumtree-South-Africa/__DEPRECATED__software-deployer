@@ -19,9 +19,9 @@ ROOT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__fi
 # Relative pass from current directory, just during development to allow run it from any location
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 
-DB_LOCATION = BASE_DIR + '/mp-db/'
+DB_LOCATION = '/etc/marktplaats/'
 
-LOG_DIR = BASE_DIR + '/logs/'
+LOG_DIR = '/opt/log/'
 
 # Remove after development :)
 print BASE_DIR
@@ -31,8 +31,8 @@ print SITE_ROOT
 
 # Directories Related to Deployment
 # Configuration files location
-DEPLOYER_CFGS = BASE_DIR + '/mp-conf/'
-DEPLOYER_TARS = BASE_DIR + '/mp-tars/'
+DEPLOYER_CFGS = '/etc/marktplaats/'
+DEPLOYER_TARS = '/opt/tarballs/'
 
 # The ID, as an integer, of the current site in the django_site database table.
 SITE_ID = 1

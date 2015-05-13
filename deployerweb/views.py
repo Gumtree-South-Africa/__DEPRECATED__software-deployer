@@ -16,8 +16,6 @@ from django.conf import settings
 
 logger = logging.getLogger('view_logger')
 
-print logging.config.dictConfig()
-
 
 def login_page(request, document_root=None):
     ''' Login page '''
