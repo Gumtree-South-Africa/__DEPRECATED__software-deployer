@@ -18,10 +18,12 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 # Relative pass from current directory, just during development to allow run it from any location
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 
+# TODO: Should be removed before final merge
 ROOT_PATH = '/Users/yflerko/git/eBay/'
 BASE_DIR = ROOT_PATH + '/web2_deployer'
 PROJECT_ROOT = BASE_DIR
 SITE_ROOT = ROOT_PATH + '/web2_deployer/deployerweb'
+
 
 DB_LOCATION = BASE_DIR + '/mp-db/'
 

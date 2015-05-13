@@ -4,6 +4,7 @@
 logs/*
 logs
 build/
+dist/
 debian/software-deployer/
 debian/files
 debian/*.substvars
