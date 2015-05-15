@@ -6,11 +6,14 @@ from deployerlib.commands.checkservice import CheckService
 class StopService(Command):
     """Stop a service and check to make sure it has been stopped successfully"""
 
-    def initialize(self, remote_host, stop_command, check_command=None, timeout=60):
+    def initialize(self, remote_host, stop_command, check_command=None, status_command=None, kill_command=None, timeout=60):
 
         self.controlservice = ControlService(
           remote_host=self.remote_host,
           control_command=self.stop_command,
+          status_command=self.status_command,
+          kill_command=self.kill_command,
+          want_state='down',
           tag=self.tag,
         )
 

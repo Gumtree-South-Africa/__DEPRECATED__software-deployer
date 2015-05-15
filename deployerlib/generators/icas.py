@@ -248,10 +248,8 @@ class IcasGenerator(Generator):
                     if hasattr(service_config, option):
                         deploy_task[option] = getattr(service_config, option)
 
-                control_commands = ['stop_command', 'start_command', 'check_command']
-
                 # add service control options
-                for cmd in control_commands:
+                for cmd in ['stop_command', 'start_command', 'check_command', 'status_command', 'kill_command']:
 
                     if hasattr(service_config, cmd):
                         deploy_task[cmd] = service_config[cmd].format(
