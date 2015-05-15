@@ -14,14 +14,13 @@ class CleanUp(Command):
         return True
 
     def execute(self):
-        res = self.remote_host.execute_remote("/bin/ls -1At {0}".format(self.path), output_hidebug=True)
+        res = self.remote_host.execute_remote("/bin/ls -1Atd {0}/{1}".format(self.path, self.filespec), output_hidebug=True)
 
         if res.failed:
-            self.log.critical('Failed to list path, because: {0}'.format(res))
-            return False
+            self.log.warning('Failed to list path for cleanup: {0}'.format(res))
+            return True
 
         files = res.split()
-        files = fnmatch.filter(files, self.filespec)
 
         if not files:
             self.log.info('No files found to cleanup')
