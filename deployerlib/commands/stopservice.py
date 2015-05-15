@@ -11,8 +11,8 @@ class StopService(Command):
         self.controlservice = ControlService(
           remote_host=self.remote_host,
           control_command=self.stop_command,
-          status_command=self.status_command,
-          kill_command=self.kill_command,
+          status_command=status_command,
+          kill_command=kill_command,
           want_state='down',
           tag=self.tag,
         )

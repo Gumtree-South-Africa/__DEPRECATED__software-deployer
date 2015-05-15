@@ -1,3 +1,9 @@
+software-deployer (0.9.35) precise; urgency=low
+
+  * Fix bug in StopService
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Sat, 16 May 2015 00:16:53 +0200
+
 software-deployer (0.9.34) precise; urgency=low
 
   [ Yevgen Flerko ]
