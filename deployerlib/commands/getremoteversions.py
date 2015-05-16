@@ -26,6 +26,8 @@ class GetRemoteVersions(Command):
         res = self.remote_host.execute_remote("/usr/bin/find {0} -maxdepth 1 -type l -exec /bin/readlink {{}} \\;".format(self.install_location))
         if res:
             for item in res.splitlines():
+                if not item:
+                    continue
                 item = os.path.basename(item)
                 name_vers = item.split('_')
                 service_name = name_vers[0]
@@ -33,6 +35,7 @@ class GetRemoteVersions(Command):
                 jbname = '{0}/{1}'.format(self.remote_host.hostname, service_name)
                 self.remote_versions[jbname] = remote_version
                 self.log.info("{0}:{1}".format(service_name, remote_version))
+
         return res.succeeded
 
     def get_properties_versions(self):
