@@ -1,3 +1,9 @@
+software-deployer (0.9.36) precise; urgency=low
+
+  * iCAS generator: Deploy ecg services first
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Sat, 16 May 2015 16:56:53 +0200
+
 software-deployer (0.9.35) precise; urgency=low
 
   * Fix bug in StopService
