@@ -44,7 +44,6 @@ class CleanUp(Command):
             res = self.remote_host.execute_remote('rm -rf {0}'.format(os.path.join(self.path, filename)))
 
             if res.failed:
-                self.log.critical('Failed to remove {1}, because: {2}'.format(filename, res))
-                return False
+                self.log.error('Failed to remove {0}: {1}'.format(filename, res))
 
         return True
