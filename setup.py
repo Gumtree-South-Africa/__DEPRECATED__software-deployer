@@ -40,7 +40,7 @@ setup(
         'bin/deploy.py',
         'bin/build_tasklist.py',
         'bin/servicecontrol.py',
-        'bin/webapp.py',
-        'bin/webmanage.py'
+        'bin/deploywebapp.py',
+        'bin/deploywebmanage.py'
     ],
 )
