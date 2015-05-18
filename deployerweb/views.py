@@ -8,12 +8,15 @@ from django.shortcuts import render_to_response, redirect
 from django.http import HttpResponse
 from django.template import RequestContext
 # from loggers import get_logger
-import logging
+# import logging
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout, get_user
 from django.conf import settings
+# We will use Tornado Application Logging while Django coupled with Tornado
+# app_log.info|critical|error|debug(MESSAGE)
+from tornado.log import app_log
 
-logger = logging.getLogger('view_logger')
+# logger = logging.getLogger('view_logger')
 
 
 def login_page(request, document_root=None):
@@ -30,8 +33,6 @@ def authorize(request):
     ''' Where real authorization done '''
 
     request_context = RequestContext(request)
-    # print request.POST
-    # print request.GET
 
     user = authenticate(username=request.POST.get('username', None), password=request.POST.get('password', None))
     if user is not None:
@@ -62,7 +63,7 @@ def list_configs(request):
     # user.groups return django.db.models.query.QuerySet:
     # https://docs.djangoproject.com/en/1.8/ref/models/querysets/#values-list
     user = get_user(request)
-    print user.groups.all().values_list('name', flat=True)
+    # print user.groups.all().values_list('name', flat=True)
     # print user.groups.all()[0]
     # print user.get_group_permissions()
     # print user.user_permissions.all()
@@ -105,7 +106,6 @@ def list_dirs(request):
         return redirect(settings.LOGIN_REDIRECT_URL)
 
     dirs = sorted([x[0].replace('{}'.format(request.session['tarballs']), '') for x in os.walk(request.session['tarballs']) if request.session['platform'] in x[0]])
-    print dirs
     return render_to_response('list_dirs.html', {'releases': dirs}, context_instance=request_context)
 
 
@@ -115,11 +115,14 @@ def list_dir_content(request):
 
     request_context = RequestContext(request)
     if request.method == 'POST':
-        release = request.POST.get('release', None)
-        if not release:
-            return list_dirs(request)
-
-        request.session['release'] = release
+        if not request.session.get('release', None):
+            release = request.POST.get('release', None)
+            if not release:
+                return list_dirs(request)
+            else:
+                request.session['release'] = release
+        else:
+            release = request.session.get('release', None)
 
     elif not request.session['platform'] or not request.session['tarballs']:
         return redirect(settings.LOGIN_REDIRECT_URL)
@@ -141,13 +144,14 @@ def deploy_it(request):
 
     params = {}
 
+    if not request.session.get('release', None):
+        if request.POST.get('release', None):
+            request.session['release'] = request.POST.get('release', None)
+        else:
+            return list_dirs(request)
+
     components = request.POST.getlist('components', None)
-
-    request.session['release'] = request.POST.get('release', None)
-
     if request.POST.get('deployment_type', None) == 'component' and (type(components) is list and len(components) > 0):
-        # print len(components)
-        # print request.POST.getlist('components', None)
         params.update(components=components, deployment_type=request.POST.get('deployment_type'))
 
     if request.POST.get('deployment_type', None) == 'full':
@@ -160,7 +164,6 @@ def deploy_it(request):
         params.update(redeploy=True)
     # Build parameters we want to pass into Tornado from deployment page
     params.update(config_file=request.session['config_file'], release=request.session['release'], tarballs=request.session['tarballs'])
-    # print json.dumps(params)
     # return render_to_response('progress.html', {'log_file': log_file, 'self_host': self_host}, context_instance=request_context)
     return render_to_response('progress.html', {'data': json.dumps(params), 'host': request.META['HTTP_HOST']}, context_instance=request_context)
 

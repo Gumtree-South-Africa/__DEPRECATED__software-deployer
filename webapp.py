@@ -36,11 +36,11 @@ import signal
 # import random
 
 # Tornado options, need find better place for them later
+# to Run it in debug mode use flag '--debug=True --logging=debug'
 define('port', type=int, default=8080, help='server port number (default: 8080)')
 define('debug', type=bool, default=False, help='run in debug mode with autoreload (default: True)')
-options.log_file_prefix = (settings.LOG_DIR + '/tornado_server.log')
-options.log_file_max_size = (20*2**10*2**10)
-# parse_command_line()
+options.log_file_prefix = (settings.LOG_DIR + '/tornado_server.log')  # default file size 100Mb and with 10 files retention (1GB of logs)
+
 
 def signal_handler(signum, frame):
     logging.info('exiting...')
@@ -59,15 +59,16 @@ class Application(tornado.web.Application):
             ('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
         ]
         settings = dict()
-        tornado.web.Application.__init__(self, handlers, **settings)
+        tornado.web.Application.__init__(self, handlers, default_host="", transforms=None, **settings)
 
 
 def main():
     ''' Main loop of application '''
 
     parse_command_line()
-    logger = logging.getLogger('tornado')
-    logger.info("Tornado server starting...")
+    logging.info('Tornado Server starting...')
+    app_log = tornado.log.app_log
+    app_log.debug("Tornado run with next options: {}".format(options.as_dict()))
     signal.signal(signal.SIGINT, signal_handler)
     server = tornado.httpserver.HTTPServer(Application())
     server.listen(options.port)

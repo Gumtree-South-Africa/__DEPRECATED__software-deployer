@@ -27,6 +27,7 @@ if django.VERSION[1] > 5:
     django.setup()
 
 # Tornado options, need find better place for them later
+# to Run it in debug mode use flag '--debug=True'
 define('port', type=int, default=8080, help='server port number (default: 8080)')
 define('debug', type=bool, default=False, help='run in debug mode with autoreload (default: True)')
 options.log_file_prefix = (settings.LOG_DIR + '/tornado_server.log')
@@ -57,8 +58,7 @@ def main():
     ''' Main loop of application '''
 
     parse_command_line()
-    logger = logging.getLogger(__name__)
-    logger.info("Tornado server starting...")
+    logging.info("Tornado server starting...")
     signal.signal(signal.SIGINT, signal_handler)
     server = tornado.httpserver.HTTPServer(Application())
     server.listen(options.port)

@@ -40,7 +40,11 @@ LISTENERS = {}
 # }
 EXECPOOL = {}
 
+# TODO: before final merge any loop should be removed!
 MAIN_RUN = True
+
+# Get logger instance for Tornado
+app_log = tornado.log.app_log
 
 
 def run_deployment(data, timeout=5):
@@ -55,13 +59,13 @@ def run_deployment(data, timeout=5):
         if timeout and int(count) > int(timeout):
             break
         msg = "My index {}: Current cycle {} / {}".format(data['release'], count, timeout)
-        print "First message: ", msg
+        app_log.debug(msg)
         thread_to_wsockets(data['release'], format_to_json(data=msg))
 
         if not args:
 
             msg = "My index {}: preparing for deployment.".format(data['release'])
-            print msg
+            app_log.debug(msg)
             thread_to_wsockets(data['release'], format_to_json(data=msg))
 
             # Checking arguments in 'data' and build CommandLine parameters
@@ -75,6 +79,7 @@ def run_deployment(data, timeout=5):
             args = CommandLine(command_line_args=cmd_params)
 
             msg = "We complete build arguments for Deployment.\n"
+            app_log.debug(msg)
             thread_to_wsockets(data['release'], format_to_json(data=msg))
 
             config = Config(args)
@@ -113,22 +118,19 @@ def run_deployment(data, timeout=5):
         time.sleep(1)
     if timeout:
         msg = "My index {} passed {} counts, so i exiting....".format(data['release'], count)
-        print msg
+        app_log.debug(msg)
         thread_to_wsockets(data['release'], format_to_json(data=msg))
     else:
         msg = "My index {} and i exiting....".format(data['release'])
-        print msg
+        app_log.debug(msg)
         thread_to_wsockets(data['release'], format_to_json(data=msg))
 
     # Destroy Deployment Loggers
     if deployerlib.log.LogDict:
         for logname in deployerlib.log.LogDict.keys():
-            # print "Destroying logger {}".format(logname)
             del logging.Logger.manager.loggerDict[logname]
             del deployerlib.log.LogDict[logname]
-    # print deployerlib.log.LogDict
-    # print logging.Logger.manager.loggerDict
-    return "Index {} Return: Blah".format(data['release'])
+    return "Index {} Return: Oops, i did it again :)".format(data['release'])
 
 
 def format_to_json(calltype='text', data=False):
@@ -164,7 +166,7 @@ def thread_to_wsockets(myid, message):
         try:
             sid.write_message(message)
         except tornado.websocket.WebSocketClosedError:
-            print "SocketId {} closed.".format(sid)
+            app_log.debug("SocketId {} closed.".format(sid))
 
 
 def before_deploy():
@@ -190,9 +192,10 @@ def run_thread(data):
 def check_process_alive():
     # for index, phandler in EXECPOOL.iteritems():
     for index in EXECPOOL.keys():
-        print "Process #{} finished its execution: {}".format(index, EXECPOOL[index]['process'].done())
+        app_log.debug("Process #{} finished its execution: {}".format(index, EXECPOOL[index]['process'].done()))
         if EXECPOOL[index]['process'].done() is True:
-            print EXECPOOL[index]['process'].exception(1)
+            app_log.debug("Process #{} removed from execution pool.".format(index))
+            print "Process Exception: {}".format(EXECPOOL[index]['process'].exception(1))
             # print EXECPOOL[index].result(1)
             del EXECPOOL[index]
 
@@ -201,14 +204,14 @@ def check_process_alive():
 def print_variables():
     # print "WebSockets:"
     for x in LISTENERS:
-        print "Socket {}: {}/{}/{}".format(x, LISTENERS[x]['release'], len(LISTENERS[x]['buffer']), LISTENERS[x]['socket'])
+        app_log.debug("Socket {}: {}/{}/{}".format(x, LISTENERS[x]['release'], len(LISTENERS[x]['buffer']), LISTENERS[x]['socket']))
     # print "Threads: "
     for y in EXECPOOL:
-        print "Thread {}: {}/{}".format(y, EXECPOOL[y]['process'], EXECPOOL[y]['logfile'])
+        app_log.debug("Thread {}: {}/{}".format(y, EXECPOOL[y]['process'], EXECPOOL[y]['logfile']))
     check_process_alive()
 
 # Print to console each 5 seconds Listeners and Thread stats
-prnt_vars = tornado.ioloop.PeriodicCallback(print_variables, 5000)
+prnt_vars = tornado.ioloop.PeriodicCallback(print_variables, 1000)
 prnt_vars.start()
 
 
@@ -290,10 +293,9 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
 
         self.csrftoken = self.get_cookie('csrftoken', default=None)
         self.sessionid = self.get_cookie('sessionid', default=None)
-        print self.csrftoken, self.sessionid
         self.index = self.get_argument("release", default=None)
 
-        print "WebSocket id {} opened".format(self.sessionid)
+        app_log.debug("WebSocket id {} opened".format(self.sessionid))
 
         if self.index:
             if self.sessionid in LISTENERS:
@@ -313,17 +315,16 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
             self.json_api_call(jsonmsg)
 
     def on_close(self):
-        print "WebSocket id {} closed!".format(self.sessionid)
+        app_log.debug("WebSocket id {} closed!".format(self.sessionid))
         if LISTENERS[self.sessionid]:
             del LISTENERS[self.sessionid]
             try:
                 self.tailed_callback
             except:
-                print "Unable stop fucking LOOP! :D"  # need to remove
+                ("Unable stop fucking LOOP! :D")  # need to remove
                 pass
             else:
                 self.tailed_callback.stop()
-        # print "Current opened Socket connections: ", LISTENERS
 
     def json_api_call(self, jdata):
         ''' processing of json received from socket '''
@@ -338,7 +339,6 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         ''' Prepare and run Tail as part of Tornado Event loop '''
 
         tailed_file = self.open_file(data['logfile'])
-        # self.tailed_callback = tornado.ioloop.PeriodicCallback(partial(self.check_file, tailed_file, self.sessionid), 10)
         self.tailed_callback = tornado.ioloop.PeriodicCallback(partial(self.check_file_buffered, tailed_file, self.sessionid, self.index), 1)
         self.tailed_callback.start()
 
@@ -347,13 +347,11 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         try:
             tailed_file = open(logfile)
         except (OSError, IOError) as e:
-            print "Unable open log file {} with error {}".format(logfile, e)
+            app_log.debug("Unable open log file {} with error {}".format(logfile, e))
             self.tailed_callback.stop()
 
-        print "Tail Descriptor: ", tailed_file
+        app_log.debug("Tail Descriptor: {}".format(tailed_file))
         tailed_file.seek(os.path.getsize(logfile))
-
-        # For test chunks
 
         return tailed_file
 
@@ -364,20 +362,17 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         if not line:
             tailed_file.seek(where)
         else:
-            # print "File refresh"
             if sid in LISTENERS:
                 try:
                     LISTENERS[sid]['socket'].write_message(format_to_json(data=line))
                 except tornado.websocket.WebSocketClosedError:
-                    print "Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket'])
+                    app_log.debug("Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
 
     def check_file_buffered(self, tailed_file, sid, index):
         ''' Get Data from file and post it to Socket Stream '''
 
         # check if process still exist and running if not then we set flag to True, default flag False
-        # process_done = False
         if (index not in EXECPOOL or EXECPOOL[index]['process'].done() is True) and len(LISTENERS[sid]['buffer']) > 0:
-            # process_done = True
             self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
             # Close socket since thread done and we printed last amount of data to user
             self.close(code=200, reason="Deployment job done all log entries printed. Socket Closed.")
@@ -412,9 +407,9 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         # if any([x in line for x in levels.keys()]):
         for x in levels.keys():
             if x in line:
-                print x
+                # print x
                 line = levels[x].format(line)
-                print line
+                # print line
 
         # Add background color to Time output to do more readable lines of logs
         color_template = '<span style="background-color: #CCCCCC;">{}</span>'
@@ -431,6 +426,6 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         try:
             LISTENERS[sid]['socket'].write_message(format_to_json(data="<br />".join(logbuffer)))
         except tornado.websocket.WebSocketClosedError:
-            print "Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket'])
+            app_log.debug("Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
         else:
             LISTENERS[sid]['buffer'] = []
