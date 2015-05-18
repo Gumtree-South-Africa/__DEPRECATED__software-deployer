@@ -63,17 +63,13 @@ def list_configs(request):
     # user.groups return django.db.models.query.QuerySet:
     # https://docs.djangoproject.com/en/1.8/ref/models/querysets/#values-list
     user = get_user(request)
-    # print user.groups.all().values_list('name', flat=True)
-    # print user.groups.all()[0]
-    # print user.get_group_permissions()
-    # print user.user_permissions.all()
-    # if user.groups.filter(name='icas').exists():
-    #    print "in group icas"
-    # user.groups.filter(name__in=['group1', 'group2']).exists()
+    ugroups = user.groups.all().values_list('name', flat=True)
+    tmp_configs = [x for x in os.listdir(settings.DEPLOYER_CFGS) if x.endswith('yaml') or x.endswith('conf')]
+    configs = []
+    for cfg in tmp_configs:
+        if any(x in cfg for x in ugroups):
+            configs.append(cfg)
 
-    # if request.method == 'GET':
-    # configs = [x for x in os.listdir('/etc') if x.endswith('.yaml')]
-    configs = [x for x in os.listdir(settings.DEPLOYER_CFGS) if x.endswith('')]
     return render_to_response('list_configs.html', {'configs': configs}, context_instance=request_context)
 
 
@@ -115,14 +111,11 @@ def list_dir_content(request):
 
     request_context = RequestContext(request)
     if request.method == 'POST':
-        if not request.session.get('release', None):
-            release = request.POST.get('release', None)
-            if not release:
-                return list_dirs(request)
-            else:
-                request.session['release'] = release
+        release = request.POST.get('release', None)
+        if not release:
+            return list_dirs(request)
         else:
-            release = request.session.get('release', None)
+            request.session['release'] = release
 
     elif not request.session['platform'] or not request.session['tarballs']:
         return redirect(settings.LOGIN_REDIRECT_URL)
@@ -144,11 +137,21 @@ def deploy_it(request):
 
     params = {}
 
-    if not request.session.get('release', None):
-        if request.POST.get('release', None):
-            request.session['release'] = request.POST.get('release', None)
-        else:
-            return list_dirs(request)
+    if request.POST.get('release', None):
+        request.session['release'] = request.POST.get('release', None)
+    else:
+        return list_dirs(request)
+
+    # if user group not met condition then redirect user to home page
+    user = get_user(request)
+    ugroups = user.groups.all().values_list('name', flat=True)
+    granted = False
+    for x in ugroups:
+        if x in request.session['release']:
+            granted = True
+
+    if not granted:
+        return redirect(settings.LOGIN_REDIRECT_URL)
 
     components = request.POST.getlist('components', None)
     if request.POST.get('deployment_type', None) == 'component' and (type(components) is list and len(components) > 0):

@@ -161,7 +161,7 @@ WSGI_APPLICATION = None
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(DB_LOCATION, 'deployerweb.sqlite3'),
+        'NAME': os.path.join(DB_LOCATION, 'WebDeployerProd.sqlite3'),
     }
 }
 

@@ -236,6 +236,8 @@ class AnyJobsWeHave(tornado.web.RequestHandler):
 
     def post(self):
         user = get_django_user(self.get_cookie('sessionid', default=None))
+        ugroups = user.groups.all().values_list('name', flat=True)
+
         payload = {}
         if not user.is_authenticated():
             msg = "You should pass authorization first!"
@@ -244,8 +246,10 @@ class AnyJobsWeHave(tornado.web.RequestHandler):
         else:
             plist = {}
             for process in EXECPOOL.keys():
-                plist[process] = {}
-                plist[process]['logfile'] = EXECPOOL[process]['logfile']
+                if any(x in process for x in ugroups):
+                    print process
+                    plist[process] = {}
+                    plist[process]['logfile'] = EXECPOOL[process]['logfile']
             payload.update(success=True, data={'jobs': plist, 'method': 'print_jobs'}, type='api')
             self.write(json.dumps(payload, default=None))
 
