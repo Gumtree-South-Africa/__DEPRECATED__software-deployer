@@ -35,6 +35,26 @@ def set_logfile(new_logfile):
     logfile = new_logfile
 
 
+def get_my_loggers():
+    '''
+        Logger manipulation hook for Web deployment tool:
+        Return all loggers instances as Dict() created by this class
+    '''
+    global LogDict
+    return LogDict
+
+
+def clean_my_loggers():
+    '''
+        Logger manipulation hook for Web deployment tool:
+        Clean all logger instances created by this class
+    '''
+    global LogDict
+    for logname in LogDict.keys():
+        del logging.Logger.manager.loggerDict[logname]
+        del LogDict[logname]
+
+
 class Log(object):
 
     def __init__(self, instance='DEPLOYER', tag=''):

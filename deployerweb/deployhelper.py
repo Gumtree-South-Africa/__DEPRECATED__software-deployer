@@ -48,94 +48,76 @@ app_log = tornado.log.app_log
 
 
 def run_deployment(data, timeout=5):
-    count = 0
     args = None
+
+    # dirty hack to cleanup log instances for deployer before start
+    # in case it failed in the middle
+    # TODO: rewrite to more elegant way
+    deployerlib.log.clean_my_loggers()
     # Wait for 5 seconds, time required to client side successfully connected to socket after API call
     # TODO: need do this in more elegant way without unnecessary sleeps in thread
     #       As possible variant do not trigger deployment itself over Ajax API Call, but over socket API call
     #       After socket successfully connection established
     time.sleep(5)
-    while MAIN_RUN:
-        if timeout and int(count) > int(timeout):
-            break
-        msg = "My index {}: Current cycle {} / {}".format(data['release'], count, timeout)
-        app_log.debug(msg)
-        thread_to_wsockets(data['release'], format_to_json(data=msg))
 
-        # Destroy Deployment Loggers
-        # temporary dirty hack
-        if deployerlib.log.LogDict:
-            for logname in deployerlib.log.LogDict.keys():
-                del logging.Logger.manager.loggerDict[logname]
-                del deployerlib.log.LogDict[logname]
+    msg = "Release #{}: preparing for deployment.".format(data['release'])
+    app_log.debug(msg)
+    thread_to_wsockets(data['release'], format_to_json(data=msg))
 
-        if not args:
+    # Checking arguments in 'data' and build CommandLine parameters
+    cmd_params = []
+    cmd_params.append('--config')
+    cmd_params.append(settings.DEPLOYER_CFGS + '/' + data['config_file'])
+    if 'redeploy' in data.keys():
+        cmd_params.append('--redeploy')
+    cmd_params.append('--logdir')
+    cmd_params.append(settings.LOG_DIR)
+    args = CommandLine(command_line_args=cmd_params)
 
-            msg = "My index {}: preparing for deployment.".format(data['release'])
-            app_log.debug(msg)
-            thread_to_wsockets(data['release'], format_to_json(data=msg))
+    msg = "Release #{}: complete build arguments for Deployment.\n".format(data['release'])
+    app_log.debug(msg)
+    thread_to_wsockets(data['release'], format_to_json(data=msg))
 
-            # Checking arguments in 'data' and build CommandLine parameters
-            cmd_params = []
-            cmd_params.append('--config')
-            cmd_params.append(settings.DEPLOYER_CFGS + '/' + data['config_file'])
-            if 'redeploy' in data.keys():
-                cmd_params.append('--redeploy')
-            cmd_params.append('--logdir')
-            cmd_params.append(settings.LOG_DIR)
-            args = CommandLine(command_line_args=cmd_params)
+    config = Config(args)
+    config.component = None
+    config.release = None
 
-            msg = "We complete build arguments for Deployment.\n"
-            app_log.debug(msg)
-            thread_to_wsockets(data['release'], format_to_json(data=msg))
+    # Grab log file from args and pass it to our process information
+    EXECPOOL[data['release']]['logfile'] = args.logfile
+    msg = {'logfile': args.logfile, 'releaseid': data['release'], 'method': 'run_tail'}
+    thread_to_wsockets(data['release'], format_to_json(calltype='api', data=msg))
+    time.sleep(1)
 
-            config = Config(args)
-            config.component = None
-            config.release = None
-
-            # Grab log file from args and pass it to our process information
-            EXECPOOL[data['release']]['logfile'] = args.logfile
-            msg = {'logfile': args.logfile, 'releaseid': data['release'], 'method': 'run_tail'}
-            thread_to_wsockets(data['release'], format_to_json(calltype='api', data=msg))
-
-            if 'components' in data and 'deployment_type' in data and data['deployment_type'] == 'component':
-                config.component = []
-                for component in data['components']:
-                    config.component.append(settings.DEPLOYER_TARS + '/' + data['release'] + '/' + component)
-            elif 'deployment_type' in data and data['deployment_type'] == 'full':
-                # Forced to use encode to UTF otherwise it throw critical error and exit
-                config.release = [(settings.DEPLOYER_TARS + '/' + data['release'] + '/').encode('utf-8')]
-            else:
-                msg = "Looks like we got from you wrong parameters set and we unable build correct arguments for Deployer\n"
-                thread_to_wsockets(data['release'], format_to_json(data=msg))
-                break
-
-            msg = "We complete build configuration for Deployment.\n"
-            thread_to_wsockets(data['release'], format_to_json(data=msg))
-
-            config.tasklist = None
-            tasklist_builder = None
-            tasklist_builder = Tasklist(config, config.platform)
-            executor = Executor(tasklist=tasklist_builder.tasklist)
-            if not settings.ENV_DEV:
-                executor.run()
-
-        count += 1
-        time.sleep(1)
-    if timeout:
-        msg = "My index {} passed {} counts, so i exiting....".format(data['release'], count)
-        app_log.debug(msg)
-        thread_to_wsockets(data['release'], format_to_json(data=msg))
+    if 'components' in data and 'deployment_type' in data and data['deployment_type'] == 'component':
+        config.component = []
+        for component in data['components']:
+            config.component.append(settings.DEPLOYER_TARS + '/' + data['release'] + '/' + component)
+    elif 'deployment_type' in data and data['deployment_type'] == 'full':
+        # Forced to use encode to UTF otherwise it throw critical error and exit
+        config.release = [(settings.DEPLOYER_TARS + '/' + data['release'] + '/').encode('utf-8')]
     else:
-        msg = "My index {} and i exiting....".format(data['release'])
-        app_log.debug(msg)
+        msg = "Release #{}: Looks like we got from you wrong parameters set and we unable build correct arguments for Deployer\n".format(data['release'])
         thread_to_wsockets(data['release'], format_to_json(data=msg))
+        return False
 
-    # Destroy Deployment Loggers
-    if deployerlib.log.LogDict:
-        for logname in deployerlib.log.LogDict.keys():
-            del logging.Logger.manager.loggerDict[logname]
-            del deployerlib.log.LogDict[logname]
+    msg = "Release #{}: complete build configuration for Deployment.\n".format(data['release'])
+    thread_to_wsockets(data['release'], format_to_json(data=msg))
+
+    config.tasklist = None
+    tasklist_builder = None
+
+    msg = "Release #{}: building tasks list for Deployment.\n".format(data['release'])
+    thread_to_wsockets(data['release'], format_to_json(data=msg))
+    tasklist_builder = Tasklist(config, config.platform)
+    executor = Executor(tasklist=tasklist_builder.tasklist)
+    if not settings.ENV_DEV:
+        msg = "Release #{}: starting Deployment.\n".format(data['release'])
+        thread_to_wsockets(data['release'], format_to_json(data=msg))
+        executor.run()
+
+    # Deployer Log instances cleanup after successful deployment
+    deployerlib.log.clean_my_loggers()
+
     return "Index {} Return: Oops, i did it again :)".format(data['release'])
 
 
@@ -376,7 +358,7 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
                 try:
                     LISTENERS[sid]['socket'].write_message(format_to_json(data=line))
                 except tornado.websocket.WebSocketClosedError:
-                    app_log.debug("Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
+                    app_log.debug("1Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
 
     def check_file_buffered(self, tailed_file, sid, index):
         ''' Get Data from file and post it to Socket Stream '''
@@ -385,7 +367,7 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         if (index not in EXECPOOL or EXECPOOL[index]['process'].done() is True) and len(LISTENERS[sid]['buffer']) > 0:
             self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
             # Close socket since thread done and we printed last amount of data to user
-            self.close(code=200, reason="Deployment job done all log entries printed. Socket Closed.")
+            # self.close(code=200, reason="Deployment job done all log entries printed. Socket Closed.")
 
         where = tailed_file.tell()
         line = tailed_file.readline()
@@ -395,7 +377,7 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
             if sid in LISTENERS:
 
                 LISTENERS[sid]['buffer'].append(self.output_filter(line))
-                if len(LISTENERS[sid]['buffer']) > 29:
+                if len(LISTENERS[sid]['buffer']) > 9:
                     self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
 
     def output_filter(self, line):
@@ -436,6 +418,6 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         try:
             LISTENERS[sid]['socket'].write_message(format_to_json(data="<br />".join(logbuffer)))
         except tornado.websocket.WebSocketClosedError:
-            app_log.debug("Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
+            app_log.debug("2Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
         else:
             LISTENERS[sid]['buffer'] = []
