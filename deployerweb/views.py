@@ -95,7 +95,12 @@ def list_dirs(request):
             except yaml.YAMLError, exc:
                 return HttpResponse('We unable load yaml file due exception: {}'.format(exc))
             else:
-                request.session['platform'] = cfg['platform'].replace('lp', '')
+                platform = cfg['platform'].replace('lp', '')
+                # Static platform override, because native platform for static is aurora,
+                # but packages hosted separately :(
+                if 'static' in config:
+                    platform = 'static'
+                request.session['platform'] = platform
                 request.session['tarballs'] = settings.DEPLOYER_TARS
 
     elif not request.session['platform'] or not request.session['tarballs']:
