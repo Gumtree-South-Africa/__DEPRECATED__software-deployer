@@ -72,10 +72,10 @@ def run_deployment(data, timeout=5):
             cmd_params = []
             cmd_params.append('--config')
             cmd_params.append(settings.DEPLOYER_CFGS + '/' + data['config_file'])
-            if data['redeploy']:
+            if 'redeploy' in data.keys():
                 cmd_params.append('--redeploy')
             cmd_params.append('--logdir')
-            cmd_params.append(settings.BASE_DIR + '/logs')
+            cmd_params.append(settings.LOG_DIR)
             args = CommandLine(command_line_args=cmd_params)
 
             msg = "We complete build arguments for Deployment.\n"
