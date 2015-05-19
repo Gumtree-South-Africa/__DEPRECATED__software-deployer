@@ -95,7 +95,6 @@ def run_deployment(data, timeout=5):
 
             # Grab log file from args and pass it to our process information
             EXECPOOL[data['release']]['logfile'] = args.logfile
-            # msg = json.dumps({'logfile': args.logfile, 'releaseid': data['release'], 'method': 'run_tail'})
             msg = {'logfile': args.logfile, 'releaseid': data['release'], 'method': 'run_tail'}
             thread_to_wsockets(data['release'], format_to_json(calltype='api', data=msg))
 
