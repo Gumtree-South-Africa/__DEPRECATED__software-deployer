@@ -359,13 +359,14 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
                 try:
                     LISTENERS[sid]['socket'].write_message(format_to_json(data=line))
                 except tornado.websocket.WebSocketClosedError:
-                    app_log.debug("1Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
+                    app_log.debug("Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
 
     def check_file_buffered(self, tailed_file, sid, index):
         ''' Get Data from file and post it to Socket Stream '''
 
         # check if process still exist and running if not then we set flag to True, default flag False
         if (index not in EXECPOOL or EXECPOOL[index]['process'].done() is True) and len(LISTENERS[sid]['buffer']) > 0:
+            LISTENERS[sid]['buffer'].append("Release #{}: Deployment process finished.".format(index))
             self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
             # Close socket since thread done and we printed last amount of data to user
             # self.close(code=200, reason="Deployment job done all log entries printed. Socket Closed.")
@@ -376,8 +377,9 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
             tailed_file.seek(where)
         else:
             if sid in LISTENERS:
-
-                LISTENERS[sid]['buffer'].append(self.output_filter(line))
+                fline = self.output_filter(line)
+                if fline:
+                    LISTENERS[sid]['buffer'].append(fline)
                 if len(LISTENERS[sid]['buffer']) > 9:
                     self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
 
@@ -390,9 +392,13 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         ansi_escape = re.compile(r'\x1b[^m]*m')
         line = ansi_escape.sub('', line)
 
-        # Warning/Critical and other type of colored decoration
         # DEBUG/VERBOSE Lines hidden
+        if '[DEBUG ]' in line or '[VERBOSE ]' in line:
+            return False
+
+        # Warning/Critical and other type of colored decoration
         levels = {
+            'Deployment process finished': '<span style="background-color: #00D627;">{}</span>',
             'got statuscode 200': '<span style="background-color: #00D627;">{}</span>',
             '[WARNING ]': '<span style="background-color: #ABACFF; font-weight:bold">{}</span>',
             '[ERROR ]': '<span style="background-color: magenta; font-weight:bold">{}</span>',
@@ -401,12 +407,9 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
             # '[VERBOSE ]': '<span style="display: none">{}</span>'
         }
 
-        # if any([x in line for x in levels.keys()]):
         for x in levels.keys():
             if x in line:
-                # print x
                 line = levels[x].format(line)
-                # print line
 
         # Add background color to Time output to do more readable lines of logs
         color_template = '<span style="background-color: #CCCCCC;">{}</span>'
@@ -423,6 +426,6 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         try:
             LISTENERS[sid]['socket'].write_message(format_to_json(data="<br />".join(logbuffer)))
         except tornado.websocket.WebSocketClosedError:
-            app_log.debug("2Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
+            app_log.debug("Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
         else:
             LISTENERS[sid]['buffer'] = []
