@@ -394,12 +394,11 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         # DEBUG/VERBOSE Lines hidden
         levels = {
             'got statuscode 200': '<span style="background-color: #00D627;">{}</span>',
-            'Could not connect to': '<span style="background-color: #FF5500;">{}</span>',
-            '[WARNING ]': '<span style="background-color:blue; font-weight:bold">{}</span>',
-            '[ERROR ]': '<span style="background-color:magenta; font-weight:bold">{}</span>',
-            '[CRITICAL ]': '<span style="background-color:red; font-weight:bold">{}</span>',
-            '[DEBUG ]': '<span style="display: none">{}</span>',
-            '[VERBOSE ]': '<span style="display: none">{}</span>'
+            '[WARNING ]': '<span style="background-color: #ABACFF; font-weight:bold">{}</span>',
+            '[ERROR ]': '<span style="background-color: magenta; font-weight:bold">{}</span>',
+            '[CRITICAL ]': '<span style="background-color: red; font-weight:bold">{}</span>',
+            # '[DEBUG ]': '<span style="display: none">{}</span>',
+            # '[VERBOSE ]': '<span style="display: none">{}</span>'
         }
 
         # if any([x in line for x in levels.keys()]):
