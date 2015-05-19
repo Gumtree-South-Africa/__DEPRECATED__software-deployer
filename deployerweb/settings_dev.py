@@ -42,6 +42,9 @@ print SITE_ROOT
 
 ENV_DEV = True
 
+# Websocket buffer size
+WS_BUFFER_SIZE = 4
+
 # The ID, as an integer, of the current site in the django_site database table.
 SITE_ID = 1
 

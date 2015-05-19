@@ -366,7 +366,7 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
 
         # check if process still exist and running if not then we set flag to True, default flag False
         if (index not in EXECPOOL or EXECPOOL[index]['process'].done() is True) and len(LISTENERS[sid]['buffer']) > 0:
-            LISTENERS[sid]['buffer'].append("Release #{}: Deployment process finished.".format(index))
+            # LISTENERS[sid]['buffer'].append("<span style=\"background-color: #00D627;\">Release #{}: Deployment process finished.</span>".format(index))
             self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
             # Close socket since thread done and we printed last amount of data to user
             # self.close(code=200, reason="Deployment job done all log entries printed. Socket Closed.")
@@ -380,7 +380,7 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
                 fline = self.output_filter(line)
                 if fline:
                     LISTENERS[sid]['buffer'].append(fline)
-                if len(LISTENERS[sid]['buffer']) > 9:
+                if len(LISTENERS[sid]['buffer']) > settings.WS_BUFFER_SIZE:
                     self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
 
     def output_filter(self, line):
@@ -392,19 +392,16 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         ansi_escape = re.compile(r'\x1b[^m]*m')
         line = ansi_escape.sub('', line)
 
-        # DEBUG/VERBOSE Lines hidden
-        if '[DEBUG ]' in line or '[VERBOSE ]' in line:
+        # DEBUG Lines hidden
+        if not tornado.options.options.debug and '[DEBUG' in line:
             return False
 
         # Warning/Critical and other type of colored decoration
         levels = {
-            'Deployment process finished': '<span style="background-color: #00D627;">{}</span>',
             'got statuscode 200': '<span style="background-color: #00D627;">{}</span>',
             '[WARNING ]': '<span style="background-color: #ABACFF; font-weight:bold">{}</span>',
             '[ERROR ]': '<span style="background-color: magenta; font-weight:bold">{}</span>',
-            '[CRITICAL ]': '<span style="background-color: red; font-weight:bold">{}</span>',
-            # '[DEBUG ]': '<span style="display: none">{}</span>',
-            # '[VERBOSE ]': '<span style="display: none">{}</span>'
+            '[CRITICAL ]': '<span style="background-color: red; font-weight:bold">{}</span>'
         }
 
         for x in levels.keys():
@@ -414,7 +411,6 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         # Add background color to Time output to do more readable lines of logs
         color_template = '<span style="background-color: #CCCCCC;">{}</span>'
         strdate = re.match('(\d{4})[/.-](\d{2})[/.-](\d{2}) (\d{2})[:](\d{2})[:](\d{2})[,](\d{3})', line)
-        # date = re.match('(\d{4})[/.-](\d{2})[/.-](\d{2})', line)
         if strdate:
             tmpline = color_template.format(strdate.group())
             line = line.replace(strdate.group(), tmpline)
