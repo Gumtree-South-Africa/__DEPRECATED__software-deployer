@@ -20,7 +20,9 @@ setup(
     license="GPL",
     keywords="python software deployment",
     url="https://github.scm.corp.ebay.com/ecg-marktplaats/software-deployer",
-    packages=['deployerlib', 'deployerlib.commands', 'deployerlib.generators', 'deployerweb'],
+    packages=['deployerlib', 'deployerlib.commands', 'deployerlib.generators', 'deployerweb', 'deployerweb.migrations'],
+    include_package_data=True,
+    zip_safe=False,
     long_description=read('README.md'),
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -29,7 +31,7 @@ setup(
     ],
     install_requires=[
         "nsnitro",
-        "attrdict<=1.0.0",
+        "attrdict<=1.0.1",
         "django>=1.8.0",
         "tornado>=4.0",
         "futures>=2.2.0",

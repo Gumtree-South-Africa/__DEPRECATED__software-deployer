@@ -183,8 +183,8 @@ def check_process_alive():
         app_log.debug("Process #{} finished its execution: {}".format(index, EXECPOOL[index]['process'].done()))
         if EXECPOOL[index]['process'].done() is True:
             app_log.debug("Process #{} removed from execution pool.".format(index))
-            print "Process Exception: {}".format(EXECPOOL[index]['process'].exception(1))
-            # print EXECPOOL[index].result(1)
+            app_log.debug("Process #{} return Exception: {}".format(index, EXECPOOL[index]['process'].exception(1)))
+            app_log.debug("Process #{} return: {}".format(index, EXECPOOL[index]['process'].result(1)))
             del EXECPOOL[index]
 
 
@@ -235,7 +235,6 @@ class AnyJobsWeHave(tornado.web.RequestHandler):
             plist = {}
             for process in EXECPOOL.keys():
                 if any(x in process for x in ugroups):
-                    print process
                     plist[process] = {}
                     plist[process]['logfile'] = EXECPOOL[process]['logfile']
             payload.update(success=True, data={'jobs': plist, 'method': 'print_jobs'}, type='api')

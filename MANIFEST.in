@@ -1,0 +1,2 @@
+recursive-include deployerweb/static *
+recursive-include deployerweb/templates *
