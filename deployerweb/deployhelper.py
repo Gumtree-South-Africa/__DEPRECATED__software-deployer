@@ -62,6 +62,13 @@ def run_deployment(data, timeout=5):
         app_log.debug(msg)
         thread_to_wsockets(data['release'], format_to_json(data=msg))
 
+        # Destroy Deployment Loggers
+        # temporary dirty hack
+        if deployerlib.log.LogDict:
+            for logname in deployerlib.log.LogDict.keys():
+                del logging.Logger.manager.loggerDict[logname]
+                del deployerlib.log.LogDict[logname]
+
         if not args:
 
             msg = "My index {}: preparing for deployment.".format(data['release'])
