@@ -183,8 +183,10 @@ def check_process_alive():
         app_log.debug("Process #{} finished its execution: {}".format(index, EXECPOOL[index]['process'].done()))
         if EXECPOOL[index]['process'].done() is True:
             app_log.debug("Process #{} removed from execution pool.".format(index))
-            app_log.debug("Process #{} return Exception: {}".format(index, EXECPOOL[index]['process'].exception(1)))
-            app_log.debug("Process #{} return: {}".format(index, EXECPOOL[index]['process'].result(1)))
+            if EXECPOOL[index]['process'].exception(1):
+                app_log.debug("Process #{} return Exception: {}".format(index, EXECPOOL[index]['process'].exception(1)))
+            else:
+                app_log.debug("Process #{} return: {}".format(index, EXECPOOL[index]['process'].result(1)))
             del EXECPOOL[index]
 
 
