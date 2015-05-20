@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% load static from staticfiles %}
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Web Deployment</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="{% static "bootstrap/css/bootstrap.min.css" %}" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="{% static "main/main_page.css" %}" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+    </script>
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Web Deployer</a>
+          <a class="navbar-brand" href="/">Home</a>
+          <a class="navbar-brand" href="/status/">Current Jobs</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/logout/">Logout</a></li>
+            {% csrf_token %}
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="central-div config-div">
+
+      <form class="form-config" action="/deploy/" method="post">
+        <div class="row">
+          <div class="col-lg-4">
+          <a href="/" class="btn btn-xs btn-primary btn-block">Back To Configs</a>
+          {% for release in releases %}
+            <div class="input-group input-group-sm">
+              <span class="input-group-addon">
+                <input type="radio" aria-label="..." name='release' value="{{release}}">
+              </span>
+              <form class="form-config" action="/components/" method="post">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-default btn-block" type="submit" name='release' value="{{release}}">{{release}}</button>
+              </form>
+            </div><!-- /input-group -->
+          {% endfor %}
+            <div class="input-group input-group-sm">
+              <span class="input-group-addon">
+                <input type="checkbox" aria-label="..." name="redeploy">
+              </span>
+              <p type="text" class="form-control text-center" >Redeploy?</p>
+            </div><!-- /input-group -->
+            <input type="hidden" name="deployment_type" value="full">
+            <button class="btn btn-xs btn-success btn-block" type="submit">Deploy Release</button>
+          </div><!-- /.col-lg-6 -->
+        </div><!-- /.row -->
+        {% csrf_token %}
+      </form>
+
+      </div> <!-- /.central-div -->
+    </div><!-- /.container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+  </body>
+</html>

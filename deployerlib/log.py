@@ -10,6 +10,7 @@ from deployerlib.exceptions import DeployerException
 # Default level
 level = logging.INFO
 logfile = ''
+LogDict = {}
 
 # Add level VERBOSE
 logging.VERBOSE = 15
@@ -18,6 +19,8 @@ logging.addLevelName(logging.VERBOSE, 'VERBOSE')
 # Add level HIDEBUG
 logging.HIDEBUG = 5
 logging.addLevelName(logging.HIDEBUG, 'HIDEBUG')
+
+myloggerDict = logging.Manager
 
 
 def set_level(new_level):
@@ -30,6 +33,27 @@ def set_logfile(new_logfile):
 
     global logfile
     logfile = new_logfile
+
+
+def get_my_loggers():
+    '''
+        Logger manipulation hook for Web deployment tool:
+        Return all loggers instances as Dict() created by this class
+    '''
+    global LogDict
+    return LogDict
+
+
+def clean_my_loggers():
+    '''
+        Logger manipulation hook for Web deployment tool:
+        Clean all logger instances created by this class
+    '''
+    global LogDict
+    for logname in LogDict.keys():
+        del logging.Logger.manager.loggerDict[logname]
+        del LogDict[logname]
+
 
 class Log(object):
 
@@ -59,13 +83,13 @@ class Log(object):
         logger = logging.getLogger(instance)
         logger.setLevel(1)
 
-        console = logging.StreamHandler(sys.stdout)
-        console.setLevel(level)
+        # console = logging.StreamHandler(sys.stdout)
+        # console.setLevel(level)
 
         formatter = logging.Formatter('%(asctime)s [%(levelname)-8s] [%(name)-15s] [%(remote)s] [%(tag)s] %(message)s')
 
-        console.setFormatter(formatter)
-        logger.addHandler(console)
+        # console.setFormatter(formatter)
+        # logger.addHandler(console)
 
         if logfile:
 
@@ -84,6 +108,8 @@ class Log(object):
             logfile_h.setFormatter(formatter)
             logger.addHandler(logfile_h)
 
+        global LogDict
+        LogDict.update({instance: logger})
         return logger
 
     def get_logfile(self):

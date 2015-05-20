@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% load static from staticfiles %}
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Web Deployment</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="{% static "bootstrap/css/bootstrap.min.css" %}" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="{% static "main/main_page.css" %}" rel="stylesheet">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+
+        // Data set by Django template (what we want to deploy)
+        var data = {{ data|safe }};
+
+        // Fire Ajax call to tornado API to run Deployment
+        // As result will return us deployment # to where we want connect by WebSocket to see progress 
+        jQuery( document ).ready(function( $ ) {
+
+          var scroll_enabled = true;
+          $( "#scroll_toggle" ).click(function() {
+            console.log("Clicked");
+            if(scroll_enabled == true){
+              $(this).text("Scroll OFF");
+              $(this).addClass( 'btn-danger' );
+              $(this).removeClass( 'btn-success' );
+              scroll_enabled = false;
+            } else {
+              $(this).text("Scroll ON");
+              $(this).removeClass( 'btn-danger' );
+              $(this).addClass( 'btn-success' );
+              scroll_enabled = true;
+            }
+          });
+
+          $.ajax({
+            type: "POST",
+            url: "/start_deploy/",
+            data: JSON.stringify({ deployit: data }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function(data){ on_success(data); },
+            failure: function(errMsg){ alert(errMsg); },
+            error: function(jqXHR, textStatus, errorThrown){ alert('Error during request: ' + textStatus + ' / ' + errorThrown); }
+          });
+
+          function on_success(data){
+            // Run WebSockets on Successful return
+            // alert(JSON.stringify(data));
+            if (data.success == true) {
+
+              if ("MozWebSocket" in window) {
+                WebSocket = MozWebSocket;
+              }
+
+              if (WebSocket) {
+                var ws = new WebSocket("ws://{{ host }}/listen/?release=" + data.data.release);
+                ws.onopen = function() {
+                  ws.send("We Trying to open Socket");
+                };
+
+                // Stolen from https://github.com/douglascrockford/JSON-js/blob/master/json2.js :D 
+                // We want to check if we get Json or no, 
+                // if Json we do additional processing and sending request to Tornado over WebSocet
+                // as Json for additional Server side processing
+                ws.onmessage = function (evt) {
+                  try {
+                    jsondata = jQuery.parseJSON(evt.data)
+                    processing_data(ws, jsondata)
+                  } catch (err) {
+                    console.log("Wrong json recived.")
+                  }
+
+                  if(scroll_enabled == true){
+                    $(window).scrollTop($('body').height()); // scroll page down on data write
+                  }
+                };
+                ws.onclose = function() {};
+              } else {
+                alert("WebSocket not supported");
+              }
+
+            } else if (data.success == false) {
+              // Need to do soe nasty handling of error messages
+              if (data.data){
+                alert(data.data);
+              } else {
+                alert("API Call return false, operation not succeed!");
+              }
+            } else {
+              // Need some handling in case we revive not json at all
+              // or json but some shitty payload inside
+              alert("Server return some shit instead of normal Json or wrong Json data :)")
+            }
+          }
+
+        });
+
+        // globally available functions
+        function processing_data(ws, message){
+          if (message['type'] == 'text'){
+            write_line(message['data']);
+          }
+          if (message['type'] == 'api'){
+              if (message['data']['method'] == 'run_tail'){
+                request_log(ws, JSON.stringify(message));
+              }
+          }
+        }
+
+        function request_log(ws, data){
+          ws.send(data);
+        }
+
+        function write_line(l) {
+            $('.deploy-div').append( l + "<br/>");
+        }
+    </script>
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <button id="scroll_toggle" type="button" class="btn btn-success navbar-btn" data-toggle="button">Scroll ON</button>
+          <a class="navbar-brand" href="#">Web Deployer</a>
+          <a class="navbar-brand" href="/">Home</a>
+          <a class="navbar-brand" href="/status/">Current Jobs</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="/logout/">Logout</a></li>
+            {% csrf_token %}
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+      <div id="deploy-div" class="central-div deploy-div">
+
+      </div> <!-- /.central-div -->
+    </div><!-- /.container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
+    <script src="{% static "bootstrap/js/bootstrap.min.js" %}"></script>
+  </body>
+</html>
