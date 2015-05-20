@@ -12,6 +12,9 @@ level = logging.INFO
 logfile = ''
 LogDict = {}
 
+# WebDeployment parameter to enable/disable stdoutput for deployer
+is_web = False
+
 # Add level VERBOSE
 logging.VERBOSE = 15
 logging.addLevelName(logging.VERBOSE, 'VERBOSE')
@@ -55,6 +58,15 @@ def clean_my_loggers():
         del LogDict[logname]
 
 
+def set_is_web():
+    '''
+        Logger manipulation hook for Web deployment tool:
+        Set global variable 'is_web' to disable stdout logging for deployer
+    '''
+    global is_web
+    is_web = True
+
+
 class Log(object):
 
     def __init__(self, instance='DEPLOYER', tag=''):
@@ -83,13 +95,14 @@ class Log(object):
         logger = logging.getLogger(instance)
         logger.setLevel(1)
 
-        # console = logging.StreamHandler(sys.stdout)
-        # console.setLevel(level)
-
         formatter = logging.Formatter('%(asctime)s [%(levelname)-8s] [%(name)-15s] [%(remote)s] [%(tag)s] %(message)s')
 
-        # console.setFormatter(formatter)
-        # logger.addHandler(console)
+        global is_web
+        if not is_web:
+            console = logging.StreamHandler(sys.stdout)
+            console.setLevel(level)
+            console.setFormatter(formatter)
+            logger.addHandler(console)
 
         if logfile:
 

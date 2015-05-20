@@ -53,6 +53,7 @@ def run_deployment(data, timeout=5):
     # dirty hack to cleanup log instances for deployer before start
     # in case it failed in the middle
     # TODO: rewrite to more elegant way
+    deployerlib.log.set_is_web()
     deployerlib.log.clean_my_loggers()
     # Wait for 5 seconds, time required to client side successfully connected to socket after API call
     # TODO: need do this in more elegant way without unnecessary sleeps in thread
