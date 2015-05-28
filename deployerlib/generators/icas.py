@@ -322,6 +322,18 @@ class IcasGenerator(Generator):
               'tasks': dbmig_tasks,
             })
 
+        # deploy services with ecg prefix first
+        ecg_tasks = [x for x in deploy_tasks if x['tag'].startswith('ecg-')]
+
+        if ecg_tasks:
+            deploy_tasks = [x for x in deploy_tasks if not x in ecg_tasks]
+            task_list['stages'].append({
+              'name': 'Deploy ecg services',
+              'concurrency': self.config.deploy_concurrency,
+              'concurrency_per_host': self.config.deploy_concurrency_per_host,
+              'tasks': ecg_tasks,
+            })
+
         # deploy backend services except for cfp on the active host
         for hostlist in self.config.deployment_order['backend']:
             this_stage, this_stage_tasks = self.get_deploy_stage(deploy_tasks, hostlist)
