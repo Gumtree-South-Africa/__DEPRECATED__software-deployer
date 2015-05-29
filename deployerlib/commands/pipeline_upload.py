@@ -33,7 +33,6 @@ class PipelineUpload(Command):
             req.add_header('Content-Type', 'application/json')
             if self.proxy:
                 req.set_proxy(self.proxy, 'http')
-            #print json.dumps({'projects' : projects})
             urllib2.urlopen(req, json.dumps({'projects' : projects}))
             return True
         except OSError as e:

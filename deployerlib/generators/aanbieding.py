@@ -53,8 +53,6 @@ class AanbiedingGenerator(Generator):
                     concurrency_per_host=self.config.non_deploy_concurrency_per_host,
                     abort_on_error=True)
 
-            #print 'returned remote_versions: {0}'.format(remote_versions)
-
         if not self.config.redeploy and not remote_versions:
             raise DeployerException('Errors with determining remote versions')
 
