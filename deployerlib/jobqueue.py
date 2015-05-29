@@ -142,10 +142,23 @@ class JobQueue(object):
 
             for idx, job_candidate in enumerate(self._queued):
 
+                # Check _max_per_host threshold before starting a job
                 if self._max_per_host:
                     if len([x for x in self._running if x._host == job_candidate._host]) >= self._max_per_host:
                         self.log.debug('Skipping job {0}, already {1} jobs running on {2}'.format(
                           job_candidate, self._max_per_host, job_candidate._host))
+                        continue
+
+                # Check for job dependencies
+                if job_candidate.depends:
+                    if not [x for x in self._completed if x._name == job_candidate.depends]:
+                        # Make sure the parent job exists
+                        if not [x for x in self._running + self._queued if x._name == job_candidate.depends]:
+                            self.log.error('Job {0} depends on non-existent job {1}'.format(job_candidate._name, job_candidate.depends))
+                            self._aborted.append(job_candidate)
+                            _abort_queue()
+
+                        self.log.hidebug('Job {0} is waiting for job {1} to complete'.format(job_candidate._name, job_candidate.depends))
                         continue
 
                 job = self._queued.pop(idx)
@@ -163,15 +176,10 @@ class JobQueue(object):
 
             return False
 
-        def _abort_queue(jobnames=[]):
+        def _abort_queue():
             """Helper function to abort the queue cleanly"""
 
-            msg = 'Aborting queue due to failed jobs'
-
-            if jobnames:
-                msg += ': {0}'.format(', '.join(jobnames))
-
-            self.log.critical(msg)
+            self.log.critical('Aborting queue due to failed jobs: {0}'.format(', '.join([x._name for x in self._aborted])))
 
             if len(self._running) > 0:
                 self.log.warning('Allowing {0} running jobs to finish before aborting the queue'.format(len(self._running)))
@@ -205,41 +213,33 @@ class JobQueue(object):
                 break
 
         # Main loop!
-        abortflag = False
-        failedjobs_names = []
         while not self._finished:
             while len(self._running) < self._max and self._queued:
                 if not _advance_the_queue():
                     break
 
             if not self._all_alive():
-                running_jobs = list(enumerate(self._running))
-                # this is needed because the use of the pop() method below resets the indexes in self._running,
-                # if you do it in reverse order, the highest indexes have already been checked
-                running_jobs.reverse()
-                for id, job in running_jobs:
-                    if not job.is_alive():
-                        self.log.debug('Found finished job: {0}'.format(job._name))
+                # Check for completed jobs and remove them from the _running queue
+                completed = [x for x in self._running if not x.is_alive()]
 
-                        done = self._running.pop(id)
-                        self._completed.append(done)
+                self._running = [x for x in self._running if not x in completed]
+                self._completed += completed
 
-                        if not self.remote_results[job._name] or self.remote_results[job._name] == self.not_run:
-                            abortflag = True
-                            failedjobs_names.append(job._name)
+                # Jobs that do not return a result are considered failed
+                self._aborted += [x for x in completed if not self.remote_results[x._name] or self.remote_results[x._name] == self.not_run]
 
                 self.log.debug('{0} jobs running, {1} jobs queued, {2} jobs completed'.format(
                   len(self._running), len(self._queued), len(self._completed)))
 
-            if abortflag:
-                if self.abort_on_error:
-                    _abort_queue(failedjobs_names)
+            if self._aborted:
+                _abort_queue()
 
             if not (self._queued or self._running):
                 if self._aborted:
                     self.log.debug('Aborted job queue')
                 else:
                     self.log.debug('Finished job queue')
+
                 self._finished = True
 
             # Each loop pass, try pulling results off the queue to keep its
@@ -258,7 +258,7 @@ class JobQueue(object):
         for job in self._completed:
             results[job.name]['exit_code'] = job.exitcode
 
-        if abortflag and self.abort_on_error:
+        if self._aborted and self.abort_on_error:
             return False
         else:
             return True

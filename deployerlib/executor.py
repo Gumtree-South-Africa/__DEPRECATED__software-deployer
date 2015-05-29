@@ -148,11 +148,10 @@ class Executor(object):
            'remote_host' is optional, and will be replaced by a RemoteHost object
            'remote_user' is optional, and will be passed to the RemoteHost object (and not to the internal command)
         """
+        def queue_task(_task, parent_task=None):
+            """Create a job and add it to the job queue"""
 
-        job_list = []
-
-        for i in tasks:
-            task = i.copy()
+            task = _task.copy()
 
             if not 'command' in task:
                 raise DeployerException('No command specified in task: {0}'.format(task))
@@ -185,8 +184,25 @@ class Executor(object):
 
             job = Process(target=remote_task.thread_execute, name=procname, args=[procname, self.remote_results])
             job._host = job_id
+            job.depends = parent_task
 
             job_list.append(job)
+
+            return procname
+
+        job_list = []
+
+        for _task in tasks:
+            # Handle a list of tasks that must be executed in order
+            if type(_task) == list:
+                parent_task = None
+
+                for item in _task:
+                    parent_task = queue_task(item, parent_task)
+
+            # Handle a single task
+            else:
+                queue_task(_task)
 
         return job_list
 
