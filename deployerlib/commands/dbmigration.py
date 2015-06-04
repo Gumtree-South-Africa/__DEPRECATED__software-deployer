@@ -19,13 +19,11 @@ class DBMigration(Command):
                   self.if_exists))
                 return True
 
-            self.log.debug('{0} exists, continuing with migration'.format(self.if_exists))
-
-        self.log.info('Executing database migrations using command: {0}'.format(self.source))
+        self.log.info('Executing database migrations: {0}'.format(self.source))
         res = self.remote_host.execute_remote(self.source)
 
         if res.succeeded:
-            self.log.info(res)
+            self.log.debug(res)
         else:
             self.log.critical('Database migration failed: {0}'.format(res))
 

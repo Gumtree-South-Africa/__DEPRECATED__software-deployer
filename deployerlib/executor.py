@@ -36,8 +36,8 @@ class Executor(object):
           'start_service': startservice.StartService,
           'restart_service': restartservice.RestartService,
           'reload_service': reloadservice.ReloadService,
-          'add_daemontools': adddaemontools.AddDaemontools,
-          'remove_daemontools': removedaemontools.RemoveDaemontools,
+          'check_service': checkservice.CheckService,
+          'symlink': symlink.SymLink,
           'disable_loadbalancer': disableloadbalancer.DisableLoadbalancer,
           'enable_loadbalancer': enableloadbalancer.EnableLoadbalancer,
           'execute_command': executecommand.ExecuteCommand,
@@ -49,6 +49,7 @@ class Executor(object):
           'test_command': testcommand.TestCommand,
           'listdirectory': listdirectory.ListDirectory,
           'getremoteversions': getremoteversions.GetRemoteVersions,
+          'daemontools': daemontools.DaemonTools,
         }
 
         manager = Manager()
@@ -170,7 +171,8 @@ class Executor(object):
 
                 task['remote_host'] = self.get_remote_host(task['remote_host'], username)
                 job_id = task['remote_host'].hostname
-
+            elif 'lb_hostname' in task:
+                job_id = task['lb_hostname']
             else:
                 job_id = 'local'
 

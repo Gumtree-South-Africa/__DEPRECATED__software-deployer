@@ -23,7 +23,7 @@ class CleanUp(Command):
         files = res.split()
 
         if not files:
-            self.log.info('No files found to cleanup')
+            self.log.debug('No files found to cleanup')
             return True
 
         if self.exclude:
@@ -34,7 +34,7 @@ class CleanUp(Command):
             self.keepversions = 1
 
         if not files or len(files) <= self.keepversions:
-            self.log.info('No old versions to clean up')
+            self.log.debug('No old versions to clean up')
             return True
 
         cleanup_files = files[self.keepversions:]

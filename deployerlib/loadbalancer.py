@@ -74,7 +74,7 @@ class LoadBalancer(object):
         service = self.get_service(lbservice)
 
         if not service:
-            self.log.warning('No such service {0} on {1}'.format(lbservice, self.hostname))
+            self.log.debug('No such service {0} on {1}'.format(lbservice, self.hostname))
             return None, None
         else:
             return service.get_svrstate(), service
