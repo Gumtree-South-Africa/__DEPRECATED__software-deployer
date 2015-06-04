@@ -12,7 +12,7 @@ import re
 
 from deployerlib.config import Config
 from deployerlib.commandline import CommandLine
-from deployerlib.tasklist import Tasklist
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.executor import Executor
 from deployerlib.exceptions import DeployerException
 import deployerlib.log
@@ -109,7 +109,7 @@ def run_deployment(data, timeout=5):
 
     msg = "Release #{}: building tasks list for Deployment.\n".format(data['release'])
     thread_to_wsockets(data['release'], format_to_json(data=msg))
-    tasklist_builder = Tasklist(config, config.platform)
+    tasklist_builder = GeneratorHelper(config, config.platform)
     executor = Executor(tasklist=tasklist_builder.tasklist)
     if not settings.ENV_DEV:
         msg = "Release #{}: starting Deployment.\n".format(data['release'])

@@ -14,13 +14,13 @@ Here is an example of a top-level script:
 ```python
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
-from deployerlib.tasklist import Tasklist
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.executor import Executor
 from deployerlib.exceptions import DeployerException
 
 args = CommandLine()
 config = Config(args)
-builder = Tasklist(config, 'TestGenerator')
+builder = GeneratorHelper(config, 'TestGenerator')
 executor = Executor(tasklist=builder.tasklist)
 
 try:

@@ -4,7 +4,7 @@ import unittest
 
 from deployerlib.log import Log
 from deployerlib.config import Config
-from deployerlib.tasklist import Tasklist
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.exceptions import DeployerException
 
 
@@ -18,17 +18,17 @@ class TasklistTest(unittest.TestCase):
         self.log.info('Testing with bad generator')
 
         with self.assertRaises(DeployerException):
-            builder = Tasklist(self.config, 'NO SUCH GENERATOR')
+            builder = GeneratorHelper(self.config, 'NO SUCH GENERATOR')
 
     def testTasklist(self):
-        self.log.info('Tasklist with TestGenerator')
-        builder = Tasklist(self.config, 'test')
+        self.log.info('GeneratorHelper with TestGenerator')
+        builder = GeneratorHelper(self.config, 'test')
 
         self.assertIsInstance(builder.tasklist, dict)
 
     def testVerifyTasklist(self):
         self.log.info('Verifying generated task list')
-        builder = Tasklist(self.config, 'test')
+        builder = GeneratorHelper(self.config, 'test')
         self.assertTrue(builder.verify_tasklist())
         self.assertIn('stages', builder.tasklist)
 

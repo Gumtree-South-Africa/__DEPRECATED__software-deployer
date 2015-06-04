@@ -6,7 +6,7 @@ import unittest
 from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
-from deployerlib.tasklist import Tasklist
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.executor import Executor
 from deployerlib.exceptions import DeployerException
 

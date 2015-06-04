@@ -267,6 +267,6 @@ class Executor(object):
               idx, duration, stage['name']))
 
         tasklist_duration = int(time.time() - tasklist_start_time)
-        self.log.verbose('Tasklist execution duration: {0} seconds'.format(tasklist_duration))
+        self.log.verbose('GeneratorHelper execution duration: {0} seconds'.format(tasklist_duration))
 
         return True

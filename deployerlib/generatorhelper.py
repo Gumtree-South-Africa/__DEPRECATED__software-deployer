@@ -10,8 +10,8 @@ from deployerlib.executor import Executor
 from deployerlib.exceptions import DeployerException
 
 
-class Tasklist(object):
-    """Tasklist builder"""
+class GeneratorHelper(object):
+    """GeneratorHelper builder"""
 
     def __init__(self, config, generator_name):
         self.log = Log(self.__class__.__name__)

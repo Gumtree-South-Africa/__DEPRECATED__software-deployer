@@ -6,7 +6,7 @@ from multiprocessing import Process, Manager
 
 from deployerlib.log import Log
 from deployerlib.config import Config
-from deployerlib.tasklist import Tasklist
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.jobqueue import JobQueue
 from deployerlib.exceptions import DeployerException
 from deployerlib.commands import testcommand
@@ -18,7 +18,7 @@ class JobQueueTest(unittest.TestCase):
         self.log = Log(self.__class__.__name__)
 
         config = Config()
-        builder = Tasklist(config, generator_name='test')
+        builder = GeneratorHelper(config, generator_name='test')
         manager = Manager()
         self.results = manager.dict()
         self.job_list = []

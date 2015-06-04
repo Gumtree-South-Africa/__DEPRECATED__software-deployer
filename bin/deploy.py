@@ -7,7 +7,7 @@ import argparse
 from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
-from deployerlib.tasklist import Tasklist
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.executor import Executor
 from deployerlib.exceptions import DeployerException
 
@@ -29,7 +29,7 @@ elif args.config:
     config = Config(args)
 
     try:
-        tasklist_builder = Tasklist(config, config.platform)
+        tasklist_builder = GeneratorHelper(config, config.platform)
     except DeployerException as e:
         log.critical('Failed to generate task list: {0}. {1}'.format(e, more_details_msg))
         sys.exit(1)

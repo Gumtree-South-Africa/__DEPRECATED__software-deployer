@@ -4,7 +4,7 @@ import unittest
 
 from deployerlib.log import Log
 from deployerlib.config import Config
-from deployerlib.tasklist import Tasklist
+from deployerlib.generatorhelper import GeneratorHelper
 from deployerlib.executor import Executor
 from deployerlib.exceptions import DeployerException
 
@@ -14,7 +14,7 @@ class ExecutorTest(unittest.TestCase):
     def setUp(self):
         self.log = Log(self.__class__.__name__)
         self.config = Config()
-        self.builder = Tasklist(self.config, 'test')
+        self.builder = GeneratorHelper(self.config, 'test')
 
     def testEmptyTasklist(self):
         self.log.info('Testing with empty task list')

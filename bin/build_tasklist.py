@@ -10,7 +10,7 @@ from deployerlib.exceptions import DeployerException
 from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
 from deployerlib.config import Config
-from deployerlib.tasklist import Tasklist
+from deployerlib.generatorhelper import GeneratorHelper
 
 
 json_opts = {'indent': 4, 'sort_keys': True}
@@ -26,7 +26,7 @@ try:
     args = CommandLine(parents=parser)
     log = Log(os.path.basename(__file__))
     config = Config(args)
-    tasklist_builder = Tasklist(config, config.platform)
+    tasklist_builder = GeneratorHelper(config, config.platform)
 except DeployerException as e:
     log.critical('Failed to generate task list: {0}'.format(e))
     sys.exit(1)
