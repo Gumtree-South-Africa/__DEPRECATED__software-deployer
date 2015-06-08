@@ -1,3 +1,9 @@
+software-deployer (0.9.40) precise; urgency=low
+
+  * Bug fix for Generator
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Mon, 08 Jun 2015 16:39:35 +0200
+
 software-deployer (0.9.39) precise; urgency=low
 
   * Rename Tasklist class to GeneratorHelper

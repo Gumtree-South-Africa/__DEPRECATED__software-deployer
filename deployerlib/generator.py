@@ -237,7 +237,7 @@ class Generator(object):
             service_config = self.config.get_with_defaults('service', package.servicename)
             deploy_hosts = self.deployment_matrix.get(package.servicename)
 
-            if not hasattr(service_config, 'migration_command'):
+            if not service_config.get('migration_command'):
                 self.log.debug('Service {0} does not have a migration_command, skipping DB migrations'.format(package.servicename))
                 continue
 
