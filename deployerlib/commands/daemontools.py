@@ -5,7 +5,7 @@ from deployerlib.command import Command
 
 class DaemonTools(Command):
 
-    def initialize(self, remote_host, action, servicename, timeout=10, if_exists=None, unless_exists=None):
+    def initialize(self, remote_host, action, servicename, timeout=60, if_exists=None, unless_exists=None):
         self.timeout = timeout
         self.if_exists = if_exists
         self.unless_exists = unless_exists

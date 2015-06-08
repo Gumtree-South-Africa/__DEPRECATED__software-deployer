@@ -226,10 +226,11 @@ class Generator(object):
 
         self.deploy_stage('Properties', packages, queue_base_tasks, only_hosts, is_properties=True)
 
-    def dbmigrations_stage(self, packages, properties_path):
+    def dbmigrations_stage(self, packages, properties_path, migration_path_suffix=''):
         """Add database migration tasks for the specified packages
            packages: A list of package objects
            properties_path: The path to the properties that are used by this service
+           migration_path_suffix: A relative path to append to the package's unpack location
         """
 
         for package in packages:
@@ -245,7 +246,8 @@ class Generator(object):
                 continue
 
             hostname = deploy_hosts[0]
-            migration_location = os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename, 'db')
+            unpack_location = os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename)
+            migration_location = os.path.join(unpack_location, migration_path_suffix).rstrip('/')
             self.log.info('Adding db migration for {0} on {1}'.format(package.servicename, hostname))
 
             self.tasklist.add('Database migrations', {
@@ -253,9 +255,10 @@ class Generator(object):
               'remote_host': hostname,
               'remote_user': self.config.user,
               'source': service_config.migration_command.format(
-                unpack_location=migration_location,
+                unpack_location=unpack_location,
                 migration_location=migration_location,
                 properties_location=properties_path,
+                properties_path=properties_path,
               ),
               'tag': package.servicename,
               'if_exists': migration_location,
@@ -511,7 +514,7 @@ class Generator(object):
             subtasks = self._deploy_subtask_move(hostname, package)
 
         if not control_type:
-            self.log.debug('Service {0} will not be controlled on {1}'.format(package.servicename, hostname))
+            self.log.hidebug('Service {0} will not be controlled on {1}'.format(package.servicename, hostname))
             return subtasks
 
         # Add steps to stop/start the service
@@ -591,7 +594,7 @@ class Generator(object):
 
         # Add optional values
         if hasattr(service_config, 'control_timeout'):
-            check_task.append(('timeout', service_config['control_timeout']))
+            check_task['timeout'] = service_config['control_timeout']
 
         # Return a tuple of tasks for stopping and tasks for starting
         stop_tasks = [

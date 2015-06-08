@@ -19,7 +19,7 @@ class DBMigration(Command):
                   self.if_exists))
                 return True
 
-        self.log.info('Executing database migrations: {0}'.format(self.source))
+        self.log.info('Executing database migrations')
         res = self.remote_host.execute_remote(self.source)
 
         if res.succeeded:

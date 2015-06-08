@@ -28,17 +28,19 @@ class IcasGenerator(Generator):
                 continue
 
             self.log.info('Active {0} server: {1}'.format(cfp_package.servicename, active_cfp_host))
-            cfp_stage = 'Active CFP service'
+            cfp_stage = 'Deploy active CFP services'
             self.deploy_stage(cfp_stage, [cfp_package], only_hosts=[active_cfp_host])
 
         properties_packages = [x for x in packages if x.servicename.endswith('cas-properties')]
         ecg_packages = [x for x in packages if x.servicename.startswith('ecg-') and not x in properties_packages]
         tenant_packages = [x for x in packages if not x in properties_packages and not x in ecg_packages]
 
-        self.graphite_stage('start')
+        if self.config.get('graphite'):
+            self.graphite_stage('start')
+
         self.properties_stage(properties_packages)
         self.daemontools_stage(ecg_packages + tenant_packages)
-        self.deploy_stage('ECG packages', ecg_packages)
+        self.deploy_stage('Deploy ECG packages', ecg_packages)
 
         # Mark the most recently created stage
         stage_name = None
@@ -64,15 +66,18 @@ class IcasGenerator(Generator):
         for prefix in ['ecg-', 'dba-', 'kjca-', '']:
             this_packages = [x for x in dbmig_packages if x.servicename.startswith(prefix)]
             dbmig_packages = [x for x in dbmig_packages if not x in this_packages]
-            properties_config = self.config.get_with_defaults('service', '{0}cas-properties'.format(prefix))
+            properties_package = '{0}cas-properties'.format(prefix)
+            self.log.debug('Using properties_path from {0} for prefix {1}'.format(properties_package, prefix))
+            properties_config = self.config.get_with_defaults('service', properties_package)
 
             if not properties_config:
                 self.log.warning('No properties package found for prefix {0}, skipping this tenant'.format(prefix))
                 continue
 
-            self.dbmigrations_stage(this_packages, properties_config.properties_path)
+            self.dbmigrations_stage(this_packages, properties_config.properties_path, migration_path_suffix='db')
 
-        self.graphite_stage('end')
+        if self.config.get('graphite'):
+            self.graphite_stage('end')
 
         return self.tasklist.generate()
 
