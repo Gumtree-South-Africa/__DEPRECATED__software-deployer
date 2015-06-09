@@ -60,7 +60,7 @@
               </span>
               <form class="form-config" action="/components/" method="post">
                 {% csrf_token %}
-                <button class="btn btn-sm btn-default btn-block" type="submit" name='release' value="{{release}}">{{release}}</button>
+                <button class="btn btn-sm btn-default btn-block" type="submit" name='release' value="{{release.id}}">{{release.niceName}}</button>
               </form>
             </div><!-- /input-group -->
           {% endfor %}

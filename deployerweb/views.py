@@ -3,6 +3,7 @@
 import os
 import yaml
 import json
+import re
 
 from django.shortcuts import render_to_response, redirect
 from django.http import HttpResponse
@@ -18,6 +19,10 @@ from tornado.log import app_log
 
 # logger = logging.getLogger('view_logger')
 
+
+def niceName(release):
+    groups = re.match(r'^([a-z]+)-([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$', release)
+    return "%s %s-%s-%s %s:%s:%s" % groups.group(1,2,3,4,5,6,7)
 
 def login_page(request, document_root=None):
     ''' Login page '''
@@ -106,8 +111,15 @@ def list_dirs(request):
     elif not request.session['platform'] or not request.session['tarballs']:
         return redirect(settings.LOGIN_REDIRECT_URL)
 
-    dirs = sorted([x[0].replace('{}'.format(request.session['tarballs']), '') for x in os.walk(request.session['tarballs']) if request.session['platform'] in x[0]])
-    return render_to_response('list_dirs.html', {'releases': dirs}, context_instance=request_context)
+    releases = []
+    for x in os.walk(request.session['tarballs']):
+        if request.session['platform'] in x[0]:
+            releaseId = x[0].replace('{}'.format(request.session['tarballs']), '')
+            releases.append({'id': releaseId, 'niceName': niceName(releaseId)})
+
+    releases = sorted(releases, key=lambda k: k['id'], reverse=True)
+
+    return render_to_response('list_dirs.html', {'releases': releases}, context_instance=request_context)
 
 
 @login_required(redirect_field_name=None)

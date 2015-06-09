@@ -116,7 +116,9 @@ def run_deployment(data, timeout=5):
         thread_to_wsockets(data['release'], format_to_json(data=msg))
         executor.run()
 
-    # Deployer Log instances cleanup after successful deployment
+    msg = "Release #{}: Finished Deployment.\n".format(data['release'])
+    thread_to_wsockets(data['release'], format_to_json(data=msg))
+     # Deployer Log instances cleanup after successful deployment
     deployerlib.log.clean_my_loggers()
 
     return "Index {} Return: Oops, i did it again :)".format(data['release'])
@@ -397,17 +399,19 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         if not tornado.options.options.debug and '[DEBUG' in line:
             return False
 
-        # Warning/Critical and other type of colored decoration
         levels = {
-            'got statuscode 200': '<span style="background-color: #00D627;">{}</span>',
-            '[WARNING ]': '<span style="background-color: #ABACFF; font-weight:bold">{}</span>',
-            '[ERROR ]': '<span style="background-color: magenta; font-weight:bold">{}</span>',
-            '[CRITICAL ]': '<span style="background-color: red; font-weight:bold">{}</span>'
+           '[CRITICAL]': 'text-critical',
+           '[ERROR   ]': 'text-error',
+           '[WARNING ]': 'text-warning',
+           '[VERBOSE ]': 'text-verbose',
+           '[DEBUG   ]': 'text-debug',
+           '[INFO    ]': 'text-info'
         }
 
+        divClass = "text-normal"
         for x in levels.keys():
             if x in line:
-                line = levels[x].format(line)
+                divClass = levels[x]
 
         # Add background color to Time output to do more readable lines of logs
         color_template = '<span style="background-color: #CCCCCC;">{}</span>'
@@ -416,12 +420,12 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
             tmpline = color_template.format(strdate.group())
             line = line.replace(strdate.group(), tmpline)
 
-        return line
+        return '<div class="%s">%s</div>' % (divClass, line)
 
     def send_buffer_socket(self, sid, logbuffer):
         ''' Send log buffer to user socket, functionality written as method for more simple reuse '''
         try:
-            LISTENERS[sid]['socket'].write_message(format_to_json(data="<br />".join(logbuffer)))
+            LISTENERS[sid]['socket'].write_message(format_to_json(data=logbuffer))
         except tornado.websocket.WebSocketClosedError:
             app_log.debug("Socket {} with SocketId {} closed.".format(sid, LISTENERS[sid]['socket']))
         else:
