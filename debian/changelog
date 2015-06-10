@@ -1,3 +1,9 @@
+software-deployer (0.9.42) precise; urgency=low
+
+  * Bug fixes for Generator
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Wed, 10 Jun 2015 11:29:15 +0200
+
 software-deployer (0.9.41) precise; urgency=low
 
   * Fixed the coloring and enabled hiding verbose messages. Also made nicer timestamps for releases and put newest release at the top
