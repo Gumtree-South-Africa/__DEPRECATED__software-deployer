@@ -1,3 +1,11 @@
+software-deployer (0.9.41) precise; urgency=low
+
+  * Fixed the coloring and enabled hiding verbose messages. Also made nicer timestamps for releases and put newest release at the top
+  * GetRemoteVersions: Return True (i.e. don't abort) when unable to get a remote version
+  * Additions to Generator parent class to support Aurora generator
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Wed, 10 Jun 2015 10:56:15 +0200
+
 software-deployer (0.9.40) precise; urgency=low
 
   * Bug fix for Generator
