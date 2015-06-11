@@ -36,14 +36,18 @@ class GetRemoteVersions(Command):
                 self.remote_versions[jbname] = remote_version
                 self.log.info("{0}:{1}".format(service_name, remote_version))
 
-        return res.succeeded
+        if not res.succeeded:
+            self.log.debug('Failed to get remote versions: {0}'.format(res))
+
+        return True
 
     def get_properties_versions(self):
         # todo: this won't work for iCas yet due to mp/dba separation and properties_location not existing yet)
         for prop_name, prop_path in self.properties_defs:
             res = self.remote_host.execute_remote("/bin/cat %s/properties_version" % prop_path)
             if res.failed:
-                return False
+                self.log.debug('Failed to get properties version from %s/properties_version' % prop_path)
+                return True
             jbname = '{0}/{1}'.format(self.remote_host.hostname, prop_name)
             self.remote_versions[jbname] = res
             self.log.info("{0}:{1}".format(prop_name, res))
