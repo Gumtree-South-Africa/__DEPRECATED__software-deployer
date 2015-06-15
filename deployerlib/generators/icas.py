@@ -29,7 +29,7 @@ class IcasGenerator(Generator):
 
             self.log.info('Active {0} server: {1}'.format(cfp_package.servicename, active_cfp_host))
             cfp_stage = 'Deploy active CFP services'
-            self.deploy_packages([cfp_package], only_hosts=[active_cfp_host])
+            self.deploy_packages([cfp_package], only_hosts=[active_cfp_host], stage_name=cfp_stage)
 
         properties_packages = [x for x in packages if x.servicename.endswith('cas-properties')]
         ecg_packages = [x for x in packages if x.servicename.startswith('ecg-') and not x in properties_packages]
@@ -48,7 +48,7 @@ class IcasGenerator(Generator):
             self.deploy_packages(tenant_packages, only_hosts=hostlist)
 
         # Move deployment of active CFP services after other backend services
-        if cfp_stage:
+        if cfp_stage and cfp_stage in self.tasklist.stages():
             self.tasklist.set_position(cfp_stage, len(self.tasklist.stages()))
 
         # Deploy frontend services

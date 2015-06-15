@@ -60,6 +60,7 @@ class Generator(object):
 
         if not hasattr(self.config, 'graphite'):
             self.log.info('Config does not contain graphite section, skipping graphite stages')
+            return
 
         self.graphite_stage('start')
         self.graphite_stage('end')
@@ -195,9 +196,9 @@ class Generator(object):
     def deploy_properties(self, packages, queue_base_tasks=True, only_hosts=None):
         """Wrapper to deploy a packages as properties"""
 
-        self.deploy_packages(packages, queue_base_tasks, only_hosts, is_properties=True)
+        self.deploy_packages(packages, 'Properties', queue_base_tasks, only_hosts, is_properties=True)
 
-    def deploy_packages(self, packages, queue_base_tasks=True, only_hosts=None, is_properties=False):
+    def deploy_packages(self, packages, stage_name=None, queue_base_tasks=True, only_hosts=None, is_properties=False):
         """Build a deployment stage for a list of packages
            packages: A list of package objects
            queue_base_tasks: Create the tasks that are normally required to deploy a package, such as upload, unpack, cleanup
@@ -213,20 +214,17 @@ class Generator(object):
                 if only_hosts:
                     hostlist = [x for x in hostlist if x in only_hosts]
 
-                # Remove hosts which do not need this package
-                this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
+                if not stage_name:
+                    stage_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
 
-                if is_properties:
-                    this_stage_name = 'Properties'
-                else:
-                    this_stage_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
+                this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
 
                 if not this_tasks:
                     self.log.debug('No deployment tasks for {0} on {1}'.format(package.servicename, ', '.join(hostlist)))
                     continue
 
-                self.tasklist.create_stage(this_stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
-                self.tasklist.add(this_stage_name, this_tasks)
+                self.tasklist.create_stage(stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
+                self.tasklist.add(stage_name, this_tasks)
 
     def dbmigrations_stage(self, packages, properties_path=None, migration_path_suffix=''):
         """Add database migration tasks for the specified packages
@@ -502,7 +500,7 @@ class Generator(object):
 
     def _get_service_stages(self, servicename, version=None):
         """Determine the stages required to deploy a package while satisfying min_nodes_up
-           If min_nodes_up isn't specified, it will default to 1
+           If min_nodes_up isn't specified, it will default to 0, i.e. all nodes at once
            If the hosts running the service are limited by enabled_on_hosts,
            only the enabled hosts are taken into account when distributing the
            hosts into stages
@@ -548,7 +546,7 @@ class Generator(object):
         disabled_hosts = [x for x in target_hosts if not x in enabled_hosts]
 
         # minimum number of hosts that need to be up
-        min_nodes_up = service_config.get('min_nodes_up', 1)
+        min_nodes_up = service_config.get('min_nodes_up', 0)
         self.log.hidebug('{0} min_nodes_up: {1}'.format(servicename, min_nodes_up))
 
         if len(config_enabled_hosts) <= min_nodes_up:
