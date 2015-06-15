@@ -7,9 +7,8 @@ from deployerlib.exceptions import DeployerException
 class Tasklist(object):
     """Manage the building of a tasklist"""
 
-    def __init__(self, name='Deployment'):
+    def __init__(self):
         self.log = Log(self.__class__.__name__)
-        self.name = name
         self._stages = {}
         self._stage_order = []
         self._pre_order = []
@@ -19,6 +18,7 @@ class Tasklist(object):
         """Create a new stage"""
 
         if stage_name in self._stages:
+            self.log.hidebug('Stage {0} already exists'.format(stage_name))
             return False
 
         self._stage_order.append(stage_name)
@@ -118,8 +118,16 @@ class Tasklist(object):
 
         return self._stages[stage_name]['tasks']
 
-    def generate(self):
+    def is_empty(self):
+        """Return True if any tasks have been added to any stages, False otherwise"""
+
+        return not bool([x for x in self._stages.keys() if self._stages[x]['tasks']])
+
+    def generate(self, name='Deployment'):
         """Build a tasklist from the queued stages"""
+
+        if self.is_empty():
+            self.log.warning('Tasklist is empty')
 
         pre = [x for x in self._stage_order if x in self._pre_order]
         post = [x for x in self._stage_order if x in self._post_order]
@@ -127,10 +135,7 @@ class Tasklist(object):
 
         stages = [self._stages[x] for x in pre + main + post if self._stages[x]['tasks']]
 
-        if not stages:
-            self.log.warning('Tasklist is empty')
-
-        return { 'name': self.name, 'stages': stages }
+        return { 'name': name, 'stages': stages }
 
     def _exists_or_die(self, stage_name):
 

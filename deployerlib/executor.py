@@ -28,6 +28,7 @@ class Executor(object):
           'createdirectory': createdirectory.CreateDirectory,
           'copyfile': copyfile.CopyFile,
           'movefile': movefile.MoveFile,
+          'writefile': writefile.WriteFile,
           'removefile': removefile.RemoveFile,
           'deploy_and_restart': deployandrestart.DeployAndRestart,
           'deploy_properties': deployproperties.DeployProperties,

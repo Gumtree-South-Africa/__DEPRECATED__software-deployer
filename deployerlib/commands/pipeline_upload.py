@@ -8,7 +8,7 @@ from deployerlib.command import Command
 class PipelineUpload(Command):
     """Upload projects of a deploy_package to pipeline"""
 
-    def initialize(self, deploy_package_basedir, release, url, proxy='', continue_on_fail=True):
+    def initialize(self, deploy_package_basedir, release, url, proxy=None, continue_on_fail=True):
         self.deploy_package_basedir = deploy_package_basedir
         self.release = release
         self.url = url

@@ -185,7 +185,7 @@ class Config(AttrDict):
             environment=environment
         )
 
-        self.log.info('Generated lb_service={0}'.format(repr(lb_service)), tag=servicename)
+        self.log.debug('Generated lb_service={0}'.format(repr(lb_service)), tag=servicename)
         return lb_service
 
     def get_num_hosts_in_hostgroup(self, hg):
@@ -210,7 +210,7 @@ class Config(AttrDict):
 
             if hosts:
                 hosts = [self.get_full_hostname(h) for h in hosts]
-                self.log.info('Configured to run on: {0}, hostgroups: {1}'.format(', '.join(hosts), ', '.join(hostgroups)), tag=servicename)
+                self.log.debug('Configured to run on: {0}, hostgroups: {1}'.format(', '.join(hosts), ', '.join(hostgroups)), tag=servicename)
 
             if in_hostgroup:
                 hosts = []

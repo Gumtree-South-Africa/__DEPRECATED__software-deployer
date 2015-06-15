@@ -29,18 +29,15 @@ class IcasGenerator(Generator):
 
             self.log.info('Active {0} server: {1}'.format(cfp_package.servicename, active_cfp_host))
             cfp_stage = 'Deploy active CFP services'
-            self.deploy_stage(cfp_stage, [cfp_package], only_hosts=[active_cfp_host])
+            self.deploy_packages([cfp_package], only_hosts=[active_cfp_host])
 
         properties_packages = [x for x in packages if x.servicename.endswith('cas-properties')]
         ecg_packages = [x for x in packages if x.servicename.startswith('ecg-') and not x in properties_packages]
         tenant_packages = [x for x in packages if not x in properties_packages and not x in ecg_packages]
 
-        if self.config.get('graphite'):
-            self.graphite_stage('start')
-
-        self.properties_stage(properties_packages)
+        self.deploy_properties(properties_packages)
         self.daemontools_stage(ecg_packages + tenant_packages)
-        self.deploy_stage('Deploy ECG packages', ecg_packages)
+        self.deploy_packages(ecg_packages)
 
         # Mark the most recently created stage
         stage_name = None
@@ -48,7 +45,7 @@ class IcasGenerator(Generator):
         # Deploy backend services
         for hostlist in self.config.deployment_order['backend']:
             stage_name = 'Deploy to {0}'.format(', '.join(hostlist))
-            self.deploy_stage(stage_name, tenant_packages, only_hosts=hostlist)
+            self.deploy_packages(tenant_packages, only_hosts=hostlist)
 
         # Move deployment of active CFP services after other backend services
         if cfp_stage:
@@ -57,7 +54,7 @@ class IcasGenerator(Generator):
         # Deploy frontend services
         for hostlist in self.config.deployment_order['frontend']:
             stage_name = 'Deploy to {0}'.format(', '.join(hostlist))
-            self.deploy_stage(stage_name, tenant_packages, only_hosts=hostlist)
+            self.deploy_packages(tenant_packages, only_hosts=hostlist)
 
         # Packages which may have database migrations
         dbmig_packages = [x for x in packages if not x in properties_packages]
@@ -76,8 +73,8 @@ class IcasGenerator(Generator):
 
             self.dbmigrations_stage(this_packages, properties_config.properties_path, migration_path_suffix='db')
 
-        if self.config.get('graphite'):
-            self.graphite_stage('end')
+        if not self.tasklist.is_empty():
+            self.use_graphite()
 
         return self.tasklist.generate()
 

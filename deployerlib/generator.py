@@ -1,5 +1,6 @@
 import os
 
+from itertools import izip_longest
 from multiprocessing import Process, Manager
 
 from deployerlib.log import Log
@@ -50,9 +51,27 @@ class Generator(object):
         self.create_base_stages()
 
     def use_remote_versions(self, packages):
-        """Set self.remote_versions, which will be used by self.deploy_stage()"""
+        """Set self.remote_versions, which will be used by self.deploy_packages()"""
 
         self.remote_versions = self.get_remote_versions(packages)
+
+    def use_graphite(self):
+        """Add graphite start and end stages"""
+
+        if not hasattr(self.config, 'graphite'):
+            self.log.info('Config does not contain graphite section, skipping graphite stages')
+
+        self.graphite_stage('start')
+        self.graphite_stage('end')
+
+    def use_pipeline(self, release_version, upload=False):
+        """Add pipeline start, end, upload stages"""
+
+        self.pipeline_notify('deploying', release_version)
+        self.pipeline_notify('deployed', release_version)
+
+        if upload:
+            self.pipeline_upload(release_version)
 
     def get_packages(self):
         """Get a list of packages provided on the command line"""
@@ -80,18 +99,7 @@ class Generator(object):
         else:
             raise DeployerException('Invalid configuration: no components to deploy')
 
-        return self.filter_ignored_packages(packages)
-
-    def filter_ignored_packages(self, packages):
-        """Strip packages which is in ignore_packages list/str if it exist"""
-
-        if hasattr(self.config, 'ignore_packages'):
-            not_filtered = packages
-            packages = [ fp for fp in not_filtered if not fp.servicename in self.config.ignore_packages]
-            ignored_packages = [ignored.servicename for ignored in (set(not_filtered) - set(packages))]
-            self.log.warning('Ignored packages: {0}'.format( ", ".join(ignored_packages)))
-
-        return packages
+        return self._filter_ignored_packages(packages)
 
     def create_base_stages(self):
         """Create common stages in the correct order"""
@@ -101,17 +109,17 @@ class Generator(object):
           'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
         }
 
-        for stage in ['Create temp directories', 'Upload', 'Unpack', 'Send graphite start', 'Properties', 'Database migrations', 'Set daemontools state']:
+        for stage in ['Create temp directories', 'Pipeline notify deploying', 'Upload', 'Unpack', 'Send graphite start', 'Properties', 'Database migrations', 'Set daemontools state']:
             self.tasklist.create_stage(stage, pre=True)
 
             if not stage == 'Database migrations':
                 self.tasklist.set(stage, **non_deploy_settings)
 
-        for stage in ['Remove temp directories', 'Cleanup']:
+        for stage in ['Send graphite end', 'Pipeline notify deployed', 'Pipeline upload', 'Remove temp directories', 'Cleanup']:
             self.tasklist.create_stage(stage, post=True)
             self.tasklist.set(stage, **non_deploy_settings)
 
-    def queue_base_tasks(self, package, hostname, control_type, is_properties):
+    def queue_base_tasks(self, package, hostname, is_properties):
         """Add preparation and cleanup stages required for package deployment"""
 
         service_config = self.config.get_with_defaults('service', package.servicename)
@@ -175,59 +183,54 @@ class Generator(object):
               'tag': package.servicename,
             })
 
-    def deploy_stage(self, stage_name, packages, queue_base_tasks=True, only_hosts=None, is_properties=False):
-        """Build a deploy task for each package
-           stage_name: The name of the stage to create for these tasks
+    def deploy_ordered_packages(self, packages, order, queue_base_tasks=True):
+        """Create deploy stages for packages based on the specified order
+           packages: A list of package objects
+           order: A list of service names, optionally nested
+        """
+
+        for step in self._sort_packages(packages, order):
+            self.deploy_packages(step, queue_base_tasks=queue_base_tasks)
+
+    def deploy_properties(self, packages, queue_base_tasks=True, only_hosts=None):
+        """Wrapper to deploy a packages as properties"""
+
+        self.deploy_packages(packages, queue_base_tasks, only_hosts, is_properties=True)
+
+    def deploy_packages(self, packages, queue_base_tasks=True, only_hosts=None, is_properties=False):
+        """Build a deployment stage for a list of packages
            packages: A list of package objects
            queue_base_tasks: Create the tasks that are normally required to deploy a package, such as upload, unpack, cleanup
            only_hosts: If supplied, tasks will only be created for the hosts in this list
            is_properties: Package will be deployed as properties (i.e. copy to properties_path rather than move to install_location)
-           """
+        """
 
-        self.tasklist.create_stage(stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
+        base_stage_name = 'Deploy {0}'.format(', '.join([x.servicename for x in packages]))
 
         for package in packages:
-            service_config = self.config.get_with_defaults('service', package.servicename)
-            this_stage_hosts = self.config.get_service_hosts(package.servicename)
+            for hostlist in self._get_service_stages(package.servicename, package.version):
 
-            if not package.servicename in self.deployment_matrix:
-                self.deployment_matrix[package.servicename] = []
+                if only_hosts:
+                    hostlist = [x for x in hostlist if x in only_hosts]
 
-            if only_hosts:
-                this_stage_hosts = [x for x in this_stage_hosts if x in only_hosts]
-
-            for hostname in this_stage_hosts:
-                # Skip this package if it's already in the deployment matrix
-                if hostname in self.deployment_matrix[package.servicename]:
-                    self.log.info('{0} is already deployed to {1} in another stage'.format(package.servicename, hostname))
-                    continue
-
-                # Skip this package on this host if it is already at the correct version
-                if self.remote_versions.get(package.servicename):
-                    if self.remote_versions[package.servicename].get(hostname) == package.version:
-                        self.log.info('Service {0} is up to date on {1}, skipping'.format(package.servicename, hostname))
-                        continue
+                # Remove hosts which do not need this package
+                this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
 
                 if is_properties:
-                    control_type = None
+                    this_stage_name = 'Properties'
                 else:
-                    control_type = self.get_control_type(package.servicename, hostname)
+                    this_stage_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
 
-                if queue_base_tasks:
-                    self.queue_base_tasks(package, hostname, control_type, is_properties)
+                if not this_tasks:
+                    self.log.debug('No deployment tasks for {0} on {1}'.format(package.servicename, ', '.join(hostlist)))
+                    continue
 
-                self.tasklist.add(stage_name, self.get_deploy_task(package, hostname, control_type, is_properties))
+                self.tasklist.create_stage(this_stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
+                self.tasklist.add(this_stage_name, this_tasks)
 
-                # Update deployment matrix
-                self.deployment_matrix[package.servicename].append(hostname)
-
-    def properties_stage(self, packages, queue_base_tasks=True, only_hosts=None):
-        """Wrapper to deploy a packages as properties"""
-
-        self.deploy_stage('Properties', packages, queue_base_tasks, only_hosts, is_properties=True)
-
-    def dbmigrations_stage(self, packages, properties_path, migration_path_suffix=''):
+    def dbmigrations_stage(self, packages, properties_path=None, migration_path_suffix=''):
         """Add database migration tasks for the specified packages
+           This should be run after deploy_packages so that self.deployment_matrix is populated
            packages: A list of package objects
            properties_path: The path to the properties that are used by this service
            migration_path_suffix: A relative path to append to the package's unpack location
@@ -257,7 +260,7 @@ class Generator(object):
               'source': service_config.migration_command.format(
                 unpack_location=unpack_location,
                 migration_location=migration_location,
-                properties_location=properties_path,
+                properties_location=service_config.get('properties_location'),
                 properties_path=properties_path,
               ),
               'tag': package.servicename,
@@ -338,6 +341,70 @@ class Generator(object):
           'metric_name': '.'.join((self.config.graphite.metric_prefix, metric_suffix)),
         })
 
+    def pipeline_notify(self, status, release_version):
+        """Update pipeline with the status of a release"""
+
+        environment = self.config.get('environment')
+        if environment == 'production':
+            environment = 'prod'
+
+        url = '{0}/{1}/{2}/{3}'.format(self.config.pipeline_url, status, environment, release_version)
+        stage_name = 'Pipeline notify {0}'.format(status)
+
+        self.tasklist.create_stage(stage_name)
+
+        self.tasklist.add(stage_name, {
+          'command': 'pipeline_notify',
+          'url': url,
+          'proxy': self.config.get('proxy'),
+        })
+
+    def pipeline_upload(self, release_version):
+        """Upload projects of a deploy_package to pipeline"""
+
+        url = '{0}/package/{1}/projects'.format(self.config.pipeline_url, release_version)
+        deploy_package_basedir = self.config.get('deploy_package_basedir', '/opt/deploy_packages')
+        stage_name = 'Pipeline upload'
+
+        self.tasklist.create_stage(stage_name)
+
+        self.tasklist.add(stage_name, {
+          'command': 'pipeline_upload',
+          'deploy_package_basedir': deploy_package_basedir,
+          'release': release_version,
+          'url': url,
+          'proxy': self.config.get('proxy'),
+        })
+
+    def archive_stage(self):
+        """Add archive stage"""
+
+        if not self.config.get('history'):
+            raise DeployerException('Archive stage requires "history" section in deployer config')
+
+        stage_name = 'Archive'
+        self.tasklist.create_stage(stage_name, post=True, concurrency=self.config.non_deploy_concurrency, concurrency_per_host=self.config.non_deploy_concurrency_per_host)
+
+        # Archive command doesn't support multipled release directories
+        for release in self.config.release:
+
+            self.tasklist.add(stage_name, {
+              'command': 'archive',
+              'archivedir': self.config.history.archivedir,
+              'archivedepth': self.config.history.depth,
+              'release': release,
+            })
+
+        # Archive command supports multiple components
+        if self.config.component:
+
+            self.tasklist.add(stage_name, {
+              'command': 'archive',
+              'archivedir': self.config.history.archivedir,
+              'archivedepth': self.config.history.depth,
+              'components': self.config.component,
+            })
+
     def get_remote_versions(self, *args, **kwargs):
         """Get the versions of all services running on remote hosts"""
 
@@ -395,8 +462,310 @@ class Generator(object):
             self._remote_hosts.append(host)
             return host
 
+    def get_deploy_task(self, package, hostname, control_type=None, is_properties=False):
+        """Build a deploy task for a single package
+           control_type: If specified, service and LB control tasks will be added
+           is_properties: If specified, the service will be deployed as a properties package
+        """
+
+        # Begin with steps to move directory into place and create symlink
+        if is_properties:
+            subtasks = self._deploy_subtask_move_properties(hostname, package)
+        else:
+            subtasks = self._deploy_subtask_move(hostname, package)
+
+        if not control_type:
+            self.log.hidebug('Service {0} will not be controlled on {1}'.format(package.servicename, hostname))
+            return subtasks
+
+        # Add steps to stop/start the service
+        stop_tasks, start_tasks = self._deploy_subtask_svc_control(hostname, package.servicename, control_type)
+        subtasks = stop_tasks + subtasks + start_tasks
+
+        # Add stops to disable/enable LB service if LB configuration is present
+        if not self.config.ignore_lb:
+            disable_tasks, enable_tasks = self._deploy_subtask_lb_control(hostname, package.servicename)
+            subtasks = disable_tasks + subtasks + enable_tasks
+
+        return subtasks
+
+    def _filter_ignored_packages(self, packages):
+        """Strip packages which is in ignore_packages list/str if it exist"""
+
+        if hasattr(self.config, 'ignore_packages'):
+            not_filtered = packages
+            packages = [ fp for fp in not_filtered if not fp.servicename in self.config.ignore_packages]
+            ignored_packages = [ignored.servicename for ignored in (set(not_filtered) - set(packages))]
+            self.log.info('Ignored packages: {0}'.format( ", ".join(ignored_packages)))
+
+        return packages
+
+    def _get_service_stages(self, servicename, version=None):
+        """Determine the stages required to deploy a package while satisfying min_nodes_up
+           If min_nodes_up isn't specified, it will default to 1
+           If the hosts running the service are limited by enabled_on_hosts,
+           only the enabled hosts are taken into account when distributing the
+           hosts into stages
+           Hosts will be evenly distributed, meaning min_nodes_up will likely
+           result in hosts being divided into two equal stages
+        """
+
+        service_config = self.config.get_with_defaults('service', servicename)
+
+        if not service_config:
+            raise DeployerException('Service not found in config: {0}'.format(servicename))
+
+        # hosts this service is installed on
+        config_hosts = self.config.get_service_hosts(servicename)
+        # hosts this service is enabled on
+        config_enabled_hosts = service_config.get('enabled_on_hosts', 'all')
+
+        if config_enabled_hosts == 'all':
+            config_enabled_hosts = config_hosts
+
+        # check remote versions
+        if version and self.remote_versions.get(servicename):
+            target_hosts = [x for x in config_hosts if self.remote_versions[servicename].get(x) != version]
+        else:
+            target_hosts = config_hosts
+
+        # Get a list of skipped hosts so we can show a message
+        skipped_hosts = [x for x in config_hosts if not x in target_hosts]
+
+        if not target_hosts:
+            self.log.info('All hosts have {0} version {1}'.format(servicename, version))
+            return []
+
+        if skipped_hosts:
+            self.log.info('The following hosts already have {0} version {1}: {2}'.format(
+              servicename, version, ', '.join(skipped_hosts)))
+
+        self.log.hidebug('{0} configured on {1} hosts, enabled on {2} hosts'.format(
+          servicename, len(config_hosts), len(config_enabled_hosts)))
+
+        # Hosts that will have the package installed but do not run the service
+        enabled_hosts = [x for x in target_hosts if x in config_enabled_hosts]
+        disabled_hosts = [x for x in target_hosts if not x in enabled_hosts]
+
+        # minimum number of hosts that need to be up
+        min_nodes_up = service_config.get('min_nodes_up', 1)
+        self.log.hidebug('{0} min_nodes_up: {1}'.format(servicename, min_nodes_up))
+
+        if len(config_enabled_hosts) <= min_nodes_up:
+            raise DeployerException('Service {0} configured on {1} hosts, but min_nodes_up is {2}'.format(
+              servicename, len(config_enabled_hosts), min_nodes_up))
+
+        # The maximum number of enabled_hosts that can be run in a single stage
+        max_nodes = len(config_enabled_hosts) - min_nodes_up
+
+        # If all enabled hosts can be deployed in a single stage
+        if len(enabled_hosts) <= max_nodes:
+            num_stages = 1
+            enabled_groups = [enabled_hosts]
+        # If there are more hosts than min_nodes_up will allow, break the hosts into stages
+        else:
+            # The number of stages required to run all of enabled_hosts with only max_nodes in each stage
+            num_stages = len(range(0, len(enabled_hosts), max_nodes))
+            # If there are more nodes than min_nodes_up will allow, divide them into multiple stages
+            chunk_size = int(round(float(len(enabled_hosts)) / num_stages))
+            # The groupings for enabled hosts distributed by chunk_size
+            enabled_groups = [enabled_hosts[i:i + chunk_size] for i in range(0, len(enabled_hosts), chunk_size)]
+
+        if disabled_hosts:
+            # Break the list of disabled hosts into the same number of stages as enabled_groups
+            disabled_chunk_size = int(round(float(len(disabled_hosts)) / num_stages))
+            disabled_groups = [disabled_hosts[i:i + disabled_chunk_size] for i in range(0, len(disabled_hosts), disabled_chunk_size)]
+
+            # Distribute the disabled hosts across all stages
+            return map(lambda x, y: sorted(x + (y or [])), enabled_groups, disabled_groups)
+        else:
+            return sorted(enabled_groups)
+
+    def _sort_packages(self, packages, deployment_order):
+        """Build a list of lists of packages ordered by deployment_order
+           packages: List of package objects
+           deployment_order: List of service names, optionally nested
+           Returns: A list of lists of packages; each list can be deployed in parallel
+        """
+
+        ordered_packages = []
+
+        for i in deployment_order:
+            if type(i) == list:
+                ordered_packages.append([x for x in packages if x.servicename in i])
+            else:
+                ordered_packages.append([x for x in packages if x.servicename == i])
+
+        return ordered_packages
+
+    def _get_deploy_tasks(self, package, hostnames, queue_base_tasks, is_properties=False):
+        """Build a list of tasks required to deploy a package
+           Returns a list of tasks, and a list of the hosts these tasks will be run on
+        """
+
+        tasks = []
+
+        if not package.servicename in self.deployment_matrix:
+            self.deployment_matrix[package.servicename] = []
+
+        for hostname in hostnames:
+
+            # Skip this package if it's already in the deployment matrix
+            if hostname in self.deployment_matrix.get(package.servicename, []):
+                self.log.info('{0} is already deployed to {1} in another stage'.format(package.servicename, hostname))
+                continue
+
+            if is_properties:
+                control_type = None
+            else:
+                control_type = self.get_control_type(package.servicename, hostname)
+
+            if queue_base_tasks:
+                self.queue_base_tasks(package, hostname, is_properties)
+
+            tasks += self.get_deploy_task(package, hostname, control_type, is_properties)
+
+            # Update deployment matrix
+            self.deployment_matrix[package.servicename].append(hostname)
+
+        return tasks
+
+    def _deploy_subtask_move_properties(self, hostname, package):
+        """Copy properties from the unpack directory into properties_path"""
+
+        service_config = self.config.get_with_defaults('service', package.servicename)
+
+        # environment might be specified per service (icas) or per platform (aurora)
+        environment = service_config.get('environment')
+        if not environment:
+            environment = self.config.get('environment')
+
+        # properties path might be specified as properties_path (icas) or properties_location (aurora)
+        install_path = service_config.get('properties_path')
+        if not install_path:
+            install_path = service_config.get('properties_location')
+
+        source_path = os.path.join(
+          service_config.install_location,
+          service_config.unpack_dir,
+          package.packagename,
+          environment,
+        )
+
+        return [
+          {
+            'command': 'copyfile',
+            'remote_host': hostname,
+            'remote_user': self.config.user,
+            'source': '{0}/*'.format(source_path),
+            'destination': '{0}/'.format(install_path),
+            'continue_if_exists': True,
+            'tag': package.servicename,
+          },
+          {
+            'command': 'writefile',
+            'remote_host': hostname,
+            'remote_user': self.config.user,
+            'destination': '{0}/properties_version'.format(install_path),
+            'contents': package.version,
+            'clobber': True,
+            'tag': package.servicename,
+          }
+        ]
+
+    def _deploy_subtask_move(self, hostname, package):
+        """Minimum deploy consists of moving a directory into place and creating a symlink"""
+
+        service_config = self.config.get_with_defaults('service', package.servicename)
+
+        return [
+          {
+            'command': 'movefile',
+            'remote_host': hostname,
+            'remote_user': self.config.user,
+            'tag': package.servicename,
+            'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
+            'destination': os.path.join(service_config.install_location, package.packagename),
+            'clobber': True,
+          },
+          {
+            'command': 'symlink',
+            'remote_host': hostname,
+            'remote_user': self.config.user,
+            'tag': package.servicename,
+            'source': os.path.join(service_config.install_location, package.packagename),
+            'destination': os.path.join(service_config.install_location, package.servicename),
+          },
+        ]
+
+    def _deploy_subtask_svc_control(self, hostname, servicename, control):
+        """Steps to stop, start and check a daemontools service"""
+
+        service_config = self.config.get_with_defaults('service', servicename)
+
+        control_task = {
+          'command': control,
+          'remote_host': hostname,
+          'remote_user': self.config.user,
+          'tag': servicename,
+          'servicename': servicename,
+        }
+
+        check_task = {
+          'command': 'check_service',
+          'remote_host': hostname,
+          'remote_user': self.config.user,
+          'tag': servicename,
+          'check_command': service_config['check_command'].format(servicename=servicename, port=service_config['port']),
+        }
+
+        # Add optional values
+        if hasattr(service_config, 'control_timeout'):
+            check_task['timeout'] = service_config['control_timeout']
+
+        # Return a tuple of tasks for stopping and tasks for starting
+        stop_tasks = [
+          dict(control_task.items() + [('action', 'stop')]),
+          dict(check_task.items() + [('want_state', 2)]),
+        ]
+
+        start_tasks = [
+          dict(control_task.items() + [('action', 'start')]),
+          dict(check_task.items() + [('want_state', 0)]),
+        ]
+
+        return stop_tasks, start_tasks
+
+    def _deploy_subtask_lb_control(self, hostname, servicename):
+        """Steps to disable and enable a load balancer service"""
+
+        lb_hostname, lb_username, lb_password = self.config.get_lb(servicename, hostname)
+        service_config = self.config.get_with_defaults('service', servicename)
+        lb_service = self.config.get_lb_servicename(servicename, hostname, service_config.get('lb_service'))
+
+        # Check whether we have enough config information to do LB control
+        if not (lb_hostname and lb_username and lb_password and lb_service):
+            self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=servicename)
+            return [], []
+
+        lb_task = {
+          'lb_hostname': lb_hostname,
+          'lb_username': lb_username,
+          'lb_password': lb_password,
+          'lb_service': lb_service,
+          'tag': servicename,
+        }
+
+        if hasattr(service_config, 'lb_timeout'):
+            lb_task['timeout'] = service_config['lb_timeout']
+
+        enable_tasks = [dict(lb_task.items() + [('command', 'disable_loadbalancer')])]
+        disable_tasks = [dict(lb_task.items() + [('command', 'enable_loadbalancer')])]
+
+        return enable_tasks, disable_tasks
+
     def get_graphite_stage(self, metric_suffix):
-        """Return a task for send_graphite (for generators not using the Tasklist class)"""
+        """Return a task for send_graphite (legacy)"""
 
         task = {
           'command': 'send_graphite',
@@ -413,7 +782,7 @@ class Generator(object):
         return stage
 
     def get_pipeline_notify_stage(self, status, release):
-        """Return a task for pipeline_notify"""
+        """Return a task for pipeline_notify (legacy)"""
 
         envt = self.config.environment
         if envt == "production":
@@ -440,7 +809,7 @@ class Generator(object):
         return stage
 
     def get_pipeline_upload_stage(self, release):
-        """Return a task for pipeline_upload"""
+        """Return a task for pipeline_upload (legacy)"""
 
         url = '%s/package/%s/projects' % (self.config.pipeline_url, release)
 
@@ -471,7 +840,7 @@ class Generator(object):
         return stage
 
     def get_archive_stage(self):
-        """Return a task for handling the history of releases/hotfixes in the archive"""
+        """Return a task for handling the history of releases/hotfixes in the archive (legacy)"""
 
         if hasattr(self.config, 'history'):
             history = self.config.history
@@ -498,141 +867,3 @@ class Generator(object):
         }
 
         return stage
-
-    def get_deploy_task(self, package, hostname, control_type=None, is_properties=False):
-        """Build a deploy task for a single package
-           control_type: If specified, service and LB control tasks will be added
-           is_properties: If specified, the service will be deployed as a properties package
-        """
-
-        service_config = self.config.get_with_defaults('service', package.servicename)
-
-        # Begin with steps to move directory into place and create symlink
-        if is_properties:
-            subtasks = self._deploy_subtask_move_properties(hostname, package)
-        else:
-            subtasks = self._deploy_subtask_move(hostname, package)
-
-        if not control_type:
-            self.log.hidebug('Service {0} will not be controlled on {1}'.format(package.servicename, hostname))
-            return subtasks
-
-        # Add steps to stop/start the service
-        stop_tasks, start_tasks = self._deploy_subtask_svc_control(hostname, package, control_type)
-        subtasks = stop_tasks + subtasks + start_tasks
-
-        # Add stops to disable/enable LB service if LB configuration is present
-        if not self.config.ignore_lb:
-            disable_tasks, enable_tasks = self._deploy_subtask_lb_control(hostname, package)
-            subtasks = disable_tasks + subtasks + enable_tasks
-
-        return subtasks
-
-    def _deploy_subtask_move_properties(self, hostname, package):
-        """Copy properties from the unpack directory into properties_path"""
-
-        service_config = self.config.get_with_defaults('service', package.servicename)
-
-        return [
-          {
-            'command': 'copyfile',
-            'remote_host': hostname,
-            'remote_user': self.config.user,
-            'source': '{0}/*'.format(os.path.join(service_config.install_location,
-            service_config.unpack_dir, package.packagename, service_config.environment)),
-            'destination': '{0}/'.format(service_config.properties_path),
-            'continue_if_exists': True,
-            'tag': package.servicename,
-          }
-        ]
-
-    def _deploy_subtask_move(self, hostname, package):
-        """Minimum deploy consists of moving a directory into place and creating a symlink"""
-
-        service_config = self.config.get_with_defaults('service', package.servicename)
-
-        return [
-          {
-            'command': 'movefile',
-            'remote_host': hostname,
-            'remote_user': self.config.user,
-            'tag': package.servicename,
-            'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
-            'destination': os.path.join(service_config.install_location, package.packagename),
-            'clobber': True,
-          },
-          {
-            'command': 'symlink',
-            'remote_host': hostname,
-            'remote_user': self.config.user,
-            'tag': package.servicename,
-            'source': os.path.join(service_config.install_location, package.packagename),
-            'destination': os.path.join(service_config.install_location, package.servicename),
-          },
-        ]
-
-    def _deploy_subtask_svc_control(self, hostname, package, control):
-        """Steps to stop, start and check a daemontools service"""
-
-        service_config = self.config.get_with_defaults('service', package.servicename)
-
-        control_task = {
-          'command': control,
-          'remote_host': hostname,
-          'remote_user': self.config.user,
-          'tag': package.servicename,
-          'servicename': package.servicename,
-        }
-
-        check_task = {
-          'command': 'check_service',
-          'remote_host': hostname,
-          'remote_user': self.config.user,
-          'tag': package.servicename,
-          'check_command': service_config['check_command'].format(servicename=package.servicename, port=service_config['port']),
-        }
-
-        # Add optional values
-        if hasattr(service_config, 'control_timeout'):
-            check_task['timeout'] = service_config['control_timeout']
-
-        # Return a tuple of tasks for stopping and tasks for starting
-        stop_tasks = [
-          dict(control_task.items() + [('action', 'stop')]),
-          dict(check_task.items() + [('want_state', 2)]),
-        ]
-
-        start_tasks = [
-          dict(control_task.items() + [('action', 'start')]),
-          dict(check_task.items() + [('want_state', 0)]),
-        ]
-
-        return stop_tasks, start_tasks
-
-    def _deploy_subtask_lb_control(self, hostname, package):
-        """Steps to disable and enable a load balancer service"""
-
-        lb_hostname, lb_username, lb_password = self.config.get_lb(package.servicename, hostname)
-        service_config = self.config.get_with_defaults('service', package.servicename)
-        lb_service = self.config.get_lb_servicename(package.servicename, hostname, service_config.get('lb_service'))
-
-        # Check whether we have enough config information to do LB control
-        if not (lb_hostname and lb_username and lb_password and lb_service):
-            self.log.warning('No load balancer found for service on {0}'.format(hostname), tag=package.servicename)
-            return [], []
-
-        lb_task = {
-          'lb_hostname': lb_hostname,
-          'lb_username': lb_username,
-          'lb_password': lb_password,
-          'lb_service': lb_service,
-          'tag': package.servicename,
-        }
-
-        if hasattr(service_config, 'lb_timeout'):
-            lb_task['timeout'] = service_config['lb_timeout']
-
-        enable_tasks = [dict(lb_task.items() + [('command', 'disable_loadbalancer')])]
-        disable_tasks = [dict(lb_task.items() + [('command', 'enable_loadbalancer')])]
-
-        return enable_tasks, disable_tasks
