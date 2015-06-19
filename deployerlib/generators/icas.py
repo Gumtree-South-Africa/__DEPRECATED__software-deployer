@@ -32,8 +32,15 @@ class IcasGenerator(Generator):
             self.deploy_packages([cfp_package], only_hosts=[active_cfp_host], stage_name=cfp_stage)
 
         properties_packages = [x for x in packages if x.servicename.endswith('cas-properties')]
-        ecg_packages = [x for x in packages if x.servicename.startswith('ecg-') and not x in properties_packages]
-        tenant_packages = [x for x in packages if not x in properties_packages and not x in ecg_packages]
+        ecg_packages = [x for x in packages if x.servicename.startswith('ecg-') and x not in properties_packages]
+        tenant_packages = [x for x in packages if x not in properties_packages and x not in ecg_packages]
+        # Next lines are ugly and should be temporary, at least until a dependency issue has been resolved..
+        # The ecg-cas-tenant-service needs to be deployed after the ecg-cas-tenant-integration-service
+        tenant_stage = None
+        for pkg in [x for x in ecg_packages if x.servicename == 'ecg-cas-tenant-service']:
+            ordered_package = [ecg_packages.pop(ecg_packages.index(pkg))]
+            tenant_stage = 'Deploy tenant service'
+            self.deploy_packages(ordered_package, stage_name=tenant_stage)
 
         self.deploy_properties(properties_packages)
         self.daemontools_stage(ecg_packages + tenant_packages)
@@ -47,6 +54,10 @@ class IcasGenerator(Generator):
             stage_name = 'Deploy to {0}'.format(', '.join(hostlist))
             self.deploy_packages(tenant_packages, only_hosts=hostlist)
 
+        # Move deployment of tenant service after other backend service
+        if tenant_stage and tenant_stage in self.tasklist.stages():
+            self.tasklist.set_position(tenant_stage, len(self.tasklist.stages()))
+
         # Move deployment of active CFP services after other backend services
         if cfp_stage and cfp_stage in self.tasklist.stages():
             self.tasklist.set_position(cfp_stage, len(self.tasklist.stages()))
@@ -57,12 +68,12 @@ class IcasGenerator(Generator):
             self.deploy_packages(tenant_packages, only_hosts=hostlist)
 
         # Packages which may have database migrations
-        dbmig_packages = [x for x in packages if not x in properties_packages]
+        dbmig_packages = [x for x in packages if x not in properties_packages]
 
         # Run dbmigrations with the properties_path from the tenant-specific properties package
         for prefix in ['ecg-', 'dba-', 'kjca-', '']:
             this_packages = [x for x in dbmig_packages if x.servicename.startswith(prefix)]
-            dbmig_packages = [x for x in dbmig_packages if not x in this_packages]
+            dbmig_packages = [x for x in dbmig_packages if x not in this_packages]
             properties_package = '{0}cas-properties'.format(prefix)
             self.log.debug('Using properties_path from {0} for prefix {1}'.format(properties_package, prefix))
             properties_config = self.config.get_with_defaults('service', properties_package)
