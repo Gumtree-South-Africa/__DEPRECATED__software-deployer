@@ -1,3 +1,9 @@
+software-deployer (0.9.43) precise; urgency=low
+
+  * cas-tenant-service: ordered deployment hack to deploy service before tenant-integration service
+
+ -- Yorick Gersie <ygersie@ebay.com>  Fri, 19 Jun 2015 13:50:24 +0200
+
 software-deployer (0.9.42) precise; urgency=low
 
   * Bug fixes for Generator
