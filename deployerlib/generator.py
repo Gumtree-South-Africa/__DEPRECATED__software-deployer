@@ -221,10 +221,6 @@ class Generator(object):
                 if not stage_name:
                     stage_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
 
-                # debug
-                print 'stage_name:', stage_name
-                print 'hostlist:', hostlist
-
                 this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
 
                 if not this_tasks:
