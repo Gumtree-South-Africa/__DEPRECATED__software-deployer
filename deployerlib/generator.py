@@ -224,7 +224,9 @@ class Generator(object):
                     continue
 
                 self.tasklist.create_stage(stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
-                self.tasklist.add(stage_name, this_tasks)
+
+                for task in this_tasks:
+                    self.tasklist.add(stage_name, task)
 
     def dbmigrations_stage(self, packages, properties_path=None, migration_path_suffix=''):
         """Add database migration tasks for the specified packages
@@ -621,7 +623,7 @@ class Generator(object):
             if queue_base_tasks:
                 self.queue_base_tasks(package, hostname, is_properties)
 
-            tasks += self.get_deploy_task(package, hostname, control_type, is_properties)
+            tasks.append(self.get_deploy_task(package, hostname, control_type, is_properties))
 
             # Update deployment matrix
             self.deployment_matrix[package.servicename].append(hostname)

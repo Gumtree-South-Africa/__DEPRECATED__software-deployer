@@ -155,8 +155,7 @@ class JobQueue(object):
                         # Make sure the parent job exists
                         if not [x for x in self._running + self._queued if x._name == job_candidate.depends]:
                             self.log.error('Job {0} depends on non-existent job {1}'.format(job_candidate._name, job_candidate.depends))
-                            self._aborted.append(job_candidate)
-                            _abort_queue()
+                            _abort_queue([job_candidate])
 
                         self.log.hidebug('Job {0} is waiting for job {1} to complete'.format(job_candidate._name, job_candidate.depends))
                         continue
@@ -176,27 +175,46 @@ class JobQueue(object):
 
             return False
 
-        def _abort_queue():
+        def _abort_queue(jobs=[]):
             """Helper function to abort the queue cleanly"""
 
-            self.log.critical('Aborting queue due to failed jobs: {0}'.format(', '.join([x._name for x in self._aborted])))
+            self.log.critical('Aborting queue due to failed jobs: {0}'.format(', '.join([x._name for x in jobs])))
+            self._aborted += jobs
+
+            # List of jobs that are dependencies of successfully-completed jobs
+            continue_jobs = []
+            for job in [x for x in self._completed if x not in self._aborted]:
+                deps = [x for x in _get_dependencies(job) if x in self._queued]
+
+                if deps:
+                    self.log.debug('Allowing {0} dependencies to continue for job: {0}'.format(len(deps), job._name))
+                    continue_jobs += deps
+
+            # Abort all other queued jobs
+            self._aborted += [x for x in self._queued if x not in continue_jobs]
+            self._queued = continue_jobs
+
+            if len(self._aborted) > 0:
+                self.log.warning('Aborting {0} queued jobs'.format(len(self._aborted)))
+                self.log.debug('Aborted jobs: {0}'.format(', '.join([x._name for x in self._aborted])))
 
             if len(self._running) > 0:
-                self.log.warning('Allowing {0} running jobs to finish before aborting the queue'.format(len(self._running)))
+                self.log.warning('Allowing {0} running jobs to finish'.format(len(self._running)))
 
-            while self._running:
-                job = self._running.pop(0)
-                job.join()
-                self._completed.append(job)
-
-            if len(self._queued) > 0:
-                self.log.warning('Aborting {0} queued jobs'.format(len(self._queued)))
-
-            while self._queued:
-                job = self._queued.pop(0)
-                self._aborted.append(job)
+            self.log.warning('Allowing {0} queued jobs to continue'.format(len(self._queued)))
 
             return
+
+        def _get_dependencies(job):
+            """Helper function to get a list of queued dependencies for a job"""
+
+            deps = [x for x in self._queued + self._running if x.depends == job._name]
+
+            if not deps:
+                return deps
+
+            for dep in deps:
+                return deps + _get_dependencies(dep)
 
         # Prep return value so we can start filling it during main loop
         results = {}
@@ -226,13 +244,13 @@ class JobQueue(object):
                 self._completed += completed
 
                 # Jobs that do not return a result are considered failed
-                self._aborted += [x for x in completed if not self.remote_results[x._name] or self.remote_results[x._name] == self.not_run]
+                failed_jobs = [x for x in completed if not self.remote_results[x._name] or self.remote_results[x._name] == self.not_run]
+
+                if failed_jobs:
+                    _abort_queue(failed_jobs)
 
                 self.log.debug('{0} jobs running, {1} jobs queued, {2} jobs completed'.format(
                   len(self._running), len(self._queued), len(self._completed)))
-
-            if self._aborted:
-                _abort_queue()
 
             if not (self._queued or self._running):
                 if self._aborted:
