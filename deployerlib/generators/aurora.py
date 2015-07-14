@@ -103,10 +103,6 @@ class AuroraGenerator(Generator):
             servicename = package.servicename
 
             service_config = self.config.get_with_defaults('service', servicename)
-            if not service_config:
-                self.log.critical('No service config found for service {0}'.format(repr(servicename)))
-                raise DeployerException('No service config found for service {0}'.format(repr(servicename)))
-
             service_config.unpack_location = os.path.join(service_config.install_location, service_config.unpack_dir)
 
             if hasattr(self.config, 'restrict_to_hostgroups') and self.config.restrict_to_hostgroups and self.config.force:

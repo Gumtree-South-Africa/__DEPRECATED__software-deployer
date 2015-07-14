@@ -116,9 +116,9 @@ class Config(AttrDict):
                 c_defaults = self.get_defaults(dict(c.items()))
                 return AttrDict(dict(ct_defaults + c_defaults + self.get_defaults(dict(ct_defaults + c_defaults + c.items())) + c.items()))
             else:
-                self.log.debug('No values for {0} found in config[{1}]. Will return None.'.format(key,configtype))
+                raise DeployerException('No key "{0}" found in {1} section of config'.format(key, configtype))
         else:
-            self.log.debug('No key "{0}" found in config. Will return None.'.format(configtype))
+            raise DeployerException('No key "{0}" found in config'.format(configtype))
         return None
 
     def get_lb(self, servicename, hostname):

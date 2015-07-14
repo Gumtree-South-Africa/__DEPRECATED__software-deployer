@@ -76,9 +76,10 @@ class IcasGenerator(Generator):
             dbmig_packages = [x for x in dbmig_packages if x not in this_packages]
             properties_package = '{0}cas-properties'.format(prefix)
             self.log.debug('Using properties_path from {0} for prefix {1}'.format(properties_package, prefix))
-            properties_config = self.config.get_with_defaults('service', properties_package)
 
-            if not properties_config:
+            try:
+                properties_config = self.config.get_with_defaults('service', properties_package)
+            except DeployerException:
                 self.log.warning('No properties package found for prefix {0}, skipping this tenant'.format(prefix))
                 continue
 
