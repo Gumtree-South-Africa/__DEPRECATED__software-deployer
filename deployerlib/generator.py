@@ -214,8 +214,16 @@ class Generator(object):
                 if only_hosts:
                     hostlist = [x for x in hostlist if x in only_hosts]
 
+                if not hostlist:
+                    self.log.debug('Skipping an empty hostlist for stage {0}'.format(stage_name or base_stage_name))
+                    continue
+
                 if not stage_name:
                     stage_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
+
+                # debug
+                print 'stage_name:', stage_name
+                print 'hostlist:', hostlist
 
                 this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
 
