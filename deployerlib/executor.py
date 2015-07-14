@@ -1,10 +1,12 @@
 import os
 import json
 import time
+import signal
 
 from fabric.colors import green
 from fabric.network import disconnect_all
-from multiprocessing import Process, Manager
+from multiprocessing import Process
+from multiprocessing.managers import SyncManager
 
 from deployerlib.commands import *
 
@@ -53,7 +55,10 @@ class Executor(object):
           'daemontools': daemontools.DaemonTools,
         }
 
-        manager = Manager()
+        # Start manager manually in order to have the child processes ignore
+        # SIGINT, allowing KeyboardInterrupt to be handled by the parent
+        manager = SyncManager()
+        manager.start(lambda *args: signal.signal(signal.SIGINT, signal.SIG_IGN))
 
         self.remote_hosts = []
         self.remote_results = manager.dict()

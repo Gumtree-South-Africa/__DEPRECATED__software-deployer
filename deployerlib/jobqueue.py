@@ -9,6 +9,7 @@ items, though within Fabric itself only ``Process`` objects are used/supported.
 
 import time
 import Queue
+import signal
 
 from fabric.state import env
 from fabric.network import ssh
@@ -48,6 +49,7 @@ class JobQueue(object):
         self._running = []
         self._completed = []
         self._aborted = []
+        self._abort_flag = False
         self._num_of_jobs = 0
         self._max = max_running
         self._max_per_host = max_per_host
@@ -178,21 +180,24 @@ class JobQueue(object):
         def _abort_queue(jobs=[]):
             """Helper function to abort the queue cleanly"""
 
-            self.log.critical('Aborting queue due to failed jobs: {0}'.format(', '.join([x._name for x in jobs])))
-            self._aborted += jobs
+            self._abort_flag = True
+
+            if jobs:
+                self.log.critical('Aborting queue due to failed jobs: {0}'.format(', '.join([x._name for x in jobs])))
+                self._aborted += jobs
 
             # List of jobs that are dependencies of successfully-completed jobs
-            continue_jobs = []
-            for job in [x for x in self._completed if x not in self._aborted]:
+            allowed_jobs = []
+            for job in [x for x in self._completed + self._running if x not in self._aborted]:
                 deps = [x for x in _get_dependencies(job) if x in self._queued]
 
                 if deps:
                     self.log.debug('Allowing {0} dependencies to continue for job: {0}'.format(len(deps), job._name))
-                    continue_jobs += deps
+                    allowed_jobs += deps
 
             # Abort all other queued jobs
-            self._aborted += [x for x in self._queued if x not in continue_jobs]
-            self._queued = continue_jobs
+            self._aborted += [x for x in self._queued if x not in allowed_jobs]
+            self._queued = [x for x in self._queued if x not in self._aborted]
 
             if len(self._aborted) > 0:
                 self.log.warning('Aborting {0} queued jobs'.format(len(self._aborted)))
@@ -215,6 +220,15 @@ class JobQueue(object):
 
             for dep in deps:
                 return deps + _get_dependencies(dep)
+
+        def _interrupt_handler(signum, frame):
+            """Handle keyboard interrupt"""
+
+            self.log.warning('User interrupt: Aborting the queue cleanly, use Ctrl-C again to abort immediately')
+            signal.signal(signal.SIGINT, signal.default_int_handler)
+            _abort_queue()
+
+        signal.signal(signal.SIGINT, _interrupt_handler)
 
         # Prep return value so we can start filling it during main loop
         results = {}
@@ -253,7 +267,7 @@ class JobQueue(object):
                   len(self._running), len(self._queued), len(self._completed)))
 
             if not (self._queued or self._running):
-                if self._aborted:
+                if self._abort_flag:
                     self.log.debug('Aborted job queue')
                 else:
                     self.log.debug('Finished job queue')
@@ -267,6 +281,8 @@ class JobQueue(object):
 
             time.sleep(ssh.io_sleep)
 
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+
         # Consume anything left in the results queue. Note that there is no
         # need to block here, as the main loop ensures that all workers will
         # already have finished.
@@ -276,7 +292,7 @@ class JobQueue(object):
         for job in self._completed:
             results[job.name]['exit_code'] = job.exitcode
 
-        if self._aborted and self.abort_on_error:
+        if self._abort_flag and self.abort_on_error:
             return False
         else:
             return True
