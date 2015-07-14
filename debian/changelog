@@ -1,3 +1,12 @@
+software-deployer (1.0.0) precise; urgency=low
+
+  * Bug fixes for nested job queueing
+  * Fix for missing host list in stage names
+  * Allow Ctrl-C to cleanly abort the job queue
+  * Config.get_with_defaults: Raise exception on non-existent keys
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Tue, 14 Jul 2015 15:48:59 +0200
+
 software-deployer (0.9.43) precise; urgency=low
 
   * cas-tenant-service: ordered deployment hack to deploy service before tenant-integration service
