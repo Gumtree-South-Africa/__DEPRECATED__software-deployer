@@ -5,8 +5,13 @@ from deployerlib.command import Command
 
 class DaemonTools(Command):
 
-    def initialize(self, remote_host, action, servicename, timeout=60, if_exists=None, unless_exists=None):
+    def initialize(self, remote_host, action, servicename, timeout=60, force=False, if_exists=None, unless_exists=None):
+        """If force is specified as an option to the stop method, the kill
+           method will be called if a normal stop fails.
+        """
+
         self.timeout = timeout
+        self.force = force
         self.if_exists = if_exists
         self.unless_exists = unless_exists
 
@@ -30,6 +35,8 @@ class DaemonTools(Command):
         return getattr(self, self.action)()
 
     def start(self):
+        """Start a daemontools service"""
+
         command = '/usr/bin/svc -u /etc/service/{0}'.format(self.servicename)
         self.log.info('Starting daemontools service')
         res = self.remote_host.execute_remote(command, use_sudo=True)
@@ -46,6 +53,8 @@ class DaemonTools(Command):
         return True
 
     def stop(self):
+        """Stop a daemontools service"""
+
         command = '/usr/bin/svc -d /etc/service/{0}'.format(self.servicename)
         self.log.info('Stopping daemontools service')
         res = self.remote_host.execute_remote(command, use_sudo=True)
@@ -55,10 +64,32 @@ class DaemonTools(Command):
             return False
 
         if not self._wait('down', self.timeout):
-            self.log.critical('Failed to stop service')
-            return False
+
+            if self.force:
+                self.kill()
+            else:
+                self.log.critical('Failed to stop service')
+                return False
 
         self.log.debug('Successfully stopped service')
+        return True
+
+    def kill(self):
+        """Kill a daemontools service"""
+
+        command = '/usr/bin/svc -k /etc/service/{0}'.format(self.servicename)
+        self.log.info('Killing daemontools service')
+        res = self.remote_host.execute_remote(command, use_sudo=True)
+
+        if not res.succeeded:
+            self.log.critical('Failed to control service: {0}'.format(res))
+            return False
+
+        if not self._wait('down', self.timeout):
+            self.log.critical('Failed to kill service')
+            return False
+
+        self.log.debug('Successfully killed service')
         return True
 
     def enable(self):

@@ -706,6 +706,7 @@ class Generator(object):
         """Steps to stop, start and check a daemontools service"""
 
         service_config = self.config.get_with_defaults('service', servicename)
+        force_kill = service_config.get('force_kill', False)
 
         control_task = {
           'command': control,
@@ -729,7 +730,7 @@ class Generator(object):
 
         # Return a tuple of tasks for stopping and tasks for starting
         stop_tasks = [
-          dict(control_task.items() + [('action', 'stop')]),
+          dict(control_task.items() + [('action', 'stop'), ('force', force_kill)]),
           dict(check_task.items() + [('want_state', 2)]),
         ]
 
