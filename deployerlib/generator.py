@@ -218,8 +218,10 @@ class Generator(object):
                     self.log.debug('Skipping an empty hostlist for stage {0}'.format(stage_name or base_stage_name))
                     continue
 
-                if not stage_name:
-                    stage_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
+                if stage_name:
+                    this_stage_name = stage_name
+                else:
+                    this_stage_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
 
                 this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
 
@@ -227,10 +229,10 @@ class Generator(object):
                     self.log.debug('No deployment tasks for {0} on {1}'.format(package.servicename, ', '.join(hostlist)))
                     continue
 
-                self.tasklist.create_stage(stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
+                self.tasklist.create_stage(this_stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
 
                 for task in this_tasks:
-                    self.tasklist.add(stage_name, task)
+                    self.tasklist.add(this_stage_name, task)
 
     def dbmigrations_stage(self, packages, properties_path=None, migration_path_suffix=''):
         """Add database migration tasks for the specified packages
@@ -553,7 +555,7 @@ class Generator(object):
 
         # minimum number of hosts that need to be up
         min_nodes_up = service_config.get('min_nodes_up', 0)
-        self.log.hidebug('{0} min_nodes_up: {1}'.format(servicename, min_nodes_up))
+        self.log.debug('Service {0} min_nodes_up: {1}'.format(servicename, min_nodes_up))
 
         if len(config_enabled_hosts) <= min_nodes_up:
             raise DeployerException('Service {0} configured on {1} hosts, but min_nodes_up is {2}'.format(
@@ -574,6 +576,8 @@ class Generator(object):
             chunk_size = int(round(float(len(enabled_hosts)) / num_stages))
             # The groupings for enabled hosts distributed by chunk_size
             enabled_groups = [enabled_hosts[i:i + chunk_size] for i in range(0, len(enabled_hosts), chunk_size)]
+
+        self.log.debug('Service {0} will be deployed in {1} stages'.format(servicename, num_stages))
 
         if disabled_hosts:
             # Break the list of disabled hosts into the same number of stages as enabled_groups
