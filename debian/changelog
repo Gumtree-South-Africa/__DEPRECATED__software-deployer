@@ -1,3 +1,11 @@
+software-deployer (1.0.1) precise; urgency=low
+
+  * Add option to force-kill a daemontools service
+  * Modify iCAS generator to use Aurora-style deployment_order
+  * Fixes for generator stage creation during package deployment
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Fri, 17 Jul 2015 14:24:44 +0200
+
 software-deployer (1.0.0) precise; urgency=low
 
   * Bug fixes for nested job queueing
