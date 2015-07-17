@@ -31,9 +31,16 @@ class IcasGenerator(Generator):
         if cfp_stage:
             self.move_cfp_stage(cfp_stage)
 
+        # Packages that may have dbmigrations
+        dbmig_packages = packages[:]
+
         # Run dbmigrations with the properties_path from the tenant-specific properties package
         for prefix in ['ecg-', 'dba-', 'kjca-', '']:
-            this_packages = [x for x in packages if x.servicename.startswith(prefix)]
+            # Prune the list so the last iteration contains only non-prefixed packages
+            this_packages = [x for x in dbmig_packages if x.servicename.startswith(prefix)]
+            dbmig_packages = [x for x in dbmig_packages if not x in this_packages]
+
+            # The properties package for this prefix
             properties_package = '{0}cas-properties'.format(prefix)
             self.log.debug('Using properties_path from {0} for prefix {1}'.format(properties_package, prefix))
 

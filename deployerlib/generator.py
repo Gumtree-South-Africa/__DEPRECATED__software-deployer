@@ -207,9 +207,10 @@ class Generator(object):
         """
 
         base_stage_name = 'Deploy {0}'.format(', '.join([x.servicename for x in packages]))
+        hostlists = {}
 
         for package in packages:
-            for hostlist in self._get_service_stages(package.servicename, package.version):
+            for stage_num, hostlist in enumerate(self._get_service_stages(package.servicename, package.version)):
 
                 if only_hosts:
                     hostlist = [x for x in hostlist if x in only_hosts]
@@ -218,10 +219,16 @@ class Generator(object):
                     self.log.debug('Skipping an empty hostlist for stage {0}'.format(stage_name or base_stage_name))
                     continue
 
+                if not hostlists.get(stage_num):
+                    hostlists[stage_num] = []
+
+                hostlists[stage_num] += hostlist
+
                 if stage_name:
                     this_stage_name = stage_name
                 else:
-                    this_stage_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
+                    # Give the stage a unique name based on the stage number
+                    this_stage_name = base_stage_name + '_stage_{0}'.format(stage_num)
 
                 this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
 
@@ -233,6 +240,15 @@ class Generator(object):
 
                 for task in this_tasks:
                     self.tasklist.add(this_stage_name, task)
+
+        # Add hostlists to stage descriptions
+        for stage_num, hostlist in hostlists.iteritems():
+            stage_name = base_stage_name + '_stage_{0}'.format(stage_num)
+            hostlist = sorted(set(hostlist))
+            if stage_name in self.tasklist.stages():
+                new_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
+                self.log.hidebug('Renaming stage from: {0}, to: {1}'.format(stage_name, new_name))
+                self.tasklist.set(stage_name, name=new_name)
 
     def dbmigrations_stage(self, packages, properties_path=None, migration_path_suffix=''):
         """Add database migration tasks for the specified packages
