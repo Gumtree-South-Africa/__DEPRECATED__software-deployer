@@ -1,3 +1,9 @@
+software-deployer (1.0.5) precise; urgency=low
+
+  * Make generator fail if a service is not specified in deployment_order
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Sun, 19 Jul 2015 21:29:48 +0200
+
 software-deployer (1.0.4) precise; urgency=low
 
   * Added functionality to create a deployment package for 1 aurora service
