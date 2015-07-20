@@ -612,6 +612,9 @@ class Generator(object):
            Returns: A list of lists of packages; each list can be deployed in parallel
         """
 
+        # Make sure all packages are listed in deployment_order
+        self._verify_deployment_order(packages, deployment_order)
+
         ordered_packages = []
 
         for i in deployment_order:
@@ -621,6 +624,22 @@ class Generator(object):
                 ordered_packages.append([x for x in packages if x.servicename == i])
 
         return ordered_packages
+
+    def _verify_deployment_order(self, packages, deployment_order):
+        """Make sure all the specified packages are listed in deployment_order"""
+
+        def recursive_find(servicename, order):
+            """Helper function to recursively search deployment_order"""
+
+            for item in order:
+                if type(item) == list and recursive_find(servicename, item):
+                    return True
+                elif item == servicename:
+                    return True
+
+        for package in packages:
+            if not recursive_find(package.servicename, deployment_order):
+                raise DeployerException('{0}: Service {1} not listed in deployment_order'.format(package.fullpath, package.servicename))
 
     def _get_deploy_tasks(self, package, hostnames, queue_base_tasks, is_properties=False):
         """Build a list of tasks required to deploy a package
