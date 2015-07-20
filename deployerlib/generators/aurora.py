@@ -18,9 +18,9 @@ class AuroraGenerator(Generator):
                 a list of strings like '<taglist> to hosts <hostlist>'
             """
             to_deploy_to = {}
-            for x in tasklist:
-                s = x['tag']
-                h = x['remote_host']
+            for task in tasklist:
+                s = task['tag']
+                h = task['remote_host']
                 if s not in to_deploy_to:
                     to_deploy_to[s] = []
                 to_deploy_to[s].append(h)

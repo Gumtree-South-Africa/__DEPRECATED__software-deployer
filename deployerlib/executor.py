@@ -53,6 +53,7 @@ class Executor(object):
           'listdirectory': listdirectory.ListDirectory,
           'getremoteversions': getremoteversions.GetRemoteVersions,
           'daemontools': daemontools.DaemonTools,
+          'createdeploypackage': createdeploypackage.CreateDeployPackage,
         }
 
         # Start manager manually in order to have the child processes ignore

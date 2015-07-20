@@ -1,7 +1,5 @@
 from deployerlib.generator import Generator
-
 from deployerlib.exceptions import DeployerException
-
 
 
 class ServiceControl(Generator):

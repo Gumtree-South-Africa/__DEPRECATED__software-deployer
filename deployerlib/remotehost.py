@@ -7,7 +7,7 @@ from fabric.api import env
 from fabric.state import output
 from fabric.contrib import files
 from fabric.context_managers import settings
-from fabric.operations import run, sudo, put
+from fabric.operations import run, sudo, put, get
 
 
 class RemoteHost(object):
@@ -43,6 +43,14 @@ class RemoteHost(object):
 
         with settings(**fabric_settings):
             return put(local_file, remote_dir)
+
+    def get_remote(self, remote_server_path, destination_path, **fabric_settings):
+        """Retrieve file from a remote host"""
+
+        self.log.debug('Getting remote file "{1}:{0}" to local "{2}"'.format(remote_server_path, self.hostname, destination_path))
+
+        with settings(**fabric_settings):
+            return get(remote_path=remote_server_path, local_path=destination_path)
 
     def file_exists(self, remote_file, **fabric_settings):
         """Check whether a file exists on a remote server"""
