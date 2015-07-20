@@ -109,7 +109,7 @@ class IcasGenerator(Generator):
                 inactive_stage_pos = pos
 
         if not inactive_stage_pos:
-            raise DeployerException('Unable to find inactive CFP deployment stage')
+            self.log.warning('Unable to find inactive CFP deployment stage, not repositioning active CFP stage')
 
         self.log.debug('Moving active CFP stage to tasklist position {0}'.format(inactive_stage_pos))
         self.tasklist.set_position(cfp_stage, inactive_stage_pos)
