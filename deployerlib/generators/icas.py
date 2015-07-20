@@ -28,7 +28,7 @@ class IcasGenerator(Generator):
         self.deploy_ordered_packages(packages, self.config.deployment_order)
 
         # Move Active CFP stage after inactive CFP stage
-        if cfp_stage:
+        if cfp_stage and cfp_stage in self.tasklist.stages():
             self.move_cfp_stage(cfp_stage)
 
         # Packages that may have dbmigrations
