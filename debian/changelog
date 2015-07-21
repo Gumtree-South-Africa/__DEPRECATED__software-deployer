@@ -1,3 +1,10 @@
+software-deployer (1.0.6) precise; urgency=low
+
+  * Added timestamp to destination directories for create package
+  * Forgot input for strftime
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Tue, 21 Jul 2015 10:02:15 +0200
+
 software-deployer (1.0.5) precise; urgency=low
 
   * Make generator fail if a service is not specified in deployment_order
