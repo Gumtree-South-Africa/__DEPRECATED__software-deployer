@@ -43,6 +43,7 @@ setup(
         'bin/build_tasklist.py',
         'bin/servicecontrol.py',
         'bin/deploywebapp.py',
-        'bin/deploywebmanage.py'
+        'bin/deploywebmanage.py',
+        "bin/createpackage.py"
     ],
 )
