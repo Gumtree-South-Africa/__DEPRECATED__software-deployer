@@ -1,3 +1,9 @@
+software-deployer (1.0.7) precise; urgency=low
+
+  * Now exposed the create package script in bin
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Tue, 21 Jul 2015 10:09:05 +0200
+
 software-deployer (1.0.6) precise; urgency=low
 
   * Added timestamp to destination directories for create package
