@@ -113,7 +113,7 @@ class Tasklist(object):
             self.log.hidebug('Stage {0} discarding duplicate task: {1}'.format(stage_name, task))
             return False
 
-        self.log.hidebug('Adding task to {0}'.format(stage_name))
+        self.log.hidebug('Adding task to stage: "{0}"'.format(stage_name))
         self._stages[stage_name]['tasks'].append(task)
 
         return True

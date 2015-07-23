@@ -213,6 +213,7 @@ class Generator(object):
                         self.log.debug('Not controlling {0} on {1}'.format(servicename, hostname))
                         continue
 
+                    self.log.debug('Adding {0} commands for {1} on {2}'.format(action, servicename, hostname))
                     stop, start = self._deploy_subtask_svc_control(hostname, servicename, control_type)
 
                     if self.config.ignore_lb:
@@ -621,7 +622,7 @@ class Generator(object):
               servicename, version, ', '.join(skipped_hosts)))
 
         self.log.hidebug('{0} configured on {1} hosts, enabled on {2} hosts'.format(
-          servicename, len(config_hosts), len(config_enabled_hosts)))
+          servicename, len(all_hosts), len(all_enabled_hosts)))
 
         # Hosts that will have the package installed and will run the service
         enabled_hosts = [x for x in target_hosts if x in config_enabled_hosts]
@@ -630,7 +631,7 @@ class Generator(object):
 
         # minimum number of hosts that need to be up
         min_nodes_up = service_config.get('min_nodes_up')
-        self.log.debug('Service {0} min_nodes_up: {1}'.format(servicename, min_nodes_up))
+        self.log.hidebug('Service {0} min_nodes_up: {1}'.format(servicename, min_nodes_up))
 
         # Make sure min_nodes_up is specified explicitly to avoid unexpected behaviour
         if min_nodes_up is None:
@@ -641,16 +642,17 @@ class Generator(object):
               servicename, len(all_enabled_hosts), min_nodes_up))
 
         # The maximum number of enabled_hosts that can be run in a single stage
-        max_nodes = len(all_enabled_hosts) - min_nodes_up
+        max_nodes_down = len(all_enabled_hosts) - min_nodes_up
+        self.log.debug('Service {0} max_nodes_down: {1}'.format(servicename, max_nodes_down))
 
         # If all enabled hosts can be deployed in a single stage
-        if len(enabled_hosts) <= max_nodes:
+        if len(enabled_hosts) <= max_nodes_down:
             num_stages = 1
             enabled_groups = [enabled_hosts]
         # If there are more hosts than min_nodes_up will allow, break the hosts into stages
         else:
-            # The number of stages required to run all of enabled_hosts with only max_nodes in each stage
-            num_stages = len(range(0, len(enabled_hosts), max_nodes))
+            # The number of stages required to run all of enabled_hosts with only max_nodes_down in each stage
+            num_stages = len(range(0, len(enabled_hosts), max_nodes_down))
             # If there are more nodes than min_nodes_up will allow, divide them into multiple stages
             chunk_size = int(round(float(len(enabled_hosts)) / num_stages))
             # The groupings for enabled hosts distributed by chunk_size
