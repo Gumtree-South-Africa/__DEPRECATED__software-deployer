@@ -37,18 +37,13 @@ class Generator(object):
         self.config = config
         self._remote_hosts = []
         self.remote_versions = {}
+        self.tasklist = Tasklist()
+        self.deployment_matrix = {}
 
     def generate(self):
         """Generators that re-use this class can provide their own generate() method"""
 
         return {}
-
-    def use_tasklist(self):
-        """Use the Tasklist class with ordered base stages"""
-
-        self.tasklist = Tasklist()
-        self.deployment_matrix = {}
-        self.create_base_stages()
 
     def use_remote_versions(self, packages):
         """Set self.remote_versions, which will be used by self.deploy_packages()"""
@@ -184,14 +179,76 @@ class Generator(object):
               'tag': package.servicename,
             })
 
+    def list_services(self):
+        """List the services running on a set of hosts"""
+
+        if not self.config.hosts:
+            raise DeployerException('Please specify one or more hosts using the --hosts flag')
+
+        stage_name = 'List services'
+        self.tasklist.create_stage(stage_name, concurrency=1)
+
+        for hostname in self.config.hosts:
+            self.tasklist.add_hosts(stage_name, hostname)
+            self.tasklist.add(stage_name, {
+              'command': 'listdirectory',
+              'directory': '/etc/service/',
+              'remote_host': hostname,
+              'remote_user': self.config.user,
+            })
+
+    def control_services(self, action, servicenames, hosts=[]):
+        """Restart the specified services"""
+
+        base_stage_name = 'Restart {0}'.format(', '.join(servicenames))
+
+        for servicename in servicenames:
+            for stage_num, hostlist in enumerate(self._get_service_stages(servicename)):
+                this_stage_name = '{0}|stage{1}'.format(base_stage_name, stage_num)
+
+                for hostname in hostlist:
+                    control_type = self.get_control_type(servicename, hostname)
+
+                    if not control_type:
+                        self.log.debug('Not controlling {0} on {1}'.format(servicename, hostname))
+                        continue
+
+                    stop, start = self._deploy_subtask_svc_control(hostname, servicename, control_type)
+
+                    if self.config.ignore_lb:
+                        disable_lb, enable_lb = [], []
+                    else:
+                        disable_lb, enable_lb = self._deploy_subtask_lb_control(hostname, servicename)
+
+                    if action == 'stop':
+                        task = disable_lb + stop
+                    elif action == 'start':
+                        task = start + enable_lb
+                    elif action == 'restart':
+                        task = disable_lb + stop + start + enable_lb
+                    else:
+                        raise DeployerException('Unknown action for control_services: {0}'.format(action))
+
+                    self.tasklist.create_stage(this_stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
+                    self.tasklist.add_hosts(this_stage_name, hostname)
+                    self.tasklist.add(this_stage_name, task)
+
     def deploy_ordered_packages(self, packages, order, queue_base_tasks=True):
         """Create deploy stages for packages based on the specified order
            packages: A list of package objects
            order: A list of service names, optionally nested
         """
 
-        for step in self._sort_packages(packages, order):
-            self.deploy_packages(step, queue_base_tasks=queue_base_tasks)
+        servicenames = [x.servicename for x in packages]
+
+        for service_list in self._sort_services(servicenames, order):
+            if not service_list:
+                continue
+
+            package_list = [x for x in packages if x.servicename in service_list]
+            display_package_list = ', '.join([x.servicename for x in package_list])
+            self.log.debug('Deploying a group of {0} packages: {1}'.format(len(package_list), display_package_list))
+            self.deploy_packages(package_list, queue_base_tasks=queue_base_tasks)
 
     def deploy_properties(self, packages, queue_base_tasks=True, only_hosts=None):
         """Wrapper to deploy a packages as properties"""
@@ -206,8 +263,11 @@ class Generator(object):
            is_properties: Package will be deployed as properties (i.e. copy to properties_path rather than move to install_location)
         """
 
+        # Create base stages so they run in the correct order
+        if self.tasklist.is_empty():
+            self.create_base_stages()
+
         base_stage_name = 'Deploy {0}'.format(', '.join([x.servicename for x in packages]))
-        hostlists = {}
 
         for package in packages:
             for stage_num, hostlist in enumerate(self._get_service_stages(package.servicename, package.version)):
@@ -219,16 +279,11 @@ class Generator(object):
                     self.log.debug('Skipping an empty hostlist for stage {0}'.format(stage_name or base_stage_name))
                     continue
 
-                if not hostlists.get(stage_num):
-                    hostlists[stage_num] = []
-
-                hostlists[stage_num] += hostlist
-
                 if stage_name:
                     this_stage_name = stage_name
                 else:
                     # Give the stage a unique name based on the stage number
-                    this_stage_name = base_stage_name + '_stage_{0}'.format(stage_num)
+                    this_stage_name = base_stage_name + '|stage{0}'.format(stage_num)
 
                 this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
 
@@ -237,18 +292,12 @@ class Generator(object):
                     continue
 
                 self.tasklist.create_stage(this_stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
+                # Track the hosts being used by this stage
+                self.tasklist.add_hosts(this_stage_name, hostlist)
 
+                # Add the tasks for this package in this stage
                 for task in this_tasks:
                     self.tasklist.add(this_stage_name, task)
-
-        # Add hostlists to stage descriptions
-        for stage_num, hostlist in hostlists.iteritems():
-            stage_name = base_stage_name + '_stage_{0}'.format(stage_num)
-            hostlist = sorted(set(hostlist))
-            if stage_name in self.tasklist.stages():
-                new_name = base_stage_name + ' to {0}'.format(', '.join(hostlist))
-                self.log.hidebug('Renaming stage from: {0}, to: {1}'.format(stage_name, new_name))
-                self.tasklist.set(stage_name, name=new_name)
 
     def dbmigrations_stage(self, packages, properties_path=None, migration_path_suffix=''):
         """Add database migration tasks for the specified packages
@@ -537,13 +586,22 @@ class Generator(object):
         if not service_config:
             raise DeployerException('Service not found in config: {0}'.format(servicename))
 
-        # hosts this service is installed on
+        # hosts this service is installed on (limited by --hosts if specified)
         config_hosts = self.config.get_service_hosts(servicename)
-        # hosts this service is enabled on
+        # hosts this service is enabled on (limited by --hosts if specified)
         config_enabled_hosts = service_config.get('enabled_on_hosts', 'all')
+        # All hosts that are configured for this service
+        all_hosts = self.config.get_service_hosts(servicename, no_restrict=True)
+        # All hosts that are enabled for this service (used to determine how many nodes can be brought down at once)
+        all_enabled_hosts = config_enabled_hosts
 
         if config_enabled_hosts == 'all':
             config_enabled_hosts = config_hosts
+            all_enabled_hosts = all_hosts
+
+        self.log.hidebug('Service configured on: {0}'.format(', '.join(all_hosts)))
+        self.log.hidebug('Service deployed to: {0}'.format(', '.join(config_hosts)))
+        self.log.hidebug('Service enabled on: {0}'.format(', '.join(config_enabled_hosts)))
 
         # check remote versions
         if version and self.remote_versions.get(servicename):
@@ -565,20 +623,25 @@ class Generator(object):
         self.log.hidebug('{0} configured on {1} hosts, enabled on {2} hosts'.format(
           servicename, len(config_hosts), len(config_enabled_hosts)))
 
-        # Hosts that will have the package installed but do not run the service
+        # Hosts that will have the package installed and will run the service
         enabled_hosts = [x for x in target_hosts if x in config_enabled_hosts]
+        # Hosts that will have the package installed but do not run the service
         disabled_hosts = [x for x in target_hosts if not x in enabled_hosts]
 
         # minimum number of hosts that need to be up
-        min_nodes_up = service_config.get('min_nodes_up', 0)
+        min_nodes_up = service_config.get('min_nodes_up')
         self.log.debug('Service {0} min_nodes_up: {1}'.format(servicename, min_nodes_up))
 
-        if len(config_enabled_hosts) <= min_nodes_up:
+        # Make sure min_nodes_up is specified explicitly to avoid unexpected behaviour
+        if min_nodes_up is None:
+            raise DeployerException('min_nodes_up is not set for {0}'.format(servicename))
+
+        if len(all_enabled_hosts) <= min_nodes_up:
             raise DeployerException('Service {0} configured on {1} hosts, but min_nodes_up is {2}'.format(
-              servicename, len(config_enabled_hosts), min_nodes_up))
+              servicename, len(all_enabled_hosts), min_nodes_up))
 
         # The maximum number of enabled_hosts that can be run in a single stage
-        max_nodes = len(config_enabled_hosts) - min_nodes_up
+        max_nodes = len(all_enabled_hosts) - min_nodes_up
 
         # If all enabled hosts can be deployed in a single stage
         if len(enabled_hosts) <= max_nodes:
@@ -605,28 +668,28 @@ class Generator(object):
         else:
             return sorted(enabled_groups)
 
-    def _sort_packages(self, packages, deployment_order):
-        """Build a list of lists of packages ordered by deployment_order
-           packages: List of package objects
+    def _sort_services(self, services, deployment_order):
+        """Build a list of lists of services ordered by deployment_order
+           services: List of service names
            deployment_order: List of service names, optionally nested
-           Returns: A list of lists of packages; each list can be deployed in parallel
+           Returns: A list of lists of service names; each list can be deployed in parallel
         """
 
-        # Make sure all packages are listed in deployment_order
-        self._verify_deployment_order(packages, deployment_order)
+        # Make sure all services are listed in deployment_order
+        self._verify_deployment_order(services, deployment_order)
 
-        ordered_packages = []
+        ordered_services = []
 
         for i in deployment_order:
             if type(i) == list:
-                ordered_packages.append([x for x in packages if x.servicename in i])
+                ordered_services.append([x for x in services if x in i])
             else:
-                ordered_packages.append([x for x in packages if x.servicename == i])
+                ordered_services.append([x for x in services if x == i])
 
-        return ordered_packages
+        return ordered_services
 
-    def _verify_deployment_order(self, packages, deployment_order):
-        """Make sure all the specified packages are listed in deployment_order"""
+    def _verify_deployment_order(self, services, deployment_order):
+        """Make sure all the specified services are listed in deployment_order"""
 
         def recursive_find(servicename, order):
             """Helper function to recursively search deployment_order"""
@@ -637,9 +700,9 @@ class Generator(object):
                 elif item == servicename:
                     return True
 
-        for package in packages:
-            if not recursive_find(package.servicename, deployment_order):
-                raise DeployerException('{0}: Service {1} not listed in deployment_order'.format(package.fullpath, package.servicename))
+        for servicename in services:
+            if not recursive_find(servicename, deployment_order):
+                raise DeployerException('Service {0} not listed in deployment_order'.format(servicename))
 
     def _get_deploy_tasks(self, package, hostnames, queue_base_tasks, is_properties=False):
         """Build a list of tasks required to deploy a package

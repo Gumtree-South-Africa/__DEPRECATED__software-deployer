@@ -52,7 +52,7 @@ class Config(AttrDict):
         if not hasattr(self, 'restrict_to_hosts'):
             restrict_to_hosts = []
             hostgroups = []
-            restrict_msg = 'Skipping because of '
+            restrict_msg = 'Restricting based on '
             if self.hosts:
                 restrict_to_hosts = self.hosts
                 restrict_msg += '"--hosts {0}"'.format(' '.join(self.hosts))
@@ -195,7 +195,7 @@ class Config(AttrDict):
         else:
             return 0
 
-    def get_service_hosts(self, servicename, in_hostgroup=None):
+    def get_service_hosts(self, servicename, in_hostgroup=None, no_restrict=False):
         """Get the list of hosts this service should be deployed to,
             optionally restricted by in_hostgroup argument or commandline parameters"""
 
@@ -232,6 +232,9 @@ class Config(AttrDict):
             restrict_to_hostgroups = self.restrict_to_hostgroups
         else:
             restrict_to_hostgroups = []
+
+        if no_restrict:
+            return hosts
 
         if restrict_to_hosts:
             restrict_msg = self.restrict_msg

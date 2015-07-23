@@ -30,6 +30,7 @@ class Tasklist(object):
 
         self._stages[stage_name] = {
           'name': stage_name,
+          'hosts': [],
           'concurrency': 1,
           'concurrency_per_host': 1,
           'tasks': [],
@@ -64,6 +65,23 @@ class Tasklist(object):
         self._exists_or_die(stage_name)
 
         return self._stages[stage_name].pop(setting_name, None)
+
+    def add_hosts(self, stage_name, hostlist):
+        """Add to the list of hosts affected by this stage"""
+
+        if type(hostlist) is not list:
+            hostlist = [hostlist]
+
+        added_hosts = []
+
+        for host in hostlist:
+            if not host in self._stages[stage_name]['hosts']:
+                self._stages[stage_name]['hosts'].append(host)
+                added_hosts.append(host)
+
+        self._stages[stage_name]['hosts'].sort()
+
+        return added_hosts
 
     def stages(self):
         """Return a list of queue names"""
@@ -129,10 +147,26 @@ class Tasklist(object):
         if self.is_empty():
             self.log.warning('Tasklist is empty')
 
+        # Finalize stage names
+        for stage_name in self.stages():
+
+            # Remove everything after | character
+            if '|' in stage_name:
+                new_name = self.get(stage_name, 'name')[:stage_name.index('|')]
+                self.set(stage_name, name=new_name)
+
+            # Append host list
+            hostlist = self._stages[stage_name].pop('hosts', None)
+            if hostlist:
+                new_name = self.get(stage_name, 'name') + ' on {0}'.format(', '.join(hostlist))
+                self.set(stage_name, name=new_name)
+
+        # Get pre/post/untagged tasks
         pre = [x for x in self._stage_order if x in self._pre_order]
         post = [x for x in self._stage_order if x in self._post_order]
         main = [x for x in self._stage_order if not x in pre + post]
 
+        # Reorder stages that have been tagged as pre or post
         stages = [self._stages[x] for x in pre + main + post if self._stages[x]['tasks']]
 
         return { 'name': name, 'stages': stages }

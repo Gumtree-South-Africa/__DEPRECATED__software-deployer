@@ -12,7 +12,6 @@ class IcasGenerator(Generator):
     def generate(self):
         """Build the task list"""
 
-        self.use_tasklist()
         packages = self.get_packages()
 
         if not self.config.redeploy:
