@@ -1,3 +1,9 @@
+software-deployer (1.0.8) precise; urgency=low
+
+  * Update servicecontrol script to use deployer logic
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Thu, 23 Jul 2015 13:58:21 +0200
+
 software-deployer (1.0.7) precise; urgency=low
 
   * Now exposed the create package script in bin
