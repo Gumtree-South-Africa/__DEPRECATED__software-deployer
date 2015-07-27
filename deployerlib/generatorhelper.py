@@ -19,7 +19,6 @@ class GeneratorHelper(object):
         generators = {
             'icas': icas.IcasGenerator,
             'aurora': aurora.AuroraGenerator,
-            'newaurora': newaurora.AuroraGenerator,
             'supermario': aurora.AuroraGenerator,
             'aanbieding': aanbieding.AanbiedingGenerator,
             'rbb': rbb.RbbGenerator,
