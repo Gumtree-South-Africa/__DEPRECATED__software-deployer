@@ -39,9 +39,9 @@ class ServiceControl(Generator):
             })
 
     def control_services(self, action, servicenames, hosts=[]):
-        """Restart the specified services"""
+        """Stop/start/restart the specified services"""
 
-        base_stage_name = 'Restart {0}'.format(', '.join(servicenames))
+        base_stage_name = '{0} {1}'.format(action.title(), ', '.join(servicenames))
 
         for servicename in servicenames:
             for stage_num, hostlist in enumerate(self._get_service_stages(servicename)):
