@@ -1,3 +1,15 @@
+software-deployer (1.0.9) precise; urgency=low
+
+  * Clean up logging output
+  * Bugfix for build_tasklist.py: Create log object before using it
+  * Added deploy profiles to the package creator
+  * Minor bug and cosmetic fixes
+  * ServiceControl: Use value of action variable for stage names
+  * Update AuroraGenerator to use generic functions from generator parent class
+  * cleanup: move non-important message to debug
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Mon, 27 Jul 2015 17:35:33 +0200
+
 software-deployer (1.0.8) precise; urgency=low
 
   * Update servicecontrol script to use deployer logic
