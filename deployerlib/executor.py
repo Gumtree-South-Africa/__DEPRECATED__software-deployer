@@ -72,6 +72,7 @@ class Executor(object):
             tasklist = self.read_tasklist(filename)
 
         self.stages = self.parse_stages(tasklist)
+        self.log.info('Tasklist loaded successfully')
 
     def read_tasklist(self, filename):
         """Read in a task list and generate a list of jobs"""

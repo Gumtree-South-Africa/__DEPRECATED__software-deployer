@@ -39,14 +39,13 @@ elif args.config:
         sys.exit(0)
 
     executor = Executor(tasklist=tasklist_builder.tasklist)
-
-    if config.dry_run:
-        log.info('Dry run, not executing any tasks. {0}'.format(more_details_msg))
-        sys.exit(0)
-
 else:
-    log.critical('Do what?')
+    log.critical('Please specify either --config or --tasklist')
     sys.exit(1)
+
+if config.dry_run:
+    log.info('Dry run, not executing any tasks. {0}'.format(more_details_msg))
+    sys.exit(0)
 
 try:
     executor.run()
