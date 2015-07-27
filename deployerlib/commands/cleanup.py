@@ -2,7 +2,6 @@ import os
 import fnmatch
 
 from deployerlib.command import Command
-from deployerlib.exceptions import DeployerException
 
 
 class CleanUp(Command):
@@ -17,7 +16,7 @@ class CleanUp(Command):
         res = self.remote_host.execute_remote("/bin/ls -1Atd {0}/{1}".format(self.path, self.filespec), output_hidebug=True)
 
         if res.failed:
-            self.log.warning('Failed to list path for cleanup: {0}'.format(res))
+            self.log.debug('Failed to list path for cleanup: {0}'.format(res))
             return True
 
         files = res.split()
