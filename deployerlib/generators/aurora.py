@@ -26,7 +26,9 @@ class AuroraGenerator(Generator):
 
         # Additional stages required when doing a full release
         if self.config.release and not self.tasklist.is_empty():
-            self.archive_stage()
+
+            if self.config.get('history'):
+                self.archive_stage()
 
             if self.config.get('graphite'):
                 self.use_graphite()
