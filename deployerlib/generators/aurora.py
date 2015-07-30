@@ -24,18 +24,33 @@ class AuroraGenerator(Generator):
         self.deploy_ordered_packages(packages, self.config.deployment_order)
         self.dbmigrations_stage(packages, migration_path_suffix='db/migrations')
 
-        # Additional stages required when doing a full release
-        if self.config.release and not self.tasklist.is_empty():
-
-            if self.config.get('history'):
-                self.archive_stage()
-
-            if self.config.get('graphite'):
-                self.use_graphite()
-
-            if self.config.get('pipeline_url'):
+        if not self.tasklist.is_empty():
+            if self.config.release:
                 release_version = os.path.basename(self.config.release[0]).replace('{0}-'.format(self.config.platform), '')
-                upload = self.config.environment == 'dev'
-                self.use_pipeline(release_version, upload)
+                deployment_type = 'release'
+                deploy_items = release_version
 
-        return self.tasklist.generate()
+                if self.config.get('history'):
+                    self.archive_stage()
+
+                if self.config.get('graphite'):
+                    self.use_graphite()
+
+                if self.config.get('pipeline_url'):
+                    upload = self.config.environment == 'dev'
+                    self.use_pipeline(release_version, upload)
+
+            elif self.config.get('component'):
+                deployment_type = 'components'
+                deploy_items = ','.join([os.path.basename(x) for x in self.config.component])
+
+            else:
+                deployment_type = 'unknown_type'
+                deploy_items = 'unknown'
+
+        else:
+            deployment_type = 'empty'
+            deploy_items = 'none'
+
+        return self.tasklist.generate('Deployment of platform {0}, environment {1}, {2} {3}'.format(self.config.platform, self.config.environment,
+            deployment_type, repr(deploy_items)))

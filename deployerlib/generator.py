@@ -105,7 +105,7 @@ class Generator(object):
           'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
         }
 
-        for stage in ['Create temp directories', 'Pipeline notify deploying', 'Upload', 'Unpack', 'Send graphite start', 'Properties', 'Database migrations', 'Set daemontools state']:
+        for stage in ['Pipeline notify deploying', 'Send graphite start', 'Upload', 'Create temp directories', 'Unpack', 'Properties', 'Database migrations', 'Set daemontools state']:
             self.tasklist.create_stage(stage, pre=True)
 
             if not stage == 'Database migrations':
@@ -127,7 +127,7 @@ class Generator(object):
           'remote_host': hostname,
           'remote_user': self.config.user,
           'source': tempdir,
-          'clobber': True,
+          'clobber': False,
         })
 
         self.tasklist.add('Upload', {
@@ -149,12 +149,25 @@ class Generator(object):
         })
 
         # Post-deploy tasks
-        self.tasklist.add('Remove temp directories', {
-          'command': 'removefile',
-          'remote_host': hostname,
-          'remote_user': self.config.user,
-          'source': tempdir,
-        })
+        if self.config.get('remove_temp_dirs'):
+            self.tasklist.add('Remove temp directories', {
+              'command': 'removefile',
+              'remote_host': hostname,
+              'remote_user': self.config.user,
+              'source': tempdir,
+            })
+        else:
+            self.tasklist.add('Cleanup', {
+                'command': 'cleanup',
+                'remote_host': hostname,
+                'remote_user': self.config.user,
+                'path': os.path.join(service_config.install_location, service_config.unpack_dir),
+                'filespec': '{0}_*'.format(package.servicename),
+                'keepversions': 0,
+                'exclude': 'XXXXXXX', # deliberately setting to a string that will never match
+                'tag': package.servicename,
+            })
+
 
         self.tasklist.add('Cleanup', {
           'command': 'cleanup',
@@ -163,6 +176,7 @@ class Generator(object):
           'path': service_config.destination,
           'filespec': '{0}_*'.format(package.servicename),
           'keepversions': self.config.keep_versions,
+          'exclude': package.filename,
           'tag': package.servicename,
         })
 
@@ -176,6 +190,7 @@ class Generator(object):
               'path': service_config.install_location,
               'filespec': '{0}_*'.format(package.servicename),
               'keepversions': self.config.keep_versions,
+              'exclude': package.packagename,
               'tag': package.servicename,
             })
 
