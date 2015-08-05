@@ -1,3 +1,14 @@
+software-deployer (1.0.10) precise; urgency=low
+
+  [ Patrick McConnell ]
+  * AuroraGenerator: Check for self.config.history before adding an archive stage
+
+  [ Arnoud Witt ]
+  * Fixes for Aurora
+  * squashed merge of generator_fixes
+
+ -- Arnoud Witt <awitt@ebay.com>  Wed, 05 Aug 2015 11:08:08 +0200
+
 software-deployer (1.0.9) precise; urgency=low
 
   * Clean up logging output
