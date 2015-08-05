@@ -111,7 +111,7 @@ class Generator(object):
             if not stage == 'Database migrations':
                 self.tasklist.set(stage, **non_deploy_settings)
 
-        for stage in ['Send graphite end', 'Pipeline notify deployed', 'Pipeline upload', 'Remove temp directories', 'Cleanup']:
+        for stage in ['Cleanup', 'Remove temp directories', 'Pipeline notify deployed', 'Pipeline upload', 'Send graphite end']:
             self.tasklist.create_stage(stage, post=True)
             self.tasklist.set(stage, **non_deploy_settings)
 
@@ -127,7 +127,7 @@ class Generator(object):
           'remote_host': hostname,
           'remote_user': self.config.user,
           'source': tempdir,
-          'clobber': False,
+          'clobber': self.config.get('remove_temp_dirs', False),
         })
 
         self.tasklist.add('Upload', {
@@ -167,7 +167,6 @@ class Generator(object):
                 'exclude': 'XXXXXXX', # deliberately setting to a string that will never match
                 'tag': package.servicename,
             })
-
 
         self.tasklist.add('Cleanup', {
           'command': 'cleanup',
@@ -219,6 +218,7 @@ class Generator(object):
     def deploy_packages(self, packages, stage_name=None, queue_base_tasks=True, only_hosts=None, is_properties=False):
         """Build a deployment stage for a list of packages
            packages: A list of package objects
+           stage_name: A stage name will be generated if one is not specified. If a stage name is specified then _get_service_stages() will be flattened.
            queue_base_tasks: Create the tasks that are normally required to deploy a package, such as upload, unpack, cleanup
            only_hosts: If supplied, tasks will only be created for the hosts in this list
            is_properties: Package will be deployed as properties (i.e. copy to properties_path rather than move to install_location)
@@ -228,37 +228,65 @@ class Generator(object):
         if self.tasklist.is_empty():
             self.create_base_stages()
 
-        base_stage_name = 'Deploy {0}'.format(', '.join([x.servicename for x in packages]))
-
+        stages = []
         for package in packages:
             for stage_num, hostlist in enumerate(self._get_service_stages(package.servicename, package.version)):
+
+                if len(stages) < stage_num + 1:
+                    stages.append([])
 
                 if only_hosts:
                     hostlist = [x for x in hostlist if x in only_hosts]
 
                 if not hostlist:
-                    self.log.debug('Skipping an empty hostlist for stage {0}'.format(stage_name or base_stage_name))
+                    self.log.debug('Skipping an empty hostlist for service {0} in substage {1}'.format(
+                      package.servicename, stage_num))
                     continue
 
+                stages[stage_num].append((package, hostlist))
+
+        for stage_num, stage in enumerate(stages):
                 if stage_name:
                     this_stage_name = stage_name
                 else:
-                    # Give the stage a unique name based on the stage number
-                    this_stage_name = base_stage_name + '|stage{0}'.format(stage_num)
+                    to_deploy = self._generate_to_deploy_list(stage)
+                    this_stage_name = 'Deploy {0}'.format('; '.join(to_deploy))
 
-                this_tasks = self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
+                this_tasks = []
+                for (package, hostlist) in stage:
+                    this_tasks += self._get_deploy_tasks(package, hostlist, queue_base_tasks, is_properties)
 
                 if not this_tasks:
-                    self.log.debug('No deployment tasks for {0} on {1}'.format(package.servicename, ', '.join(hostlist)))
+                    self.log.debug('No deployment tasks for stage {0}, substage {1}'.format(this_stage_name, stage_num))
                     continue
 
                 self.tasklist.create_stage(this_stage_name, concurrency=self.config.deploy_concurrency, concurrency_per_host=self.config.deploy_concurrency_per_host)
-                # Track the hosts being used by this stage
-                self.tasklist.add_hosts(this_stage_name, hostlist)
 
                 # Add the tasks for this package in this stage
                 for task in this_tasks:
                     self.tasklist.add(this_stage_name, task)
+
+    def _generate_to_deploy_list(self, packages_hosts):
+        """ Extracts from a packages_hosts list for each package the remote_host and generates
+            a list of strings like '<servicelist> on <hostlist>'
+        """
+
+        sh_lists = []
+        for (package,hlist) in packages_hosts:
+            s = package.servicename
+            found = 0
+            for (sl,hl) in sh_lists:
+                if set(hl) == set(hlist):
+                    sh_lists.remove((sl,hl))
+                    sl.append(s)
+                    sh_lists.append((sl,hl))
+                    found = 1
+                    break
+            if not found:
+                sh_lists.append(([s],hlist))
+
+        to_deploy = [', '.join(slist) + ' on ' + ', '.join(hlist) for (slist,hlist) in sh_lists]
+        return to_deploy
 
     def dbmigrations_stage(self, packages, properties_path=None, migration_path_suffix=''):
         """Add database migration tasks for the specified packages
@@ -311,8 +339,10 @@ class Generator(object):
         control_type = service_config.get('control_type')
 
         # Do not control services that are not enabled
-        if hasattr(service_config, 'enabled_on_hosts'):
-            if service_config['enabled_on_hosts'] != 'all' and not hostname in service_config['enabled_on_hosts']:
+        enabled_on_hosts = service_config.get('enabled_on_hosts', 'all')
+        if enabled_on_hosts != 'all':
+            enabled_on_hosts = list(set([self.config.get_full_hostname(h) for h in enabled_on_hosts]))
+            if not hostname in enabled_on_hosts:
                 self.log.debug('{0} is not enabled on {1}'.format(servicename, hostname))
                 return None
 
@@ -327,14 +357,12 @@ class Generator(object):
             control_type = service_config.get('control_type')
 
             # Make sure this is a daemontools service
-            if service_config.get('control_type') != 'daemontools':
+            if control_type != 'daemontools':
                 self.log.hidebug('Service {0} control_type is {1}, not setting daemontools state'.format(
                   package.servicename, control_type))
                 continue
 
             for hostname in self.config.get_service_hosts(package.servicename):
-                control_type = self.get_control_type(package.servicename, hostname)
-
                 # Check whether the service is disabled on this host
                 if self.get_control_type(package.servicename, hostname):
                     self.log.debug('Service {0} will be enabled on {1}'.format(package.servicename, hostname))
@@ -346,7 +374,6 @@ class Generator(object):
                       'remote_user': self.config.user,
                       'servicename': package.servicename,
                       'tag': package.servicename,
-                      'unless_exists': '/etc/service/{0}'.format(package.servicename),
                     })
 
                 else:
@@ -388,7 +415,7 @@ class Generator(object):
         self.tasklist.add(stage_name, {
           'command': 'pipeline_notify',
           'url': url,
-          'proxy': self.config.get('proxy'),
+          'proxy': self.config.get('proxy', ''),
         })
 
     def pipeline_upload(self, release_version):
@@ -405,7 +432,7 @@ class Generator(object):
           'deploy_package_basedir': deploy_package_basedir,
           'release': release_version,
           'url': url,
-          'proxy': self.config.get('proxy'),
+          'proxy': self.config.get('proxy', ''),
         })
 
     def archive_stage(self):
@@ -547,82 +574,98 @@ class Generator(object):
         if not service_config:
             raise DeployerException('Service not found in config: {0}'.format(servicename))
 
-        # hosts this service is installed on (limited by --hosts if specified)
-        config_hosts = self.config.get_service_hosts(servicename)
-        # hosts this service is enabled on (limited by --hosts if specified)
-        config_enabled_hosts = service_config.get('enabled_on_hosts', 'all')
-        # All hosts that are configured for this service
-        all_hosts = self.config.get_service_hosts(servicename, no_restrict=True)
-        # All hosts that are enabled for this service (used to determine how many nodes can be brought down at once)
-        all_enabled_hosts = config_enabled_hosts
-
-        if config_enabled_hosts == 'all':
-            config_enabled_hosts = config_hosts
-            all_enabled_hosts = all_hosts
-
-        self.log.hidebug('Service configured on: {0}'.format(', '.join(all_hosts)))
-        self.log.hidebug('Service deployed to: {0}'.format(', '.join(config_hosts)))
-        self.log.hidebug('Service enabled on: {0}'.format(', '.join(config_enabled_hosts)))
-
-        # check remote versions
-        if version and self.remote_versions.get(servicename):
-            target_hosts = [x for x in config_hosts if self.remote_versions[servicename].get(x) != version]
+        if self.config.get('restrict_to_hostgroups') and self.config.get('force'):
+            hostgroups = self.config.restrict_to_hostgroups
+        elif self.config.get('restrict_to_hosts') and self.config.get('force'):
+            hostgroups = [None]
         else:
-            target_hosts = config_hosts
+            if 'hostgroups' in service_config:
+                hostgroups = service_config.hostgroups
+            else:
+                raise DeployerException('No hostgroups specified in config where to deploy service {0}'.format(repr(servicename)))
 
-        # Get a list of skipped hosts so we can show a message
-        skipped_hosts = [x for x in config_hosts if not x in target_hosts]
+        enabled_groups = []
+        disabled_hosts = []
+        for hostgroup in hostgroups:
+            # hosts this service is installed on (limited by --hosts if specified)
+            config_hosts = self.config.get_service_hosts(servicename, in_hostgroup=hostgroup)
+            # hosts this service is enabled on (limited by --hosts if specified)
+            config_enabled_hosts = service_config.get('enabled_on_hosts', 'all')
+            # All hosts that are configured for this service
+            all_hosts = self.config.get_service_hosts(servicename, in_hostgroup=hostgroup, no_restrict=True)
+            # All hosts that are enabled for this service (used to determine how many nodes can be brought down at once)
+            all_enabled_hosts = config_enabled_hosts
 
-        if not target_hosts:
-            self.log.info('All hosts have {0} version {1}'.format(servicename, version))
-            return []
+            if config_enabled_hosts == 'all':
+                config_enabled_hosts = config_hosts
+                all_enabled_hosts = all_hosts
 
-        if skipped_hosts:
-            self.log.info('The following hosts already have {0} version {1}: {2}'.format(
-              servicename, version, ', '.join(skipped_hosts)))
+            config_enabled_hosts = list(set([self.config.get_full_hostname(h) for h in config_enabled_hosts]))
 
-        self.log.hidebug('{0} configured on {1} hosts, enabled on {2} hosts'.format(
-          servicename, len(all_hosts), len(all_enabled_hosts)))
+            self.log.hidebug('Service configured on: {0}, hostgroup: {1}'.format(', '.join(all_hosts), hostgroup))
+            self.log.hidebug('Service deployed to: {0}'.format(', '.join(config_hosts)))
+            self.log.hidebug('Service enabled on: {0}'.format(', '.join(config_enabled_hosts)))
 
-        # Hosts that will have the package installed and will run the service
-        enabled_hosts = [x for x in target_hosts if x in config_enabled_hosts]
-        # Hosts that will have the package installed but do not run the service
-        disabled_hosts = [x for x in target_hosts if not x in enabled_hosts]
+            # check remote versions
+            if version and self.remote_versions.get(servicename):
+                target_hosts = [x for x in config_hosts if self.remote_versions[servicename].get(x) != version]
+            else:
+                target_hosts = config_hosts
 
-        # minimum number of hosts that need to be up
-        min_nodes_up = service_config.get('min_nodes_up')
-        self.log.hidebug('Service {0} min_nodes_up: {1}'.format(servicename, min_nodes_up))
+            # Get a list of skipped hosts so we can show a message
+            skipped_hosts = [x for x in config_hosts if not x in target_hosts]
 
-        # Make sure min_nodes_up is specified explicitly to avoid unexpected behaviour
-        if min_nodes_up is None:
-            raise DeployerException('min_nodes_up is not set for {0}'.format(servicename))
+            if not target_hosts:
+                self.log.info('All hosts have {0} version {1}'.format(servicename, version))
+                continue
 
-        if len(all_enabled_hosts) <= min_nodes_up:
-            raise DeployerException('Service {0} configured on {1} hosts, but min_nodes_up is {2}'.format(
-              servicename, len(all_enabled_hosts), min_nodes_up))
+            if skipped_hosts:
+                self.log.info('The following hosts already have {0} version {1}: {2}'.format(
+                  servicename, version, ', '.join(skipped_hosts)))
 
-        # The maximum number of enabled_hosts that can be run in a single stage
-        max_nodes_down = len(all_enabled_hosts) - min_nodes_up
-        self.log.debug('Service {0} max_nodes_down: {1}'.format(servicename, max_nodes_down))
+            self.log.hidebug('{0} configured on {1} hosts, enabled on {2} hosts'.format(
+              servicename, len(all_hosts), len(all_enabled_hosts)))
 
-        # If all enabled hosts can be deployed in a single stage
-        if len(enabled_hosts) <= max_nodes_down:
-            num_stages = 1
-            enabled_groups = [enabled_hosts]
-        # If there are more hosts than min_nodes_up will allow, break the hosts into stages
-        else:
-            # The number of stages required to run all of enabled_hosts with only max_nodes_down in each stage
-            num_stages = len(range(0, len(enabled_hosts), max_nodes_down))
-            # If there are more nodes than min_nodes_up will allow, divide them into multiple stages
-            chunk_size = int(round(float(len(enabled_hosts)) / num_stages))
-            # The groupings for enabled hosts distributed by chunk_size
-            enabled_groups = [enabled_hosts[i:i + chunk_size] for i in range(0, len(enabled_hosts), chunk_size)]
+            # Hosts that will have the package installed and will run the service
+            enabled_hosts = [x for x in target_hosts if x in config_enabled_hosts]
+            # Hosts that will have the package installed but do not run the service
+            disabled_hosts += [x for x in target_hosts if not x in enabled_hosts]
 
-        self.log.debug('Service {0} will be deployed in {1} stages'.format(servicename, num_stages))
+            num_sub_stages = 1
+            min_nodes_up = service_config.get('min_nodes_up', 0)
+            if hostgroup and min_nodes_up > 0:
+                num_nodes_in_group = self.config.get_num_hosts_in_hostgroup(hostgroup)
+                max_nodes_down = num_nodes_in_group - service_config.min_nodes_up
+                if max_nodes_down <= 0:
+                    if self.config.force:
+                        self.log.warning(
+                                'min_nodes_up is set to {0}, but number of nodes in group {1} is {2}. Forcing deployment because of --force'.format(
+                                    min_nodes_up, hostgroup, num_nodes_in_group))
+                    else:
+                        raise DeployerException('min_nodes_up is set to {0}, but number of nodes in group {1} is {2}'.format(
+                            min_nodes_up, hostgroup, num_nodes_in_group))
+                else:
+                    num_div_max = num_nodes_in_group / max_nodes_down
+                    num_mod_max = num_nodes_in_group % max_nodes_down
+                    if num_mod_max > 0:
+                        num_sub_stages = num_div_max + 1
+                    else:
+                        num_sub_stages = num_div_max
+
+            for x in range(0,num_sub_stages - len(enabled_groups),1):
+                enabled_groups.append([])
+
+            host_no = -1
+            for hostname in enabled_hosts:
+                host_no += 1
+                sub_stage = host_no % num_sub_stages
+                enabled_groups[sub_stage].append(hostname)
+
+        self.log.debug('Service {0} will be deployed in {1} stages'.format(servicename, len(enabled_groups)))
 
         if disabled_hosts:
             # Break the list of disabled hosts into the same number of stages as enabled_groups
-            disabled_chunk_size = int(round(float(len(disabled_hosts)) / num_stages))
+            disabled_chunk_size = int(round(float(len(disabled_hosts)) / len(enabled_groups)))
             disabled_groups = [disabled_hosts[i:i + disabled_chunk_size] for i in range(0, len(disabled_hosts), disabled_chunk_size)]
 
             # Distribute the disabled hosts across all stages

@@ -21,6 +21,7 @@ class AuroraGenerator(Generator):
         packages = [x for x in packages if not x in properties_packages]
 
         self.deploy_properties(properties_packages)
+        #not yet enabled for aurora#self.daemontools_stage(packages)
         self.deploy_ordered_packages(packages, self.config.deployment_order)
         self.dbmigrations_stage(packages, migration_path_suffix='db/migrations')
 
@@ -37,7 +38,7 @@ class AuroraGenerator(Generator):
                     self.use_graphite()
 
                 if self.config.get('pipeline_url'):
-                    upload = self.config.environment == 'dev'
+                    upload = self.config.environment == 'demo'
                     self.use_pipeline(release_version, upload)
 
             elif self.config.get('component'):

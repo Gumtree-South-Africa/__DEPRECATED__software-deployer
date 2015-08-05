@@ -5,7 +5,7 @@ from deployerlib.command import Command
 
 class DaemonTools(Command):
 
-    def initialize(self, remote_host, action, servicename, timeout=60, force=False, if_exists=None, unless_exists=None):
+    def initialize(self, remote_host, action, servicename, timeout=60, force=False, if_exists=None, unless_exists=None, fail_if_not_exists=None):
         """If force is specified as an option to the stop method, the kill
            method will be called if a normal stop fails.
         """
@@ -14,21 +14,39 @@ class DaemonTools(Command):
         self.force = force
         self.if_exists = if_exists
         self.unless_exists = unless_exists
+        self.fail_if_not_exists = fail_if_not_exists
 
         if not hasattr(self, action):
             self.log.critical('{0}: Method {1} is not implemented'.format(self.__class__.__name__, action))
             return False
 
+        if action in ['start', 'stop', 'kill']:
+            if not self.fail_if_not_exists:
+                self.fail_if_not_exists = '/etc/service/{0}'.format(servicename)
+
+        if action in ['disable']:
+            if not self.if_exists:
+                self.if_exists = '/etc/service/{0}'.format(servicename)
+
+        if action in ['enable']:
+            if not self.unless_exists:
+                self.unless_exists = '/etc/service/{0}'.format(servicename)
+
         return True
 
     def execute(self):
 
+        if self.fail_if_not_exists and not self.remote_host.file_exists(self.fail_if_not_exists):
+            self.log.critical('{0}: Action {1} cannot continue, because {2} does not exist'.format(self.__class__.__name__, self.action,
+                self.fail_if_not_exists))
+            return False
+
         if self.if_exists and not self.remote_host.file_exists(self.if_exists):
-            self.log.debug('Skipping daemontools {0}, file is not present: {1}'.format(self.action, self.if_exists))
+            self.log.info('Skipping daemontools {0}, file is not present: {1}'.format(self.action, self.if_exists))
             return True
 
         if self.unless_exists and self.remote_host.file_exists(self.unless_exists):
-            self.log.debug('Skipping daemontools {0}, file exists: {1}'.format(self.action, self.unless_exists))
+            self.log.info('Skipping daemontools {0}, file exists: {1}'.format(self.action, self.unless_exists))
             return True
 
         # Run the requested action
