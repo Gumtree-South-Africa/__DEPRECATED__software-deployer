@@ -770,6 +770,7 @@ class Generator(object):
             'remote_user': self.config.user,
             'source': '{0}/*'.format(source_path),
             'destination': '{0}/'.format(install_path),
+            'recursive': True,
             'continue_if_exists': True,
             'tag': package.servicename,
           },
