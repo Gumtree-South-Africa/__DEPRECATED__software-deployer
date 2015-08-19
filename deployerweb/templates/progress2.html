@@ -17,13 +17,29 @@
 
     <!-- Custom styles for this template -->
     <link href="{% static "main/main_page.css" %}" rel="stylesheet">
+
+    <style>
+
+    .text-warning { background-color: #ABACFF; }
+    .text-critical { background-color: red; }
+    .text-error { background-color: magenta; }
+
+    .text-warning, .text-error, .text-critical {
+       font-weight: bold;
+    }
+     .text-debug, .text-verbose, .text-hidebug {
+       display: none;
+    }
+    </style>
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script type="text/javascript" charset="utf-8">
 
+        // Data set by Django template (what we want to deploy)
         var data = {{ data|safe }};
 
         // Fire Ajax call to tornado API to run Deployment
-        // As result will return us deployment # to where we want connect by WebSocket to see progress 
+        // As result will return us deployment # to where we want connect by WebSocket to see progress
         jQuery( document ).ready(function( $ ) {
 
           var scroll_enabled = true;
@@ -41,6 +57,29 @@
               scroll_enabled = true;
             }
           });
+
+          var verbose_enabled = false;
+          $( "#verbose_toggle" ).click(function() {
+            console.log("Clicked");
+            if(verbose_enabled == true){
+              $(this).text("Verbose OFF");
+              $(this).removeClass( 'btn-danger' );
+              $(this).addClass( 'btn-success' );
+              var sheet = document.createElement('style')
+              sheet.innerHTML = ".text-verbose, .text-debug, .text-hidebug {display: none}";
+              document.body.appendChild(sheet);
+              verbose_enabled = false;
+            } else {
+              $(this).text("Verbose ON");
+              $(this).removeClass( 'btn-success' );
+              $(this).addClass( 'btn-danger' );
+              verbose_enabled = true;
+              var sheet = document.createElement('style')
+              sheet.innerHTML = ".text-verbose, .text-debug, .text-hidebug {display: block}";
+              document.body.appendChild(sheet);
+            }
+          });
+
 
           if ("MozWebSocket" in window) {
             WebSocket = MozWebSocket;
@@ -82,9 +121,9 @@
             write_line(message['data']);
           }
           if (message['type'] == 'api'){
-              if (message['data']['method'] == 'run_tail'){
+              // if (message['data']['method'] == 'run_tail'){
                 request_log(ws, JSON.stringify(message));
-              }
+              // }
           }
         }
 
@@ -93,7 +132,8 @@
         }
 
         function write_line(l) {
-            $('.deploy-div').append( l + "<br/>");
+            // $('.deploy-div').append( l + "<br/>");
+            $('.deploy-div').append( l );
         }
     </script>
   </head>
@@ -110,6 +150,7 @@
             <span class="icon-bar"></span>
           </button>
           <button id="scroll_toggle" type="button" class="btn btn-success navbar-btn" data-toggle="button">Scroll ON</button>
+          <button id="verbose_toggle" type="button" class="btn btn-success navbar-btn" data-toggle="button">Verbose OFF</button>
           <a class="navbar-brand" href="#">Web Deployer</a>
           <a class="navbar-brand" href="/">Home</a>
           <a class="navbar-brand" href="/status/">Current Jobs</a>

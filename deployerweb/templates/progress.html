@@ -27,7 +27,7 @@
     .text-warning, .text-error, .text-critical {
        font-weight: bold;
     }
-     .text-debug, .text-verbose {
+     .text-debug, .text-verbose, .text-hidebug {
        display: none;
     }
     </style>
@@ -66,7 +66,7 @@
               $(this).removeClass( 'btn-danger' );
               $(this).addClass( 'btn-success' );
               var sheet = document.createElement('style')
-              sheet.innerHTML = ".text-verbose, .text-debug {display: none}";
+              sheet.innerHTML = ".text-verbose, .text-debug, .text-hidebug {display: none}";
               document.body.appendChild(sheet);
               verbose_enabled = false;
             } else {
@@ -75,7 +75,7 @@
               $(this).addClass( 'btn-danger' );
               verbose_enabled = true;
               var sheet = document.createElement('style')
-              sheet.innerHTML = ".text-verbose, .text-debug {display: block}";
+              sheet.innerHTML = ".text-verbose, .text-debug, .text-hidebug {display: block}";
               document.body.appendChild(sheet);
             }
           });
@@ -149,9 +149,9 @@
             write_line(message['data']);
           }
           if (message['type'] == 'api'){
-              if (message['data']['method'] == 'run_tail'){
+              // if (message['data']['method'] == 'run_tail'){
                 request_log(ws, JSON.stringify(message));
-              }
+              // }
           }
         }
 

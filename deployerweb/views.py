@@ -210,6 +210,6 @@ def get_log(request):
     if 'POST' not in request.method or not releaseid or not logfile:
         return deploys_status(request)
 
-    payload.update(data={'releaseid': releaseid, 'logfile': logfile, 'method': 'run_tail'}, type='api')
+    payload.update(data={'releaseid': releaseid, 'logfile': logfile, 'method': 'read_from_memory'}, type='api')
 
     return render_to_response('progress2.html', {'data': json.dumps(payload), 'host': request.META['HTTP_HOST'], 'release': releaseid}, context_instance=request_context)
