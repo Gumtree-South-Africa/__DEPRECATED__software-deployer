@@ -1,3 +1,14 @@
+software-deployer (1.0.11) precise; urgency=low
+
+  [ Vladimir Lazarenko ]
+  * Force CopyFile of generic generator to be recursive, cause suma properties contain subdirs
+
+  [ Yevgen Flerko ]
+  * deployment switched to subprocess.Popen and Stdout to PIPE
+  * small fixes to templates
+
+ -- Yevgen Flerko <yflerko@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Fri, 21 Aug 2015 11:11:42 +0200
+
 software-deployer (1.0.10) precise; urgency=low
 
   [ Patrick McConnell ]
