@@ -53,9 +53,9 @@
           {% for config in configs %}
             <div class="input-group input-group-sm">
               <span class="input-group-addon">
-                <input type="radio" aria-label="..." name='config' value="{{config}}">
               </span>
-              <input type="text" class="form-control" aria-label="..." readonly="readonly" value="{{config}}">
+              <!-- <input type="text" class="form-control" aria-label="..." readonly="readonly" value="{{config}}"> -->
+              <input class="btn btn-sm btn-default btn-block" type="submit" name='config' value="{{config}}">
             </div><!-- /input-group -->
           {% endfor %}
             <button class="btn btn-sm btn-success btn-block" type="submit">Submit</button>

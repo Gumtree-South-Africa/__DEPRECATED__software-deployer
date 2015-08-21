@@ -37,6 +37,7 @@
 
         // Data set by Django template (what we want to deploy)
         var data = {{ data|safe }};
+        var socket;
 
         // Fire Ajax call to tornado API to run Deployment
         // As result will return us deployment # to where we want connect by WebSocket to see progress
@@ -80,6 +81,18 @@
             }
           });
 
+          var killit_enabled = true;
+          $( "#killit_toggle" ).click(function() {
+            console.log("Clicked");
+            if(killit_enabled == true){
+              $(this).text("Killed!");
+              $(this).removeClass( 'btn-success' );
+              $(this).addClass( 'btn-danger' );
+              var cmd = {"data":{"method":"stop_deployment"},"type":"api"};
+              socket.send(JSON.stringify(cmd));
+              killit_enabled = false;
+            }
+          });
 
           if ("MozWebSocket" in window) {
             WebSocket = MozWebSocket;
@@ -87,6 +100,7 @@
 
           if (WebSocket) {
             var ws = new WebSocket("ws://{{ host }}/listen/?release={{ release }}");
+            socket = ws;
             ws.onopen = function() {
               ws.send("We Trying to open Socket");
               ws.send(JSON.stringify({{ data|safe }}));
@@ -151,6 +165,7 @@
           </button>
           <button id="scroll_toggle" type="button" class="btn btn-success navbar-btn" data-toggle="button">Scroll ON</button>
           <button id="verbose_toggle" type="button" class="btn btn-success navbar-btn" data-toggle="button">Verbose OFF</button>
+          <button id="killit_toggle" type="button" class="btn btn-success navbar-btn" data-toggle="button">Kill It!</button>
           <a class="navbar-brand" href="#">Web Deployer</a>
           <a class="navbar-brand" href="/">Home</a>
           <a class="navbar-brand" href="/status/">Current Jobs</a>

@@ -53,6 +53,12 @@
         <div class="row">
           <div class="col-lg-4">
           <a href="/" class="btn btn-xs btn-primary btn-block">Back To Configs</a>
+          <div class="input-group input-group-sm">
+              <span class="input-group-addon">
+                <input type="checkbox" aria-label="..." name="redeploy">
+              </span>
+              <p type="text" class="form-control text-center" >Redeploy?</p>
+          </div><!-- /input-group -->
           {% for release in releases %}
             <div class="input-group input-group-sm">
               <span class="input-group-addon">
@@ -63,13 +69,7 @@
                 <button class="btn btn-sm btn-default btn-block" type="submit" name='release' value="{{release.id}}">{{release.niceName}}</button>
               </form>
             </div><!-- /input-group -->
-          {% endfor %}
-            <div class="input-group input-group-sm">
-              <span class="input-group-addon">
-                <input type="checkbox" aria-label="..." name="redeploy">
-              </span>
-              <p type="text" class="form-control text-center" >Redeploy?</p>
-            </div><!-- /input-group -->
+            {% endfor %}
             <input type="hidden" name="deployment_type" value="full">
             <button class="btn btn-xs btn-success btn-block" type="submit">Deploy Release</button>
           </div><!-- /.col-lg-6 -->

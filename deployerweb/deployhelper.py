@@ -1,7 +1,7 @@
 ''' Deployment Helper '''
 
-import os, sys
-from subprocess import PIPE, Popen
+import os, sys, signal
+from subprocess import PIPE, Popen, STDOUT
 try:
     from Queue import Queue, Empty
 except ImportError:
@@ -38,9 +38,6 @@ LISTENERS = {}
 #   }
 # }
 EXECPOOL = {}
-
-# TODO: before final merge any loop should be removed!
-MAIN_RUN = True
 
 # Get logger instance for Tornado
 app_log = tornado.log.app_log
@@ -87,10 +84,9 @@ def run_deployment(data, timeout=5):
 
     msg = {'logfile': "false", 'releaseid': data['release'], 'method': 'read_from_memory'}
     thread_to_wsockets(data['release'], format_to_json(calltype='api', data=msg))
-    time.sleep(5)
 
     ON_POSIX = 'posix' in sys.builtin_module_names
-    EXECPOOL[data['release']]['proc'] = Popen(cmd_params, stdout=PIPE, bufsize=1, close_fds=ON_POSIX)
+    EXECPOOL[data['release']]['proc'] = Popen(cmd_params, stdout=PIPE, stderr=STDOUT, bufsize=1, close_fds=ON_POSIX)
 
     while True:
         output = EXECPOOL[data['release']]['proc'].stdout.readline()
@@ -99,6 +95,7 @@ def run_deployment(data, timeout=5):
         if output:
             EXECPOOL[data['release']]['queue'].append(output.strip())
 
+    time.sleep(2)
     msg = "Release #{}: Finished Deployment.\n".format(data['release'])
     thread_to_wsockets(data['release'], format_to_json(data='<div class="text-info">[SYSTEM  ] {}</div>'.format(msg)))
 
@@ -322,6 +319,14 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
             else:
                 self.write_message(format_to_json(data=u"<div class=\"text-info\">[SYSTEM  ] Requested method not found: {}</div>".format(jdata['data']['method'])))
 
+    def stop_deployment(self, data):
+        ''' Send termination signal to Deployment process '''
+
+        # app_log.debug("KILL IT!!!: Index/Procs/Status {}/{}/{}".format(self.index, EXECPOOL[self.index]['proc'], EXECPOOL[self.index]['proc'].poll()))
+
+        if self.index in EXECPOOL and EXECPOOL[self.index]['proc'].poll() is None:
+            EXECPOOL[self.index]['proc'].send_signal(signal.SIGINT)
+
     def run_tail(self, data):
         ''' Prepare and run Tail as part of Tornado Event loop '''
 
@@ -333,7 +338,7 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         ''' Prepare and run Tail as part of Tornado Event loop '''
 
         # LISTENERS[self.sessionid]['queue'] = EXECPOOL[self.index]['queue'].reverse()
-        self.tailed_callback = tornado.ioloop.PeriodicCallback(partial(self.read_memory_buffer, self.sessionid, self.index), 1)
+        self.tailed_callback = tornado.ioloop.PeriodicCallback(partial(self.read_memory_buffer, self.sessionid, self.index), 5)
         self.tailed_callback.start()
 
     def read_memory_buffer(self, sid, index):

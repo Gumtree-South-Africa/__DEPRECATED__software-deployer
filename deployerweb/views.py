@@ -21,8 +21,13 @@ from tornado.log import app_log
 
 
 def niceName(release):
-    groups = re.match(r'^([a-z]+)-([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$', release)
-    return "%s %s-%s-%s %s:%s:%s" % groups.group(1,2,3,4,5,6,7)
+    groups = re.match(r'^([a-z/]+)-([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$', release)
+    if groups:
+        # return "%s %s-%s-%s %s:%s:%s" % groups.group(1,2,3,4,5,6,7)
+        return "%s %s-%s-%s %s:%s:%s" % groups.groups()
+    else:
+        return None
+
 
 def login_page(request, document_root=None):
     ''' Login page '''
@@ -115,7 +120,8 @@ def list_dirs(request):
     for x in os.walk(request.session['tarballs']):
         if request.session['platform'] in x[0]:
             releaseId = x[0].replace('{}'.format(request.session['tarballs']), '')
-            releases.append({'id': releaseId, 'niceName': niceName(releaseId)})
+            if niceName(releaseId):
+                releases.append({'id': releaseId, 'niceName': niceName(releaseId)})
 
     releases = sorted(releases, key=lambda k: k['id'], reverse=True)
 
@@ -205,6 +211,7 @@ def get_log(request):
     request_context = RequestContext(request)
     payload = {}
     releaseid = request.POST.get('release', None)
+    request.session['release'] = releaseid
     logfile = request.POST.get('logfile', None)
 
     if 'POST' not in request.method or not releaseid or not logfile:
