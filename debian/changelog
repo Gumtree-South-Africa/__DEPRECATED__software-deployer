@@ -1,3 +1,9 @@
+software-deployer (1.0.12) precise; urgency=low
+
+  * LDAP Auth basic functionality only
+
+ -- Yevgen Flerko <yflerko@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Mon, 24 Aug 2015 11:42:08 +0200
+
 software-deployer (1.0.11) precise; urgency=low
 
   [ Vladimir Lazarenko ]
