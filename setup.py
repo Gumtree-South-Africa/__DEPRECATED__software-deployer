@@ -35,8 +35,8 @@ setup(
         "django>=1.8.0",
         "tornado>=4.0",
         "futures>=2.2.0",
-        "python-ldap>=2.4.0",
-        "django-auth-ldap>=1.2.6",
+        "python-ldap>=2.3.0",
+        "django-auth-ldap>=1.2.0",
         'Fabric',
         "PyYAML"
     ],
