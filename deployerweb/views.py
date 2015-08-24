@@ -13,6 +13,8 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout, get_user
 from django.conf import settings
+from django_auth_ldap.backend import LDAPBackend
+
 # We will use Tornado Application Logging while Django coupled with Tornado
 # app_log.info|critical|error|debug(MESSAGE)
 from tornado.log import app_log

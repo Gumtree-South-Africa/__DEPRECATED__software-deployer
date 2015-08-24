@@ -11,6 +11,22 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 import os
 
+# LDAP Support
+import ldap
+from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
+
+# LDAP Section
+AUTH_LDAP_BIND_DN = ""
+AUTH_LDAP_BIND_PASSWORD = ""
+AUTH_LDAP_SERVER_URI = "ldap://10.32.110.10 ldap://10.32.110.11 ldap://10.32.110.12"
+AUTH_LDAP_USER_DN_TEMPLATE = "uid=%(user)s,ou=People,ou=classifieds,o=ebay"
+AUTH_LDAP_ALWAYS_UPDATE_USER = True
+AUTH_LDAP_START_TLS = True
+#AUTH_LDAP_MIRROR_GROUPS = True
+# Data map from Ldap to Django internal
+AUTH_LDAP_USER_ATTR_MAP = {"first_name": "givenName", "last_name": "sn", "email": "mail"}
+
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -109,6 +125,11 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+)
+
+AUTHENTICATION_BACKENDS = (
+    'django_auth_ldap.backend.LDAPBackend',
+    'django.contrib.auth.backends.ModelBackend',
 )
 
 MIDDLEWARE_CLASSES = (
