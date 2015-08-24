@@ -6,7 +6,7 @@ from deployerlib.command import Command
 class CreateDeployPackage(Command):
     """Copies .tar.gz's from integration be001 to a timestamped directory"""
 
-    def initialize(self, remote_host, service_names, destination, tarballs_location, properties_location, webapps_location):
+    def initialize(self, remote_host, service_names, packagegroup, destination, tarballs_location, properties_location, webapps_location):
         return True
 
     def execute(self):
@@ -15,7 +15,7 @@ class CreateDeployPackage(Command):
         current_green_integration_packages = [self.find_package_name(service) for service in self.service_names]
 
         # make dir if links are non empty
-        timestamped_destination = "%s/%s-%s" % (self.destination, self.service_name, strftime("%Y%m%d%H%M%S"))
+        timestamped_destination = "%s/%s-%s" % (self.destination, self.packagegroup, strftime("%Y%m%d%H%M%S"))
         if not os.path.exists(timestamped_destination) and current_green_integration_packages:
             os.makedirs(timestamped_destination)
 

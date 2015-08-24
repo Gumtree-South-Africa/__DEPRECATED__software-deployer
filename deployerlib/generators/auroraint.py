@@ -19,11 +19,12 @@ class AuroraIntGenerator(Generator):
         tasks.append({
             'command': 'createdeploypackage',
             'remote_host': self.config.remote_host,
+            'packagegroup': self.config.packagegroup,
             'service_names': services,
             'destination': self.config.destination,
-            'webapps_location': self.config.webapps_location,
-            'tarballs_location': self.config.tarballs_location,
-            'properties_location': self.config.properties_location,
+            'webapps_location': self.config.service_defaults.install_location,
+            'tarballs_location': self.config.service_defaults.destination,
+            'properties_location': self.config.service_defaults.properties_location,
             'remote_user': self.config.user,
         })
 
