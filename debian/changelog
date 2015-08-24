@@ -1,3 +1,10 @@
+software-deployer (1.0.16) precise; urgency=low
+
+  * Minor fixes for min_nodes_up functionality
+  * Bug fix for release version and description
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Mon, 24 Aug 2015 23:31:54 +0200
+
 software-deployer (1.0.15) precise; urgency=low
 
   [ Sander van den Berg ]
