@@ -1,3 +1,9 @@
+software-deployer (1.0.14) precise; urgency=low
+
+  * fix of wrong package name for debian build.
+
+ -- Yevgen Flerko <yflerko@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Mon, 24 Aug 2015 11:49:52 +0200
+
 software-deployer (1.0.13) precise; urgency=low
 
   * fix deps
