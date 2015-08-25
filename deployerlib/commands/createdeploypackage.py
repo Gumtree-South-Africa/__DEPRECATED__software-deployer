@@ -20,8 +20,7 @@ class CreateDeployPackage(Command):
             os.makedirs(timestamped_destination)
 
 	for link in current_green_integration_packages:
-		 file_name = link.rsplit("/", 1)[-1]
-		 package_path = "%s/%s.tar.gz" % (self.tarballs_location, file_name)
+		 package_path = "%s/%s.tar.gz" % (self.tarballs_location, link)
 
 		 self.log.info("Fetching archive: %s" % package_path)
                  self.remote_host.get_remote(package_path, timestamped_destination)
