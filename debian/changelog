@@ -1,3 +1,10 @@
+software-deployer (1.0.17) precise; urgency=low
+
+  * Services only have one entry
+  * Link is now the file directly
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Tue, 25 Aug 2015 18:51:38 +0200
+
 software-deployer (1.0.16) precise; urgency=low
 
   * Minor fixes for min_nodes_up functionality
