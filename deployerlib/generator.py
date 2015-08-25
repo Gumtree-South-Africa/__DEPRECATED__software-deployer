@@ -38,7 +38,7 @@ class Generator(object):
     def get_release_version(self):
         """Return the release number if available"""
 
-        if self.config.release:
+        if self.config.get('release'):
             return os.path.basename(os.path.commonprefix(self.config.release).rstrip('/'))
 
     def get_release_description(self, base='Deployment of', config_items=['platform', 'environment']):
@@ -51,9 +51,9 @@ class Generator(object):
         # List of configuration items to be added to the description
         parts.append(', '.join(['{0} {1}'.format(x, self.config.get(x)) for x in config_items if self.config.get(x)]))
 
-        if self.config.release:
+        if self.config.get('release'):
             parts.append('release {0}'.format(self.release_version))
-        elif self.config.component:
+        elif self.config.get('component'):
             components = ', '.join([os.path.basename(x) for x in self.config.component])
             parts.append('components {0}'.format(components))
         else:
