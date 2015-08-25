@@ -7,8 +7,9 @@ from deployerlib.exceptions import DeployerException
 class Tasklist(object):
     """Manage the building of a tasklist"""
 
-    def __init__(self):
+    def __init__(self, name='Deployment'):
         self.log = Log(self.__class__.__name__)
+        self.name = name
         self._stages = {}
         self._stage_order = []
         self._pre_order = []
@@ -141,11 +142,13 @@ class Tasklist(object):
 
         return not bool([x for x in self._stages.keys() if self._stages[x]['tasks']])
 
-    def generate(self, name='Deployment'):
+    def generate(self):
         """Build a tasklist from the queued stages"""
 
         if self.is_empty():
             self.log.warning('Tasklist is empty')
+        else:
+            self.log.info(self.name)
 
         # Finalize stage names
         for stage_name in self.stages():
@@ -169,7 +172,7 @@ class Tasklist(object):
         # Reorder stages that have been tagged as pre or post
         stages = [self._stages[x] for x in pre + main + post if self._stages[x]['tasks']]
 
-        return { 'name': name, 'stages': stages }
+        return { 'name': self.name, 'stages': stages }
 
     def _exists_or_die(self, stage_name):
 

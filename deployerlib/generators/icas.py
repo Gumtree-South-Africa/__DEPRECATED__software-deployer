@@ -51,7 +51,7 @@ class IcasGenerator(Generator):
 
             self.dbmigrations_stage(this_packages, properties_config.properties_path, migration_path_suffix='db')
 
-        if not self.tasklist.is_empty():
+        if self.config.release and not self.tasklist.is_empty():
             self.use_graphite()
 
         return self.tasklist.generate()
