@@ -648,18 +648,22 @@ class Generator(object):
             disabled_hosts += [x for x in target_hosts if not x in enabled_hosts]
 
             num_sub_stages = 1
-            min_nodes_up = service_config.get('min_nodes_up', 0)
+            min_nodes_up = service_config.get('min_nodes_up')
+
+            # Make sure min_nodes_up is specified explicitly to avoid unexpected behaviour
+            if min_nodes_up is None:
+                raise DeployerException('min_nodes_up is not set for {0}'.format(servicename))
+
             if hostgroup and min_nodes_up > 0:
                 num_nodes_in_group = self.config.get_num_hosts_in_hostgroup(hostgroup)
-                max_nodes_down = num_nodes_in_group - service_config.min_nodes_up
+                max_nodes_down = num_nodes_in_group - min_nodes_up
                 if max_nodes_down <= 0:
+                    msg = 'min_nodes_up is set to {0} for {1}, but number of nodes in group {2} is {3}'.format(
+                      min_nodes_up, servicename, hostgroup, num_nodes_in_group)
                     if self.config.force:
-                        self.log.warning(
-                                'min_nodes_up is set to {0}, but number of nodes in group {1} is {2}. Forcing deployment because of --force'.format(
-                                    min_nodes_up, hostgroup, num_nodes_in_group))
+                        self.log.warning(msg)
                     else:
-                        raise DeployerException('min_nodes_up is set to {0}, but number of nodes in group {1} is {2}'.format(
-                            min_nodes_up, hostgroup, num_nodes_in_group))
+                        raise DeployerException(msg)
                 else:
                     num_div_max = num_nodes_in_group / max_nodes_down
                     num_mod_max = num_nodes_in_group % max_nodes_down
