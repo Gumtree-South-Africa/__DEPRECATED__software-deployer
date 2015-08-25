@@ -1,3 +1,10 @@
+software-deployer (1.0.19) precise; urgency=low
+
+  * Aurora: Only call graphite if something is being deployed
+  * Add templates_stage method to support execution of Elasticsearch templates
+
+ -- Patrick McConnell <pmcconnell@ebay.com>  Tue, 25 Aug 2015 13:42:50 +0200
+
 software-deployer (1.0.18) precise; urgency=low
 
   * When a deploy is done, run the archive, pipeline etc even when there were no tasks
