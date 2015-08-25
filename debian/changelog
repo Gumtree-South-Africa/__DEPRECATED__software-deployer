@@ -1,3 +1,15 @@
+software-deployer (1.0.15) precise; urgency=low
+
+  [ Sander van den Berg ]
+  * Changed config for package creation
+
+  [ Patrick McConnell ]
+  * Generator cleanup
+
+  [ Sander van den Berg ]
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Tue, 25 Aug 2015 12:23:24 +0200
+
 software-deployer (1.0.14) precise; urgency=low
 
   * fix of wrong package name for debian build.
