@@ -39,5 +39,5 @@ class CreateDeployPackage(Command):
 
     def find_package_name(self, service_name):
         service_location = "%s/%s" % (self.webapps_location, service_name)
-        current_green_integration_packages = self.remote_host.execute_remote('find %s -type l -exec readlink {} \;' % service_location).splitlines()
+        current_green_integration_packages = self.remote_host.execute_remote('find %s -type l -exec readlink {} \;' % service_location)
         return current_green_integration_packages
