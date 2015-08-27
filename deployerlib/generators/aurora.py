@@ -27,11 +27,11 @@ class AuroraGenerator(Generator):
 
         if self.config.release:
 
+            if self.config.get('graphite') and not self.tasklist.is_empty():
+                self.use_graphite()
+
             if self.config.get('history'):
                 self.archive_stage()
-
-            if self.config.get('graphite'):
-                self.use_graphite()
 
             if self.config.get('pipeline_url'):
                 upload = self.config.environment == 'demo'
