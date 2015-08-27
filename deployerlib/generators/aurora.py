@@ -25,7 +25,7 @@ class AuroraGenerator(Generator):
         self.deploy_ordered_packages(packages, self.config.deployment_order)
         self.dbmigrations_stage(packages, migration_path_suffix='db/migrations')
 
-        if self.config.release and not self.tasklist.is_empty():
+        if self.config.release:
 
             if self.config.get('history'):
                 self.archive_stage()
