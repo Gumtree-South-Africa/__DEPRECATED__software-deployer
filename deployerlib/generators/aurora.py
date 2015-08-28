@@ -24,7 +24,7 @@ class AuroraGenerator(Generator):
         #not yet enabled for aurora#self.daemontools_stage(packages)
         self.deploy_ordered_packages(packages, self.config.deployment_order)
         self.dbmigrations_stage(packages, migration_path_suffix='db/migrations')
-        self.templates_stage(packages, template_path_suffix='elastic/templates')
+        self.templates_stage(packages)
 
         if self.config.release:
 
