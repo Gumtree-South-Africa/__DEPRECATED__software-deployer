@@ -372,12 +372,14 @@ class Generator(object):
             # Go through each host in each hostgroup and find a single host that is in the matrix
             for hostgroup in service_config.hostgroups:
                 for hostname in self.config.hostgroup[hostgroup]['hosts']:
-                    if hostname in self.deployment_matrix.get(package.servicename, []):
-                        template_hosts.append(hostname)
+                    full_hostname = self.config.get_full_hostname(hostname)
+
+                    if full_hostname in self.deployment_matrix.get(package.servicename, []):
+                        template_hosts.append(full_hostname)
                         break
 
             if not template_hosts:
-                self.log.debug('{0} is not being deployed, not executing elastic search templates')
+                self.log.debug('{0} is not being deployed, not executing elastic search templates'.format(package.servicename))
 
             unpack_location = os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename)
             template_location = os.path.join(unpack_location, template_path_suffix).rstrip('/')
