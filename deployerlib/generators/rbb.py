@@ -233,7 +233,7 @@ class RbbGenerator(Generator):
 
                         dbmig_tasks.append({
                           'tag': servicename,
-                          'command': 'dbmigration',
+                          'command': 'migration_script',
                           'if_exists': dbmig_location,
                           'remote_host': hostname,
                           'remote_user': self.config.user,

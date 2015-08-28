@@ -26,7 +26,7 @@ class Executor(object):
         self.callables = {
           'upload': upload.Upload,
           'unpack': unpack.Unpack,
-          'dbmigration': dbmigration.DBMigration,
+          'migration_script': migrationscript.MigrationScript,
           'createdirectory': createdirectory.CreateDirectory,
           'copyfile': copyfile.CopyFile,
           'movefile': movefile.MoveFile,

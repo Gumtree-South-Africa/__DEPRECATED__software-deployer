@@ -70,8 +70,8 @@ class CommandsTest(unittest.TestCase):
         command = createdirectory.CreateDirectory(remote_host=self.remote_host, source='/tmp/NO_SUCH_DIRECTORY')
         self.verifyCommand(command)
 
-    def testCommand_dbmigration(self):
-        command = dbmigration.DBMigration(remote_host=self.remote_host, source='/tmp/NO_SUCH_DIRECTORY/NO_SUCH_DIRECTORY')
+    def testCommand_migrationscript(self):
+        command = migrationscript.migrationscript(remote_host=self.remote_host, source='/tmp/NO_SUCH_DIRECTORY/NO_SUCH_DIRECTORY')
         self.verifyCommand(command)
 
     def testCommand_deployandrestart(self):

@@ -123,7 +123,7 @@ class Generator(object):
           'concurrency_per_host': self.config.non_deploy_concurrency_per_host,
         }
 
-        for stage in ['Pipeline notify deploying', 'Create temp directories', 'Upload', 'Unpack', 'Send graphite start', 'Properties', 'Database migrations', 'Set daemontools state']:
+        for stage in ['Pipeline notify deploying', 'Create temp directories', 'Upload', 'Unpack', 'Send graphite start', 'Properties', 'Database migrations', 'Elasticsearch templates', 'Set daemontools state']:
             self.tasklist.create_stage(stage, pre=True)
 
             if not stage == 'Database migrations':
@@ -332,7 +332,7 @@ class Generator(object):
             self.log.info('Adding db migration for {0} on {1}'.format(package.servicename, hostname))
 
             self.tasklist.add('Database migrations', {
-              'command': 'dbmigration',
+              'command': 'migration_script',
               'remote_host': hostname,
               'remote_user': self.config.user,
               'source': service_config.migration_command.format(
@@ -344,6 +344,55 @@ class Generator(object):
               'tag': package.servicename,
               'if_exists': migration_location,
             })
+
+    def templates_stage(self, packages, template_path_suffix=''):
+        """Execute Elasticsearch templates on a single host from each
+           hostgroup to which this package is deployed.
+
+           This method can be called multiple times. Each time it is called it
+           will add tasks to the same stage.
+
+           NOTE: This method should be called after calling deploy_stage for the
+           given service. Otherwise no hosts will be found in the deployment
+           matrix, and therefore no template tasks will be added.
+        """
+
+        if type(packages) is not list:
+            packages = [packages]
+
+        for package in packages:
+
+            template_hosts = []
+            service_config = self.config.get_with_defaults('service', package.servicename)
+
+            if not service_config.get('template_command'):
+                self.log.debug('No template_command configured for service {0}, skipping Elasticsearch templates'.format(package.servicename))
+                continue
+
+            # Go through each host in each hostgroup and find a single host that is in the matrix
+            for hostgroup in service_config.hostgroups:
+                for hostname in self.config.hostgroup[hostgroup]['hosts']:
+                    if hostname in self.deployment_matrix.get(package.servicename, []):
+                        template_hosts.append(hostname)
+                        break
+
+            if not template_hosts:
+                self.log.debug('{0} is not being deployed, not executing elastic search templates')
+
+            unpack_location = os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename)
+            template_location = os.path.join(unpack_location, template_path_suffix).rstrip('/')
+
+            for hostname in template_hosts:
+                self.log.info('Adding Elasticsearch template for {0} on {1}'.format(package.servicename, hostname))
+
+                self.tasklist.add('Elasticsearch templates', {
+                  'command': 'migration_script',
+                  'remote_host': hostname,
+                  'remote_user': self.config.user,
+                  'source': service_config.template_command.format(template_location=template_location),
+                  'tag': package.servicename,
+                  'if_exists': template_location,
+                })
 
     def get_control_type(self, servicename, hostname):
         """Return control_type for a service on a given host
