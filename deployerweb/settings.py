@@ -9,16 +9,29 @@ https://docs.djangoproject.com/en/1.8/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.8/ref/settings/
 """
-import os
+import os, mmap, re
 
 # LDAP Support
 import ldap
 from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 
 # LDAP Section
+LDAP_CONFIG_FILE = "/etc/ldap/ldap.conf"
+
+# Get LDAP Addresses if config valid  , dirty hack to read LDAP endpoints from ldap.conf
+# But maybe better option will be place to /etc/<platform> config file and manage it by puppet per env/platform
+with open(LDAP_CONFIG_FILE, "r+b") as f:
+    mm = mmap.mmap(f.fileno(), 0)
+    pos = mm.find('URI')
+    if pos >= 0:
+        rr = mm.readline().strip(' \t\r')
+        m = re.findall('ldap://(.*?\n?) ', rr, re.DOTALL)
+        AUTH_LDAP_SERVER_URI = "ldap://" + " ldap://".join(m).strip()
+    else:
+        AUTH_LDAP_SERVER_URI = ""
+
 AUTH_LDAP_BIND_DN = ""
 AUTH_LDAP_BIND_PASSWORD = ""
-AUTH_LDAP_SERVER_URI = "ldap://10.32.110.10 ldap://10.32.110.11 ldap://10.32.110.12"
 AUTH_LDAP_USER_DN_TEMPLATE = "uid=%(user)s,ou=People,ou=classifieds,o=ebay"
 AUTH_LDAP_ALWAYS_UPDATE_USER = True
 AUTH_LDAP_START_TLS = True
