@@ -11,7 +11,7 @@ class Archive(Command):
 
     def initialize(self, archivedir, archivedepth=-1, release='', components=[]):
         self.archivedepth = archivedepth
-        self.release = release
+        self.release = release.rstrip('/')
         self.components = components
         return True
 
