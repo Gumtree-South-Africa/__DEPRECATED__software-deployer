@@ -1,3 +1,13 @@
+software-deployer (1.0.21) precise; urgency=low
+
+  [ Yevgen Flerko ]
+  * fix ldap URI configuration to allow django fetch LDAP end-points per env. from /etc/ldap/ldap.conf
+
+  [ Arnoud Witt ]
+  * Fix issue #7: remove trailing '/' in release dir
+
+ -- Arnoud Witt <awitt@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Mon, 07 Sep 2015 16:55:45 +0200
+
 software-deployer (1.0.20) precise; urgency=low
 
   * Bug fix for templates_stage
