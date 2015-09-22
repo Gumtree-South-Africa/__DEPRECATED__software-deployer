@@ -1,3 +1,9 @@
+software-deployer (1.0.22) precise; urgency=low
+
+  * enable Websocket dynamic schema change basing on headers
+
+ -- Yevgen Flerko <yflerko@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Tue, 22 Sep 2015 18:17:59 +0200
+
 software-deployer (1.0.21) precise; urgency=low
 
   [ Yevgen Flerko ]
