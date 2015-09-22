@@ -115,7 +115,7 @@
               }
 
               if (WebSocket) {
-                var ws = new WebSocket("ws://{{ host }}/listen/?release=" + data.data.release);
+                var ws = new WebSocket("{{ ws_schema }}://{{ host }}/listen/?release=" + data.data.release);
                 socket = ws;
                 ws.onopen = function() {
                   ws.send("We Trying to open Socket");

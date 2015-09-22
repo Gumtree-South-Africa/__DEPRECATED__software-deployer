@@ -99,7 +99,7 @@
           }
 
           if (WebSocket) {
-            var ws = new WebSocket("ws://{{ host }}/listen/?release={{ release }}");
+            var ws = new WebSocket("{{ ws_schema }}://{{ host }}/listen/?release={{ release }}");
             socket = ws;
             ws.onopen = function() {
               ws.send("We Trying to open Socket");

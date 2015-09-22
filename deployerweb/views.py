@@ -22,6 +22,17 @@ from tornado.log import app_log
 # logger = logging.getLogger('view_logger')
 
 
+def set_ws_schema(headers):
+    ''' Set WS or WSS depends on headers X_EBAY_SECURE or X_FORWARDED_PROTO '''
+    if 'HTTP_X_EBAY_SECURE' in headers and headers['HTTP_X_EBAY_SECURE'] == 'true':
+        return 'wss'
+
+    if 'HTTP_X_FORWARDED_PROTO' in headers and headers['HTTP_X_FORWARDED_PROTO'] == 'https':
+        return 'wss'
+
+    return 'ws'
+
+
 def niceName(release):
     groups = re.match(r'^([a-z/]+)-([0-9]{4})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$', release)
     if groups:
@@ -35,6 +46,7 @@ def login_page(request, document_root=None):
     ''' Login page '''
 
     request_context = RequestContext(request)
+
     if request.user.is_authenticated():
         return redirect(settings.LOGIN_REDIRECT_URL)
 
@@ -193,7 +205,7 @@ def deploy_it(request):
     # Build parameters we want to pass into Tornado from deployment page
     params.update(config_file=request.session['config_file'], release=request.session['release'], tarballs=request.session['tarballs'])
     # return render_to_response('progress.html', {'log_file': log_file, 'self_host': self_host}, context_instance=request_context)
-    return render_to_response('progress.html', {'data': json.dumps(params), 'host': request.META['HTTP_HOST']}, context_instance=request_context)
+    return render_to_response('progress.html', {'data': json.dumps(params), 'host': request.META['HTTP_HOST'], 'ws_schema': set_ws_schema(request.META)}, context_instance=request_context)
 
 
 @login_required(redirect_field_name=None)
@@ -221,4 +233,4 @@ def get_log(request):
 
     payload.update(data={'releaseid': releaseid, 'logfile': logfile, 'method': 'read_from_memory'}, type='api')
 
-    return render_to_response('progress2.html', {'data': json.dumps(payload), 'host': request.META['HTTP_HOST'], 'release': releaseid}, context_instance=request_context)
+    return render_to_response('progress2.html', {'data': json.dumps(payload), 'host': request.META['HTTP_HOST'], 'release': releaseid, 'ws_schema': set_ws_schema(request.META)}, context_instance=request_context)

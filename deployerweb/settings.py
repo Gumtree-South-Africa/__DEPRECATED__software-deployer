@@ -9,7 +9,10 @@ https://docs.djangoproject.com/en/1.8/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.8/ref/settings/
 """
-import os, mmap, re
+
+import os
+import mmap
+import re
 
 # LDAP Support
 import ldap
@@ -35,10 +38,9 @@ AUTH_LDAP_BIND_PASSWORD = ""
 AUTH_LDAP_USER_DN_TEMPLATE = "uid=%(user)s,ou=People,ou=classifieds,o=ebay"
 AUTH_LDAP_ALWAYS_UPDATE_USER = True
 AUTH_LDAP_START_TLS = True
-#AUTH_LDAP_MIRROR_GROUPS = True
+# AUTH_LDAP_MIRROR_GROUPS = True
 # Data map from Ldap to Django internal
 AUTH_LDAP_USER_ATTR_MAP = {"first_name": "givenName", "last_name": "sn", "email": "mail"}
-
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

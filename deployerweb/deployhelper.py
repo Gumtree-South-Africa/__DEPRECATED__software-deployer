@@ -1,6 +1,8 @@
 ''' Deployment Helper '''
 
-import os, sys, signal
+import os
+import sys
+import signal
 from subprocess import PIPE, Popen, STDOUT
 try:
     from Queue import Queue, Empty
@@ -346,19 +348,19 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
 
         # # check if process still exist and running if not then we set flag to True, default flag False
         if (index not in EXECPOOL or EXECPOOL[index]['process'].done() is True) and (sid in LISTENERS and len(LISTENERS[sid]['buffer'])) > 0:
-             # LISTENERS[sid]['buffer'].append("<span style=\"background-color: #00D627;\">Release #{}: Deployment process finished.</span>".format(index))
+            # LISTENERS[sid]['buffer'].append("<span style=\"background-color: #00D627;\">Release #{}: Deployment process finished.</span>".format(index))
             self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
-             # Close socket since thread done and we printed last amount of data to user
-             # self.close(code=200, reason="Deployment job done all log entries printed. Socket Closed.")
+            # Close socket since thread done and we printed last amount of data to user
+            # self.close(code=200, reason="Deployment job done all log entries printed. Socket Closed.")
 
         # I Don't like this many-level condition but i can live with it for now
-        if self.index in EXECPOOL and ( len(EXECPOOL[self.index]['queue']) > 0 and LISTENERS[sid]['line'] <= (len(EXECPOOL[self.index]['queue'])-1)):
+        if self.index in EXECPOOL and (len(EXECPOOL[self.index]['queue']) > 0 and LISTENERS[sid]['line'] <= (len(EXECPOOL[self.index]['queue'])-1)):
             if sid in LISTENERS:
                 line = self.output_filter(EXECPOOL[self.index]['queue'][LISTENERS[sid]['line']])
                 LISTENERS[sid]['line'] += 1
 
                 if line:
-                     LISTENERS[sid]['buffer'].append(line)
+                    LISTENERS[sid]['buffer'].append(line)
                 if len(LISTENERS[sid]['buffer']) > settings.WS_BUFFER_SIZE:
                     self.send_buffer_socket(sid, LISTENERS[sid]['buffer'])
 
@@ -420,7 +422,7 @@ class GetLogHandler(tornado.websocket.WebSocketHandler):
         line = ansi_escape.sub('', line)
 
         # DEBUG Lines hidden
-        #if not tornado.options.options.debug and '[DEBUG' in line:
+        # if not tornado.options.options.debug and '[DEBUG' in line:
         #    return False
 
         levels = {

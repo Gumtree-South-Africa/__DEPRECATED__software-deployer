@@ -50,17 +50,18 @@ class Application(tornado.web.Application):
             (r'/listen/', Dhelper.GetLogHandler),
             ('.*', tornado.web.FallbackHandler, dict(fallback=wsgi_app)),
         ]
-        settings = dict()
-        tornado.web.Application.__init__(self, handlers, **settings)
+        setting = dict()
+        tornado.web.Application.__init__(self, handlers, **setting)
 
 
 def main():
     ''' Main loop of application '''
 
+    setting = dict()
     parse_command_line()
     logging.info("Tornado server starting...")
     signal.signal(signal.SIGINT, signal_handler)
-    server = tornado.httpserver.HTTPServer(Application())
+    server = tornado.httpserver.HTTPServer(Application(), **setting)
     server.listen(options.port)
     tornado.ioloop.IOLoop.instance().start()
 
