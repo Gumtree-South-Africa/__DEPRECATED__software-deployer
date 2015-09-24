@@ -9,12 +9,13 @@ from deployerlib.exceptions import DeployerException
 class LoadBalancer(object):
     """Manage connections to a single load balancer"""
 
-    def __init__(self, hostname, username, password):
+    def __init__(self, hostname, username, password, usessl=True):
         self.log = Log(instance=self.__class__.__name__)
 
         self.hostname = hostname
         self.username = username
         self.password = password
+        self.usessl = usessl
 
         self.connect()
 
@@ -40,7 +41,7 @@ class LoadBalancer(object):
     def connect(self):
         """Connect to a load balancer"""
 
-        self.nitro = NSNitro(self.hostname, self.username, self.password)
+        self.nitro = NSNitro(self.hostname, self.username, self.password, useSSL=self.usessl)
 
         try:
             self.nitro.login()
