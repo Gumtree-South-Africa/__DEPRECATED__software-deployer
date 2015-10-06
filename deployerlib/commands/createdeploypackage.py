@@ -16,8 +16,8 @@ class CreateDeployPackage(Command):
 
         fe_service_names, be_service_names = spit_service_into_fe_be(self.services)
 
-        make_package_for(remote_host_fe, fe_service_names, timestamped_destination)
-        make_package_for(remote_host_be, be_service_names, timestamped_destination)
+        make_package_for(self.remote_host_fe, fe_service_names, timestamped_destination)
+        make_package_for(self.remote_host_be, be_service_names, timestamped_destination)
 
         # properties, we copy it for now because not everything is puppetized
         properties_version = self.remote_host.execute_remote('cat %s/properties_version' % self.properties_location)
