@@ -11,15 +11,15 @@ class CreateDeployPackage(Command):
 
     def execute(self):
 
-        fe_service_names, be_service_names = spit_service_into_fe_be(self.services)
+        fe_service_names, be_service_names = self.spit_service_into_fe_be(self.services)
 
         timestamped_destination = "%s/%s-%s" % (self.destination, self.packagegroup, strftime("%Y%m%d%H%M%S"))
         # make dir if links are non empty
         if not os.path.exists(timestamped_destination):
             os.makedirs(timestamped_destination)
 
-        make_package_for(self.remote_host_fe, fe_service_names, timestamped_destination)
-        make_package_for(self.remote_host_be, be_service_names, timestamped_destination)
+        self.make_package_for(self.remote_host_fe, fe_service_names, timestamped_destination)
+        self.make_package_for(self.remote_host_be, be_service_names, timestamped_destination)
 
         # properties, we copy it for now because not everything is puppetized
         properties_version = self.remote_host.execute_remote('cat %s/properties_version' % self.properties_location)
