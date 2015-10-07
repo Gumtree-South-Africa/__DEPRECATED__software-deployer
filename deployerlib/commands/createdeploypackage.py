@@ -10,6 +10,7 @@ class CreateDeployPackage(Command):
         return True
 
     def execute(self):
+        print self.service_names
 
         fe_service_names, be_service_names = self.split_service_into_fe_be(self.service_names)
 
