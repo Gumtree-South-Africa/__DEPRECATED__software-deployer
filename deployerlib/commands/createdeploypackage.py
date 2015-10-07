@@ -10,10 +10,7 @@ class CreateDeployPackage(Command):
         return True
 
     def execute(self):
-        for service in self.service_names:
-            print service
-
-        fe_service_names, be_service_names = self.split_service_into_fe_be(self.service_names)
+        fe_service_names, be_service_names = filter(lambda s: "frontend" in s, services), filter(lambda s: "frontend" not in s, services)
 
         timestamped_destination = "%s/%s-%s" % (self.destination, self.packagegroup, strftime("%Y%m%d%H%M%S"))
         # make dir if links are non empty
@@ -34,8 +31,6 @@ class CreateDeployPackage(Command):
             self.remote_host_be.get_remote(prop_file_name, timestamped_destination)
             return True
 
-    def split_service_into_fe_be(self, services):
-        filter(lambda s: "frontend" in s, services), filter(lambda s: "frontend" not in s, services)
 
     def find_package_name(self, remote_host, service_name):
         service_location = "%s/%s" % (self.webapps_location, service_name)
