@@ -10,6 +10,9 @@ class CreateDeployPackage(Command):
         return True
 
     def execute(self):
+        for service in self.service_names:
+            print service
+
         fe_service_names, be_service_names = self.split_service_into_fe_be(self.service_names)
 
         timestamped_destination = "%s/%s-%s" % (self.destination, self.packagegroup, strftime("%Y%m%d%H%M%S"))
