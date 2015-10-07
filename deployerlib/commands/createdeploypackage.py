@@ -21,7 +21,7 @@ class CreateDeployPackage(Command):
         self.make_package_for(self.remote_host_be, be_service_names, timestamped_destination)
 
         # properties, we copy it for now because not everything is puppetized
-        properties_version = self.remote_host.execute_remote('cat %s/properties_version' % self.properties_location)
+        properties_version = self.remote_host_be.execute_remote('cat %s/properties_version' % self.properties_location)
         if not properties_version:
             self.log.warning("Can not find installed properties version!")
             return False
@@ -30,7 +30,6 @@ class CreateDeployPackage(Command):
             self.log.info("Fetching properties from %s" % prop_file_name)
             self.remote_host_be.get_remote(prop_file_name, timestamped_destination)
             return True
-
 
     def find_package_name(self, remote_host, service_name):
         service_location = "%s/%s" % (self.webapps_location, service_name)
