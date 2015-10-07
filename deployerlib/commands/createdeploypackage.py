@@ -10,8 +10,6 @@ class CreateDeployPackage(Command):
         return True
 
     def execute(self):
-        print self.service_names
-
         fe_service_names, be_service_names = self.split_service_into_fe_be(self.service_names)
 
         timestamped_destination = "%s/%s-%s" % (self.destination, self.packagegroup, strftime("%Y%m%d%H%M%S"))
@@ -49,4 +47,4 @@ class CreateDeployPackage(Command):
 		 package_path = "%s/%s.tar.gz" % (self.tarballs_location, link)
 
 		 self.log.info("Fetching archive: %s" % package_path)
-                 self.remote_host.get_remote(package_path, timestamped_destination)
+                 remote_host.get_remote(package_path, timestamped_destination)
