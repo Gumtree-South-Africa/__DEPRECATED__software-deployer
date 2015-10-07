@@ -33,7 +33,7 @@ class CreateDeployPackage(Command):
             return True
 
     def split_service_into_fe_be(self, services):
-        filter(lambda s: s.contains("frontend"), services), filter(lambda s: not s.contains("frontend"), services)
+        filter(lambda s: "frontend" in s, services), filter(lambda s: "frontend" not in s, services)
 
     def find_package_name(self, remote_host, service_name):
         service_location = "%s/%s" % (self.webapps_location, service_name)
