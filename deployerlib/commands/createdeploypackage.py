@@ -10,7 +10,7 @@ class CreateDeployPackage(Command):
         return True
 
     def execute(self):
-        fe_service_names, be_service_names = filter(lambda s: "frontend" in s, self.service_name), filter(lambda s: "frontend" not in s, self.service_names)
+        fe_service_names, be_service_names = filter(lambda s: "frontend" in s, self.service_names), filter(lambda s: "frontend" not in s, self.service_names)
 
         timestamped_destination = "%s/%s-%s" % (self.destination, self.packagegroup, strftime("%Y%m%d%H%M%S"))
         # make dir if links are non empty
