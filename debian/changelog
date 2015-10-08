@@ -1,3 +1,13 @@
+software-deployer (1.0.24) precise; urgency=low
+
+  * Added frontend support in package builder
+  * Updated host config for retrieving FE
+  * Fix params for initialize
+  * removed check for empty packages
+  * Added missing _be
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Thu, 08 Oct 2015 09:56:13 +0200
+
 software-deployer (1.0.23) precise; urgency=low
 
   * Enable SSL by default for Loadbalacners API
