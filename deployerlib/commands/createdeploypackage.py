@@ -6,29 +6,25 @@ from deployerlib.command import Command
 class CreateDeployPackage(Command):
     """Copies .tar.gz's from integration be001 to a timestamped directory"""
 
-    def initialize(self, remote_host_be, remote_host_fe, service_names, packagegroup, destination, tarballs_location, properties_location, webapps_location, remote_user):
+    def initialize(self, remote_host, timestamped_location, service_names, packagegroup, destination, tarballs_location, properties_location, webapps_location):
         return True
 
     def execute(self):
-        fe_service_names, be_service_names = filter(lambda s: "frontend" in s, self.service_names), filter(lambda s: "frontend" not in s, self.service_names)
-
-        timestamped_destination = "%s/%s-%s" % (self.destination, self.packagegroup, strftime("%Y%m%d%H%M%S"))
         # make dir if links are non empty
-        if not os.path.exists(timestamped_destination):
-            os.makedirs(timestamped_destination)
+        if not os.path.exists(self.timestamped_location):
+            os.makedirs(self.timestamped_destination)
 
-        self.make_package_for(self.remote_host_fe, fe_service_names, timestamped_destination)
-        self.make_package_for(self.remote_host_be, be_service_names, timestamped_destination)
+        self.make_package_for(self.remote_host, self.service_names, self.timestamped_location)
 
         # properties, we copy it for now because not everything is puppetized
-        properties_version = self.remote_host_be.execute_remote('cat %s/properties_version' % self.properties_location)
+        properties_version = self.remote_host.execute_remote('cat %s/properties_version' % self.properties_location)
         if not properties_version:
             self.log.warning("Can not find installed properties version!")
             return False
         else:
             prop_file_name = "%s/%s_%s.tar.gz" % (self.tarballs_location, "*properties", properties_version)
             self.log.info("Fetching properties from %s" % prop_file_name)
-            self.remote_host_be.get_remote(prop_file_name, timestamped_destination)
+            self.remote_host.get_remote(prop_file_name, self.timestamped_location)
             return True
 
     def find_package_name(self, remote_host, service_name):

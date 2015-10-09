@@ -9,7 +9,6 @@ from deployerlib.executor import Executor
 
 from deployerlib.exceptions import DeployerException
 
-
 class GeneratorHelper(object):
     """GeneratorHelper builder"""
 

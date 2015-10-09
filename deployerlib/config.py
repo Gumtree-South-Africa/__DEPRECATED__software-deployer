@@ -767,5 +767,3 @@ class Config(AttrDict):
                 }
 
         return config_structure
-
-
