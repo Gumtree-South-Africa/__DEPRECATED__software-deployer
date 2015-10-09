@@ -1,3 +1,9 @@
+software-deployer (1.0.25) precise; urgency=low
+
+  * Fixed stupid nr of arguments error
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Fri, 09 Oct 2015 12:22:23 +0200
+
 software-deployer (1.0.24) precise; urgency=low
 
   * Added frontend support in package builder
