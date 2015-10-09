@@ -1,3 +1,9 @@
+software-deployer (1.0.26) precise; urgency=low
+
+  * Fixed package builder; now creates 2 tasks: 1 for fe, 1 for be
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Fri, 09 Oct 2015 20:20:45 +0200
+
 software-deployer (1.0.25) precise; urgency=low
 
   * Fixed stupid nr of arguments error
