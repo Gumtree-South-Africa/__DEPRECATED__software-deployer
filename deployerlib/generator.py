@@ -41,7 +41,7 @@ class Generator(object):
         if self.config.get('release'):
             platform = self.config.get('platform', '')
             platform_version = os.path.basename(os.path.commonprefix(self.config.release).rstrip('/'))
-            return platform_version.replace('{0}-'.format(platform), '')
+            return platform_version.replace('{0}-'.format(platform), '', 1)
 
     def get_release_description(self, base='Deployment of', config_items=['platform', 'environment']):
         """Use attributes of Config (and CommandLine) to build a human-readable
