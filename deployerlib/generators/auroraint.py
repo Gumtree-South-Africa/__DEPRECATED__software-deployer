@@ -21,7 +21,7 @@ class AuroraIntGenerator(Generator):
         fe_service_names, be_service_names = filter(lambda s: "frontend" in s, services), filter(lambda s: "frontend" not in s, services)
 
         #TODO. Make this into a task itself
-        timestamped_destination = "%s/%s-%s" % (self.config.destination, self.config.packagegroup, strftime("%Y%m%d%H%M%S")) 
+        timestamped_destination = "%s/%s-%s-%s" % (self.config.destination, self.config.platform, self.config.packagegroup, strftime("%Y%m%d%H%M%S")) 
         # make dir if links are non empty
         if not os.path.exists(timestamped_destination):
             os.makedirs(timestamped_destination)
