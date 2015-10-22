@@ -39,3 +39,17 @@ class AuroraGenerator(Generator):
                 self.use_pipeline(self.release_version, upload)
 
         return self.tasklist.generate()
+
+    def use_pipeline(self, release_version, upload=False):
+        """Add pipeline start, end, upload stages"""
+
+        self.pipeline_notify('deploying', release_version)
+        self.pipeline_notify('deployed', release_version)
+
+        if upload:
+            self.pipeline_upload(release_version)
+
+    def pipeline_notify(self, status, release_version):
+        self.deploy_monitor_notify(status, release_version)
+        super(AuroraGenerator, self).pipeline_notify(status, release_version)
+

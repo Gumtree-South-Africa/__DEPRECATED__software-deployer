@@ -41,7 +41,7 @@ class Generator(object):
         if self.config.get('release'):
             platform = self.config.get('platform', '')
             platform_version = os.path.basename(os.path.commonprefix(self.config.release).rstrip('/'))
-            return platform_version.replace('{0}-'.format(platform), '', 1)
+            return platform_version.replace('{0}-'.format(platform), '',1)
 
     def get_release_description(self, base='Deployment of', config_items=['platform', 'environment']):
         """Use attributes of Config (and CommandLine) to build a human-readable
@@ -467,6 +467,22 @@ class Generator(object):
           'command': 'send_graphite',
           'carbon_host': self.config.get_full_hostname(self.config.graphite.carbon_host),
           'metric_name': '.'.join((self.config.graphite.metric_prefix, metric_suffix)),
+        })
+
+    def deploy_monitor_notify(self, status, release_version):
+        stage_name = 'Deploy monitor notify {0}'.format(status)
+        self.tasklist.create_stage(stage_name)
+
+        self.log.info('Creating task for: {0} monitor'.format(stage_name))
+
+        deploy_monitor_url = self.config.get('deploy_monitor_url')
+        self.tasklist.add(stage_name, {
+            'command': 'deploymonitor_notify',
+            'url': deploy_monitor_url,
+            'release_version': release_version,
+            'environment':self.config.get('environment'),
+            'status': status,
+            'proxy': self.config.get('proxy'),
         })
 
     def pipeline_notify(self, status, release_version):
