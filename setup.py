@@ -38,6 +38,7 @@ setup(
         "python-ldap>=2.3.0",
         "django-auth-ldap>=1.2.0",
         'Fabric',
+        'requests',
         "PyYAML"
     ],
     scripts=[
