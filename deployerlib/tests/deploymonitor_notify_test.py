@@ -20,12 +20,12 @@ class DeployMonitorNotifyTest(unittest.TestCase):
         environment = "lp"
 
         expected_json={
-            "name":"deployment",
-            "event":{
-                "environment": "%s" % environment,
-                "deliverable": "aurora-core",
-                "version": "20151020132010",
-                "status": "deploying"
+            'name':'deployment',
+            'event':{
+                'environment': '%s' % environment,
+                'deliverable': 'aurora-core',
+                'version': '20151020132010',
+                'status': 'deploying'
             }
         }
 

@@ -41,12 +41,12 @@ class DeploymonitorNotify(Command):
         version = split_string[2]
         try:
             payload = {
-             "name":"deployment",
-               "event":{
-                   "environment": self.environment,
-                   "deliverable":"%s" % deliverable,
-                   "version":"%s" % version,
-                   "status":"%s" % self.status
+             'name':'deployment',
+               'event':{
+                   'environment': self.environment,
+                   'deliverable':'%s' % deliverable,
+                   'version':'%s' % version,
+                   'status':'%s' % self.status
                  }
                }
 
