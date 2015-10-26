@@ -41,7 +41,7 @@ class Generator(object):
         if self.config.get('release'):
             platform = self.config.get('platform', '')
             platform_version = os.path.basename(os.path.commonprefix(self.config.release).rstrip('/'))
-            return platform_version.replace('{0}-'.format(platform), '',1)
+            return platform_version.replace('{0}-'.format(platform), '', 1)
 
     def get_release_description(self, base='Deployment of', config_items=['platform', 'environment']):
         """Use attributes of Config (and CommandLine) to build a human-readable
@@ -470,7 +470,7 @@ class Generator(object):
         })
 
     def deploy_monitor_notify(self, status, release_version, stage_name):
-        self.log.info('Creating task for: {0} monitor'.format(stage_name))
+        self.log.info('Creating task for: notify deploy monitor on {1} in stage {0}'.format(stage_name, release_version))
 
         deploy_monitor_url = self.config.get('deploy_monitor_url')
         self.tasklist.add(stage_name, {
