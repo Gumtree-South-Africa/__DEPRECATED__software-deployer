@@ -17,12 +17,12 @@ class DeployMonitorNotifyTest(unittest.TestCase):
 
         url = "http://deployment-monitor.platform.qa-mp.so/"
         release_version = "aurora-core-20151020132010"
-        environment = "demo"
+        environment = "lp"
 
         expected_json={
             "name":"deployment",
             "event":{
-                "environment": "demo",
+                "environment": "%s" % environment,
                 "deliverable": "aurora-core",
                 "version": "20151020132010",
                 "status": "deploying"

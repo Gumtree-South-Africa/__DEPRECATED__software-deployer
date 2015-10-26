@@ -43,7 +43,7 @@ class DeploymonitorNotify(Command):
             payload = {
              "name":"deployment",
                "event":{
-                   "environment":"demo",
+                   "environment": self.environment,
                    "deliverable":"%s" % deliverable,
                    "version":"%s" % version,
                    "status":"%s" % self.status
