@@ -1,3 +1,11 @@
+software-deployer (1.0.28) precise; urgency=low
+
+  * Added support for the new pipeline environment screen
+  * Added support for the new pipeline environment screen
+  * Incorporated pull-request feedback
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Mon, 26 Oct 2015 09:43:35 +0100
+
 software-deployer (1.0.27) precise; urgency=low
 
   * Fixed bug, aurora-aurora-core-1212121221 became core-12121212121
