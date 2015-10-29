@@ -532,6 +532,7 @@ class Generator(object):
             'deploy_package_basedir': deploy_package_basedir,
             'release': release_version,
             'url': deploy_monitor_url,
+            'platform': self.config.get('platform'),
             'proxy': self.config.get('proxy'),
         })
 

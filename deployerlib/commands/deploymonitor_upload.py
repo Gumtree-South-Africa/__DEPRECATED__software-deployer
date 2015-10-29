@@ -26,10 +26,11 @@ class DeploymonitorUpload(Command):
         }
     """
 
-    def initialize(self, deploy_package_basedir, release, url, proxy=None, continue_on_fail=True):
+    def initialize(self, deploy_package_basedir, release, url, platform, proxy=None, continue_on_fail=True):
         self.release_version = release
         self.continue_on_fail=continue_on_fail
         self.url = url
+        self.platform = platform
         if proxy is None:
             self.proxy = None
         else:
@@ -48,7 +49,7 @@ class DeploymonitorUpload(Command):
         version = split_string[2]
 
         projects = []
-        deploy_package_dir = "%s/%s" % (self.deploy_package_basedir, "aurora-%s" % self.release)
+        deploy_package_dir = "%s/%s" % (self.deploy_package_basedir, "%s-%s" % (self.platform, self.release))
 
         try:
             for fileName in os.listdir(deploy_package_dir):

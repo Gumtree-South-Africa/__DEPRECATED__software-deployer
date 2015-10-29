@@ -42,7 +42,7 @@ class DeployMonitorUploadTest(unittest.TestCase):
               }
             }
 
-        monitor = deploymonitor_upload.DeploymonitorUpload(url=url, deploy_package_basedir=basedir, release=release_version)
+        monitor = deploymonitor_upload.DeploymonitorUpload(url=url, deploy_package_basedir=basedir, release=release_version, platform='aurora')
 
         monitor.execute()
 
