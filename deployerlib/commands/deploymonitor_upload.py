@@ -48,11 +48,10 @@ class DeploymonitorUpload(Command):
         version = split_string[2]
 
         projects = []
-        deploy_package_dir = "%s/%s" % (self.deploy_package_basedir, self.release)
+        deploy_package_dir = "%s/%s" % (self.deploy_package_basedir, "aurora-%s" % self.release)
 
         try:
             for fileName in os.listdir(deploy_package_dir):
-                self.log.info("fn: %s" % fileName)
                 if re.match(".*_(.*-){3}.*(tar.gz|.war)", fileName):
                     project_name = fileName.split("_")[0]
                     hash = fileName.split("-")[len(fileName.split("-")) - 2]
