@@ -1,3 +1,9 @@
+software-deployer (1.0.31) precise; urgency=low
+
+  * Added aurora- prefix
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Thu, 29 Oct 2015 16:01:35 +0100
+
 software-deployer (1.0.30) precise; urgency=low
 
   * Changed " to '
