@@ -46,7 +46,7 @@ class DeployMonitorUploadTest(unittest.TestCase):
 
         monitor.execute()
 
-        mock_listdir.assert_called_with("%s/%s" % (basedir,release_version))
+        mock_listdir.assert_called_with("%s/%s" % (basedir,"aurora-%s" % release_version))
         mock_postrequest.assert_called_with(url,json=expected_json)
 
 if __name__ == '__main__':
