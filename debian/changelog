@@ -1,3 +1,10 @@
+software-deployer (1.0.30) precise; urgency=low
+
+  * Changed " to '
+  * Added command for uploading diffs to the new pipeline
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Thu, 29 Oct 2015 12:09:59 +0100
+
 software-deployer (1.0.29) precise; urgency=low
 
   * Found and fixed bug for new deployer notify
