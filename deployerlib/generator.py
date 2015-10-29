@@ -485,7 +485,6 @@ class Generator(object):
     def pipeline_notify(self, status, release_version):
         """Update pipeline with the status of a release"""
 
-
         environment = self.config.get('environment')
         if environment == 'production':
             environment = 'prod'
@@ -512,12 +511,28 @@ class Generator(object):
 
         self.tasklist.create_stage(stage_name)
 
+        self.deploymonitor_upload(release_version, stage_name)
+
         self.tasklist.add(stage_name, {
           'command': 'pipeline_upload',
           'deploy_package_basedir': deploy_package_basedir,
           'release': release_version,
           'url': url,
           'proxy': self.config.get('proxy'),
+        })
+
+    def deploymonitor_upload(self, release_version, stage_name):
+        """Upload project of a deploypackage to the new pipeline"""
+
+        deploy_package_basedir = self.config.get('deploy_package_basedir', '/opt/deploy_packages')
+        deploy_monitor_url = self.config.get('deploy_monitor_url')
+
+        self.tasklist.add(stage_name, {
+            'command': 'deploymonitor_upload',
+            'deploy_package_basedir': deploy_package_basedir,
+            'release': release_version,
+            'url': deploy_monitor_url,
+            'proxy': self.config.get('proxy'),
         })
 
     def archive_stage(self):

@@ -50,7 +50,6 @@ class DeploymonitorNotify(Command):
                  }
                }
 
-
             self.log.info("calling: requests.post(%s, json=%s, proxies=%s)" % (self.url, payload, self.proxy))
 
             if self.proxy is None:
