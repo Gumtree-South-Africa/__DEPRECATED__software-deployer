@@ -22,7 +22,7 @@ class CreateDirectory(Command):
                         shutil.rmtree(self.source)
                         return True
                     except:
-                        self.log.critical('Failed to remove {0}: {1}'.format(self.source, res))
+                        self.log.critical('Failed to remove {0}'.format(self.source))
                         return False
 
                 else:
@@ -34,9 +34,9 @@ class CreateDirectory(Command):
                 os.makedirs(self.source)
             except OSError as e:
                 if e.errno == 17:
-                    self.log.warning('Directory already exists: {0}: {1}'.format(self.source, res))
+                    self.log.warning('Directory already exists: {0}: {1}'.format(self.source, e.strerror))
                 else:
-                    self.log.error('Failed to create directory {0}: {1}'.format(self.source, res))
+                    self.log.error('Failed to create directory {0}: {1}'.format(self.source, e.strerror))
                     return False
 
             return True
