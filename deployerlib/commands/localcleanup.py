@@ -18,7 +18,7 @@ class LocalCleanUp(Command):
         proc = subprocess.Popen(["/bin/ls", "-1Atd", "{0}/{1}".format(self.path, self.filespec)], stdout=subprocess.PIPE)
         res,_ = proc.communicate()
 
-        if res is None or res is '':
+        if res is None or res == '':
             self.log.debug('Failed to list path for cleanup: {0}'.format(res))
             return True
 
