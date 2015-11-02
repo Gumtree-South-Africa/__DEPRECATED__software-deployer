@@ -20,16 +20,21 @@ class AuroraIntGenerator(Generator):
 
         fe_service_names, be_service_names = filter(lambda s: "frontend" in s, services), filter(lambda s: "frontend" not in s, services)
 
-        #TODO. Make this into a task itself
-        timestamped_destination = "%s/%s-%s-%s" % (self.config.destination, self.config.platform, self.config.packagegroup, strftime("%Y%m%d%H%M%S")) 
-        # make dir if links are non empty
-        if not os.path.exists(timestamped_destination):
-            os.makedirs(timestamped_destination)
+        timestamped_destination = "%s-%s-%s" % (self.config.platform, self.config.packagegroup, strftime("%Y%m%d%H%M%S")) 
+        dir_path = "%s/%s/%s/%s" % (self.config.destination, self.config.platform, self.config.packagegroup, timestamped_destination)
+
+        tasks.append({
+            'command': 'createdirectory',
+            'remote_host': 'localhost',
+            'remote_user': 'jenkins',
+            'source': dir_path,
+            'clobber': False,
+        })
 
         tasks.append({
             'command': 'createdeploypackage',
             'remote_host': self.config.remote_host_be,
-            'timestamped_location': timestamped_destination,
+            'timestamped_location': dir_path,
             'service_names': be_service_names,
             'packagegroup': self.config.packagegroup,
             'destination': self.config.destination,
@@ -42,7 +47,7 @@ class AuroraIntGenerator(Generator):
         tasks.append({
             'command': 'createdeploypackage',
             'remote_host': self.config.remote_host_fe,
-            'timestamped_location': timestamped_destination,
+            'timestamped_location': dir_path,
             'service_names': fe_service_names,
             'packagegroup': self.config.packagegroup,
             'destination': self.config.destination,
@@ -51,6 +56,18 @@ class AuroraIntGenerator(Generator):
             'webapps_location': self.config.service_defaults.install_location,
             'remote_user': self.config.user,
         })
+
+        root_dir = "%s/%s/%s/" % (self.config.destination, self.config.platform, self.config.packagegroup)
+        tasks.append({
+            'command': 'local_cleanup',
+            'remote_host': 'localhost',
+            'remote_user': 'jenkins',
+            'path': root_dir,
+            'filespec': "*",
+            'keepversions': 5,
+            'tag': 'package_generator',
+        })
+
 
         stage = {
             'name': '',
