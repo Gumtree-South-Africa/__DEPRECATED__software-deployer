@@ -1,8 +1,11 @@
 from deployerlib.command import Command
 
+import shutil
+import os
+
 
 class CreateDirectory(Command):
-    """Create a directory on a remote host"""
+    """Create a directory on a remote or local host"""
 
     def initialize(self, remote_host, source, clobber=False):
         self.clobber = clobber
@@ -16,7 +19,7 @@ class CreateDirectory(Command):
                 if self.clobber:
                     self.log.info('Removing directory {0}'.format(self.source))
                     try:
-                        res = shutils.rmtree(self.source)
+                        shutil.rmtree(self.source)
                         return True
                     except:
                         self.log.critical('Failed to remove {0}: {1}'.format(self.source, res))
@@ -27,12 +30,16 @@ class CreateDirectory(Command):
                     return True
 
             self.log.info('Creating directory {0}'.format(self.source))
-            res = os.makedirs(self.source)
+            try:
+                os.makedirs(self.source)
+            except OSError as e:
+                if e.errno == 17:
+                    self.log.warning('Directory already exists: {0}: {1}'.format(self.source, res))
+                else:
+                    self.log.error('Failed to create directory {0}: {1}'.format(self.source, res))
+                    return False
 
-            if not res.succeeded:
-                self.log.critical('Failed to create directory {0}: {1}'.format(self.source, res))
-
-            return res.succeeded
+            return True
         else:
             if self.remote_host.file_exists(self.source):
 
