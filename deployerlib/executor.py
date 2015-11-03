@@ -56,7 +56,8 @@ class Executor(object):
           'createdeploypackage': createdeploypackage.CreateDeployPackage,
           'deploymonitor_notify': deploymonitor_notify.DeploymonitorNotify,
           'deploymonitor_upload': deploymonitor_upload.DeploymonitorUpload,
-          'local_cleanup': localcleanup.LocalCleanUp
+          'local_cleanup': localcleanup.LocalCleanUp,
+          'local_createdirectory': localcreatedirectory.LocalCreateDirectory
         }
 
         # Start manager manually in order to have the child processes ignore

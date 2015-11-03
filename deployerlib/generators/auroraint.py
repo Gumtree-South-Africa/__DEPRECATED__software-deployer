@@ -24,9 +24,7 @@ class AuroraIntGenerator(Generator):
         dir_path = "%s/%s/%s/%s" % (self.config.destination, self.config.platform, self.config.packagegroup, timestamped_destination)
 
         tasks.append({
-            'command': 'createdirectory',
-            'remote_host': 'localhost',
-            'remote_user': 'jenkins',
+            'command': 'local_createdirectory',
             'source': dir_path,
             'clobber': False,
         })
