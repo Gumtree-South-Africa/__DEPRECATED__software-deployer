@@ -58,12 +58,9 @@ class AuroraIntGenerator(Generator):
         root_dir = "%s/%s/%s/" % (self.config.destination, self.config.platform, self.config.packagegroup)
         tasks.append({
             'command': 'local_cleanup',
-            'remote_host': 'localhost',
-            'remote_user': 'jenkins',
             'path': root_dir,
             'filespec': "*",
             'keepversions': 5,
-            'tag': 'package_generator',
         })
 
 
