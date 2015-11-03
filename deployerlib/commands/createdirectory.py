@@ -1,10 +1,8 @@
 from deployerlib.command import Command
 
-import shutil
-import os
 
 class CreateDirectory(Command):
-    """Create a directory on a remote or local host"""
+    """Create a directory on a remote host"""
 
     def initialize(self, remote_host, source, clobber=False):
         self.clobber = clobber
@@ -13,6 +11,7 @@ class CreateDirectory(Command):
 
     def execute(self):
         """Create the directory"""
+
         if self.remote_host.file_exists(self.source):
 
             if self.clobber:
