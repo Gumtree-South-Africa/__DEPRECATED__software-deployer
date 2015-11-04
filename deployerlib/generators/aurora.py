@@ -34,8 +34,8 @@ class AuroraGenerator(Generator):
             if self.config.get('history'):
                 self.archive_stage()
 
-            if self.config.get('pipeline_url'):
-                upload = self.config.environment == 'demo'
-                self.use_pipeline(self.release_version, upload)
+            if self.config.get('pipeline_url') or self.config.get('deploy_monitor_url'):
+                needs_upload = self.config.environment == 'demo'
+                self.use_pipeline(self.release_version, needs_upload)
 
         return self.tasklist.generate()
