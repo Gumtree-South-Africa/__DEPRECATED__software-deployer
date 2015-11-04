@@ -18,8 +18,8 @@ class LocalCleanUp(Command):
         files = None
         try:
             files = sorted(os.listdir(self.path), key=os.path.getmtime)
-        except OSError:
-            self.log.debug('Failed to list path for cleanup: {0}'.format(res))
+        except OSError as e:
+            self.log.debug('Failed to list path for cleanup: {0}'.format(e))
             return True
 
         if not files:
