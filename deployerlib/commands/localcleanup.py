@@ -15,14 +15,12 @@ class LocalCleanUp(Command):
         return True
 
     def execute(self):
-        proc = subprocess.Popen(["/bin/ls", "-1Atd", "{0}/{1}".format(self.path, self.filespec)], stdout=subprocess.PIPE)
-        res,_ = proc.communicate()
-
-        if res is None or res == '':
+        files = None
+        try:
+            files = sorted(os.listdir(self.path), key=os.path.getmtime)
+        except OSError:
             self.log.debug('Failed to list path for cleanup: {0}'.format(res))
             return True
-
-        files = res.split()
 
         if not files:
             self.log.debug('No files found to cleanup')

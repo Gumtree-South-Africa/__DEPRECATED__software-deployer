@@ -21,7 +21,7 @@ class AuroraIntGenerator(Generator):
         fe_service_names, be_service_names = filter(lambda s: "frontend" in s, services), filter(lambda s: "frontend" not in s, services)
 
         timestamped_destination = "%s-%s-%s" % (self.config.platform, self.config.packagegroup, strftime("%Y%m%d%H%M%S")) 
-        dir_path = "%s/%s/%s/%s" % (self.config.destination, self.config.platform, self.config.packagegroup, timestamped_destination)
+        dir_path = os.path.join(self.config.destination, self.config.platform, self.config.packagegroup, timestamped_destination)
 
         tasks.append({
             'command': 'local_createdirectory',
@@ -55,7 +55,7 @@ class AuroraIntGenerator(Generator):
             'remote_user': self.config.user,
         })
 
-        root_dir = "%s/%s/%s/" % (self.config.destination, self.config.platform, self.config.packagegroup)
+        root_dir = os.path.join(self.config.destination, self.config.platform, self.config.packagegroup)
         tasks.append({
             'command': 'local_cleanup',
             'path': root_dir,
