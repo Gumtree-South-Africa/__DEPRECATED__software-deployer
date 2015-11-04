@@ -1,3 +1,9 @@
+software-deployer (1.0.33) precise; urgency=low
+
+  * Fixed stupid bug
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Wed, 04 Nov 2015 10:09:08 +0100
+
 software-deployer (1.0.32) precise; urgency=low
 
   * Fixed test
