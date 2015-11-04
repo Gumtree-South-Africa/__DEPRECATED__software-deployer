@@ -1,3 +1,18 @@
+software-deployer (1.0.32) precise; urgency=low
+
+  * Fixed test
+  * Changed hardcoded platform in to parameter
+  * Added 1) Support for subdirs per package in deploy generator, 2) Cleanup for local directories and files
+  * Added proper error handling to os and shutil calls
+  * Fixed error logging
+  * Incorporated review suggestions
+  * Moved local create directory to its own Command
+  * Moved local create directory to its own Command
+  * reverted createdir to old state.
+  * Incorporated more feedback
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Wed, 04 Nov 2015 09:45:55 +0100
+
 software-deployer (1.0.31) precise; urgency=low
 
   * Added aurora- prefix
