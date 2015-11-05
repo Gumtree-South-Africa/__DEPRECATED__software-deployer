@@ -17,7 +17,7 @@ class LocalCleanUp(Command):
     def execute(self):
         files = None
         try:
-            files = sorted(os.listdir(self.path), key=os.path.getmtime)
+            files = [os.path.join(self.path,d) for d in sorted(os.listdir(self.path), key=lambda d: os.path.getmtime(os.path.join(self.path, d)))]
         except OSError as e:
             self.log.debug('Failed to list path for cleanup: {0}'.format(e))
             return True
