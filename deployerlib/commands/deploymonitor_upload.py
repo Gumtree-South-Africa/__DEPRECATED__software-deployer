@@ -47,9 +47,12 @@ class DeploymonitorUpload(Command):
 
         deliverable = split_string[1]
         version = split_string[2]
+        deploy_package = deliverable.replace(self.platform+'-','')
 
         projects = []
-        deploy_package_dir = "%s/%s" % (self.deploy_package_basedir, "%s-%s" % (self.platform, self.release))
+
+        deploy_package_dir = os.join(self.deploy_package_basedir, self.platform, deploy_package, self.release_version)
+        self.log.info("Using %s as deploy_package directory" % deploy_package_dir)
 
         try:
             for fileName in os.listdir(deploy_package_dir):
