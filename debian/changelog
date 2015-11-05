@@ -1,3 +1,9 @@
+software-deployer (1.0.35) precise; urgency=low
+
+  * Fixed path problem for projects upload
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Thu, 05 Nov 2015 13:18:48 +0100
+
 software-deployer (1.0.34) precise; urgency=low
 
   * fixed the dir listing.
