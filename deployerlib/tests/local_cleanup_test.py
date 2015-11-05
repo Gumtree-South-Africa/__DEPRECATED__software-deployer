@@ -38,7 +38,7 @@ class LocalCleanUpTest(unittest.TestCase):
         cleanup.execute()
 
         mock_os.listdir.assert_called_with(dir_name)
-        mock_os.path.getmtime.assert_called_with(package_to_remove)
+        mock_os.path.getmtime.assert_called_with(dir_name+'/'+package_to_remove)
         mock_shutil.rmtree.assert_called_with('/bogus/aurora-user-services-20151021010311')
 
 if __name__ == '__main__':
