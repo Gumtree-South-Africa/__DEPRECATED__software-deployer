@@ -1,3 +1,10 @@
+software-deployer (1.0.36) precise; urgency=low
+
+  * Updated the unittests
+  * Fixed path with aurora- in it
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Fri, 06 Nov 2015 09:16:44 +0100
+
 software-deployer (1.0.35) precise; urgency=low
 
   * Fixed path problem for projects upload
