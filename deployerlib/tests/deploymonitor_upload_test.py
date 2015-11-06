@@ -27,7 +27,7 @@ class DeployMonitorUploadTest(unittest.TestCase):
         release_version = "%s-%s" % (deliverable, version)
         basedir = "bogus"
 
-        full_path = "%s/%s/%s/%s" % (basedir, platform, deliverable, release_version)
+        full_path = "%s/%s/%s/%s-%s" % (basedir, platform, deliverable, platform, release_version)
         mock_os.join.return_value = full_path
         mock_os.listdir.return_value = filelist
 
