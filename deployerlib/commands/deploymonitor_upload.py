@@ -51,7 +51,7 @@ class DeploymonitorUpload(Command):
 
         projects = []
 
-        deploy_package_dir = os.join(self.deploy_package_basedir, self.platform, deploy_package, '%s-%s' % (self.platform,self.release_version))
+        deploy_package_dir = os.path.join(self.deploy_package_basedir, self.platform, deploy_package, '%s-%s' % (self.platform,self.release_version))
         self.log.info("Using %s as deploy_package directory" % deploy_package_dir)
 
         try:

@@ -28,7 +28,7 @@ class DeployMonitorUploadTest(unittest.TestCase):
         basedir = "bogus"
 
         full_path = "%s/%s/%s/%s-%s" % (basedir, platform, deliverable, platform, release_version)
-        mock_os.join.return_value = full_path
+        mock_os.path.join.return_value = full_path
         mock_os.listdir.return_value = filelist
 
         expected_json = {
