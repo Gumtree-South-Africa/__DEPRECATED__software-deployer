@@ -19,8 +19,16 @@ class PipelineUpload(Command):
     def execute(self):
         self.log.info("Uploading projects of %s to pipeline..." % self.release)
 
+        split_string = re.split("(.+)-(\d{14})",self.release)
+        if not len(split_string) == 4:
+            raise DeployerException("invalid package_version %s" % self.release)
+
+        deliverable = split_string[1]
+        version = split_string[2]
+
         projects = []
-        deploy_package_dir = "%s/%s" % (self.deploy_package_basedir, self.release)
+        deploy_package_dir = os.path.join(self.deploy_package_basedir, 'aurora', deliverable, '%s-%s' % ('aurora',self.release))
+        self.log.info("Using %s as deploy_package directory" % deploy_package_dir)
 
         try:
             for fileName in os.listdir(deploy_package_dir):
