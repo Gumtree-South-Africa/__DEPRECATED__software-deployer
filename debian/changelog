@@ -1,3 +1,9 @@
+software-deployer (1.0.37) precise; urgency=low
+
+  * I hate mocks
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Fri, 06 Nov 2015 09:40:50 +0100
+
 software-deployer (1.0.36) precise; urgency=low
 
   * Updated the unittests
