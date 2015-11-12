@@ -1,3 +1,9 @@
+software-deployer (1.0.41) precise; urgency=low
+
+  * also cutting of 5 from a list is ehmm hard?
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Thu, 12 Nov 2015 16:32:21 +0100
+
 software-deployer (1.0.40) precise; urgency=low
 
   * Changed dir listing to no longer use mtime, but timestamps of the file instead
