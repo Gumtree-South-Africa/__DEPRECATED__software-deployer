@@ -40,5 +40,22 @@ class LocalCleanUpTest(unittest.TestCase):
         mock_os.listdir.assert_called_with(dir_name)
         mock_shutil.rmtree.assert_called_with('/bogus/%s' % package_to_remove)
 
+    @mock.patch('deployerlib.commands.localcleanup.shutil')
+    @mock.patch('deployerlib.commands.localcleanup.os')
+    def test_does_not_remove_files_when_less_then_limit(self, mock_os, mock_shutil):
+        directory_contents = ['aurora-user-services-20151030190949',
+                              'aurora-user-services-20151020020255',
+                              'aurora-user-services-20151031011256',
+                              'aurora-user-services-20151021010311']
+
+        mock_os.listdir.return_value = directory_contents
+ 
+        dir_name = "/bogus"
+        cleanup = localcleanup.LocalCleanUp(path=dir_name,filespec="*",keepversions=5)
+
+        cleanup.execute()
+
+        mock_shutil.rmtree.assert_not_called
+
 if __name__ == '__main__':
     unittest.main()
