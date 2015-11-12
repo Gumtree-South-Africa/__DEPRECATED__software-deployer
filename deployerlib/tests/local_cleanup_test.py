@@ -24,8 +24,14 @@ class LocalCleanUpTest(unittest.TestCase):
         mock_os.path.isdir.return_value = True
 
         dir_name = "/bogus"
-        mock_os.path.join.return_value = "%s/%s" % (dir_name, package_to_remove)
         mock_shutil.rmtree.return_value = 1
+
+        def side_effect(*args, **kwargs):
+            return "%s/%s" % (args[0], args[1])
+        mock_os.path.join.side_effect = side_effect
+
+# is this needed?
+        mock_os.path.join.return_value = 1
 
         cleanup = localcleanup.LocalCleanUp(path=dir_name,filespec="*",keepversions=5)
 

@@ -37,7 +37,7 @@ class LocalCleanUp(Command):
             self.log.debug('No old versions to clean up')
             return True
 
-        cleanup_files = files[self.keepversions:]
+        cleanup_files = files[:len(files)-self.keepversions]
 
         for filename in cleanup_files:
             self.log.info('Cleaning up old version: {0}'.format(filename))
