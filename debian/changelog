@@ -1,3 +1,9 @@
+software-deployer (1.0.39) precise; urgency=low
+
+  * Added test for old pipeline uploader, fixed path
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Thu, 12 Nov 2015 10:12:43 +0100
+
 software-deployer (1.0.38) precise; urgency=low
 
   * I hate mocks
