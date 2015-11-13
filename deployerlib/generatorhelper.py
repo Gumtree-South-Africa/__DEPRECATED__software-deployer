@@ -21,6 +21,7 @@ class GeneratorHelper(object):
             'supermario': aurora.AuroraGenerator,
             'aanbieding': aanbieding.AanbiedingGenerator,
             'rbb': rbb.RbbGenerator,
+            'rts2': rts2.RTS2Generator,
             'test': testgenerator.TestGenerator,
         }
 
