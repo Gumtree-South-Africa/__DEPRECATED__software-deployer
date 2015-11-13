@@ -1,3 +1,15 @@
+software-deployer (1.0.42) precise; urgency=low
+
+  [ Denys Zhdanov ]
+  * initial ReplyTS2 support
+
+  [ Sander van den Berg ]
+  * Added test for the case where we we have less packages then keep_packages requests
+
+  [ root ]
+
+ -- root <root@vagrant-ubuntu-precise-64>  Fri, 13 Nov 2015 09:52:49 +0000
+
 software-deployer (1.0.41) precise; urgency=low
 
   * also cutting of 5 from a list is ehmm hard?
