@@ -55,9 +55,15 @@ class DeploymonitorUpload(Command):
 
         try:
             for fileName in os.listdir(deploy_package_dir):
-                if re.match(".*_(.*-){3}.*(tar.gz|.war)", fileName):
-                    project_name = fileName.split("_")[0]
-                    hash = fileName.split("-")[len(fileName.split("-")) - 2]
+                if re.match(".*(.tar.gz|.war)", fileName):
+
+                    name_parts = fileName.split("_")
+                    if len(name_parts) < 2:
+                        raise DeployerException("invalid file name, expecting at least one _, got %s" % fileName)
+
+                    project_name = name_parts[0]
+                    last_part = name_parts[-1]
+                    hash = last_part.split("-")[-2]
                     projects.append({
                       'name':'%s' % project_name,
                       'hash':'%s' % hash,
