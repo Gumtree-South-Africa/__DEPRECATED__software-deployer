@@ -1,3 +1,9 @@
+software-deployer (1.0.43) precise; urgency=low
+
+  * Fixed bug where files without -SNAPSHOT would not be uploaded to deployment monitor
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Mon, 30 Nov 2015 12:15:49 +0100
+
 software-deployer (1.0.42) precise; urgency=low
 
   [ Denys Zhdanov ]
