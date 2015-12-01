@@ -111,10 +111,10 @@ class AuroraGeneratorTest(unittest.TestCase):
         generator = aurora.AuroraGenerator(config)
         tasklist = generator.generate()
         self.log.info("%s" % tasklist)
-        self.assertTrue(self.containsPipelineNotifyAndDeployMonitorNotify(tasklist))
-        self.assertTrue(self.containsPipelineUploadAndDeployMonitorUpload(tasklist))
+        self.assertTrue(self.containsDeployMonitorNotify(tasklist))
+        self.assertTrue(self.containsDeployMonitorUpload(tasklist))
 
-    def containsPipelineNotifyAndDeployMonitorNotify(self, tasklist):
+    def containsDeployMonitorNotify(self, tasklist):
         stages_exists = ('Pipeline notify deploying' in map(lambda i: i['name'], tasklist['stages'])
         and
         'Pipeline notify deployed' in map(lambda i: i['name'], tasklist['stages']))
@@ -122,18 +122,14 @@ class AuroraGeneratorTest(unittest.TestCase):
         tasks = self.flatten(map(lambda i: i['tasks'], tasklist['stages']))
         commands = map(lambda i: i['command'], list(tasks))
 
-        tasks_exist = ('deploymonitor_notify' in commands
-        and
-        'pipeline_notify' in commands)
+        tasks_exist = ('deploymonitor_notify' in commands)
         return stages_exists and tasks_exist
 
-    def containsPipelineUploadAndDeployMonitorUpload(self, tasklist):
+    def containsDeployMonitorUpload(self, tasklist):
         tasks = self.flatten(map(lambda i: i['tasks'], tasklist['stages']))
         commands = map(lambda i: i['command'], list(tasks))
 
-        tasks_exist = ('deploymonitor_upload' in commands
-        and
-        'pipeline_upload' in commands)
+        tasks_exist = ('deploymonitor_upload' in commands)
         return tasks_exist
 
 
