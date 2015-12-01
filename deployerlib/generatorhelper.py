@@ -22,6 +22,7 @@ class GeneratorHelper(object):
             'aanbieding': aanbieding.AanbiedingGenerator,
             'rbb': rbb.RbbGenerator,
             'rts2': rts2.RTS2Generator,
+            'csbizapp': csbizapp.CsbizappGenerator,
             'test': testgenerator.TestGenerator,
         }
 
