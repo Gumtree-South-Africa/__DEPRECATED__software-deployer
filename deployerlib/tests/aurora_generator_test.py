@@ -73,7 +73,7 @@ class AuroraGeneratorTest(unittest.TestCase):
         }
 
     @mock.patch('deployerlib.generators.aurora.AuroraGenerator.get_remote_versions')
-    def test_auroraGeneratorShouldIncludeBothPipelineCommands(self, mock_get_remote_versions):
+    def test_auroraGeneratorShouldIncludeDeployMonitorUploadAndNotify(self, mock_get_remote_versions):
         mock_get_remote_versions.return_value = {}
 
         commandline = CommandLine(require_config=False)
