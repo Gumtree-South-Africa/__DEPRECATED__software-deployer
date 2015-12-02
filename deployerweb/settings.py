@@ -18,6 +18,11 @@ import re
 import ldap
 from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 
+# Set SSL header to able return correct connection schema to end-user in case webserver behind proxy with http transport
+# Default is None, settings is you have normal Headers set :) ->  SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# eBay ECG header: HTTP_X_EBAY_SECURE: true
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_EBAY_SECURE', 'true')
+
 # LDAP Section
 LDAP_CONFIG_FILE = "/etc/ldap/ldap.conf"
 
