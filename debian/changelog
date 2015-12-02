@@ -1,3 +1,9 @@
+software-deployer (1.0.45) precise; urgency=low
+
+  * SSL fix for web-deployer
+
+ -- Yevgen Flerko <yflerko@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Wed, 02 Dec 2015 11:28:49 +0100
+
 software-deployer (1.0.44) precise; urgency=low
 
   * csbizapp platform for new style of packages, currently mail-guard only
