@@ -78,15 +78,6 @@ class Generator(object):
         self.graphite_stage('start')
         self.graphite_stage('end')
 
-    def use_pipeline(self, release_version, upload=False):
-        """Add pipeline start, end, upload stages"""
-
-        self.pipeline_notify('deploying', release_version)
-        self.pipeline_notify('deployed', release_version)
-
-        if upload:
-            self.pipeline_upload(release_version)
-
     def get_packages(self):
         """Get a list of packages provided on the command line"""
 
@@ -467,73 +458,6 @@ class Generator(object):
           'command': 'send_graphite',
           'carbon_host': self.config.get_full_hostname(self.config.graphite.carbon_host),
           'metric_name': '.'.join((self.config.graphite.metric_prefix, metric_suffix)),
-        })
-
-    def deploy_monitor_notify(self, status, release_version, stage_name):
-        self.log.info('Creating task for: notify deploy monitor on {1} in stage {0}'.format(stage_name, release_version))
-
-        deploy_monitor_url = self.config.get('deploy_monitor_url')
-        self.tasklist.add(stage_name, {
-            'command': 'deploymonitor_notify',
-            'url': deploy_monitor_url,
-            'release_version': release_version,
-            'environment':self.config.get('environment'),
-            'status': status,
-            'proxy': self.config.get('proxy'),
-        })
-
-    def pipeline_notify(self, status, release_version):
-        """Update pipeline with the status of a release"""
-
-        environment = self.config.get('environment')
-        if environment == 'production':
-            environment = 'prod'
-
-        url = '{0}/{1}/{2}/{3}'.format(self.config.pipeline_url, status, environment, release_version)
-        stage_name = 'Pipeline notify {0}'.format(status)
-
-        self.tasklist.create_stage(stage_name)
-
-        self.deploy_monitor_notify(status, release_version, stage_name)
-
-        self.tasklist.add(stage_name, {
-          'command': 'pipeline_notify',
-          'url': url,
-          'proxy': self.config.get('proxy'),
-        })
-
-    def pipeline_upload(self, release_version):
-        """Upload projects of a deploy_package to pipeline"""
-
-        url = '{0}/package/{1}/projects'.format(self.config.pipeline_url, release_version)
-        deploy_package_basedir = self.config.get('deploy_package_basedir', '/opt/deploy_packages')
-        stage_name = 'Pipeline upload'
-
-        self.tasklist.create_stage(stage_name)
-
-        self.deploymonitor_upload(release_version, stage_name)
-
-        self.tasklist.add(stage_name, {
-          'command': 'pipeline_upload',
-          'deploy_package_basedir': deploy_package_basedir,
-          'release': release_version,
-          'url': url,
-          'proxy': self.config.get('proxy'),
-        })
-
-    def deploymonitor_upload(self, release_version, stage_name):
-        """Upload project of a deploypackage to the new pipeline"""
-
-        deploy_package_basedir = self.config.get('deploy_package_basedir', '/opt/deploy_packages')
-        deploy_monitor_url = self.config.get('deploy_monitor_url')
-
-        self.tasklist.add(stage_name, {
-            'command': 'deploymonitor_upload',
-            'deploy_package_basedir': deploy_package_basedir,
-            'release': release_version,
-            'url': deploy_monitor_url,
-            'platform': self.config.get('platform'),
-            'proxy': self.config.get('proxy'),
         })
 
     def archive_stage(self):
