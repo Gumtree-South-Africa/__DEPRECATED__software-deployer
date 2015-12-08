@@ -11,6 +11,7 @@ tests=(
     "deployerlib/tests/createdeploypackagetest.py"
     "deployerlib/tests/local_createdirectory_test.py"
     "deployerlib/tests/pipeline_upload_test.py"
+    "deployerlib/tests/deploymonitor_client_test.py"
 )
 
 failure=0
