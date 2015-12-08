@@ -3,14 +3,18 @@
 import unittest
 import mock
 import collections
+import copy
 
 from deployerlib.log import Log
 from deployerlib.commandline import CommandLine
+
 import deployerlib.generators
 from deployerlib.generators import *
 from deployerlib.config import Config
 
 from deployerlib.tests._fakepackage import FakePackage
+from deployerlib.deploymonitor_client import DeployMonitorClient
+
 
 class AuroraIntGeneratorTest(unittest.TestCase):
 
@@ -75,7 +79,14 @@ class AuroraIntGeneratorTest(unittest.TestCase):
         }
 
 
-    def test_auroraIntGeneratorShouldGenerateDirectory(self):
+    @mock.patch('deployerlib.deploymonitor_client.DeployMonitorClient.get_all_services_for_deliverable')
+    def test_auroraIntGeneratorShouldGenerateDirectory(self, mock_get_all_services_for_deliverable):
+        mock_get_all_services_for_deliverable.return_value = [
+            'nl.marktplaats.authorization.authorizationservice-server',
+            'nl.marktplaats.statistics.statisticsservice-server',
+            'nl.marktplaats.aurora-metrics-frontend',
+            'nl.marktplaats.aurora-carsl1-frontend'
+        ]
 
         commandline = CommandLine(require_config=False)
         config = Config(commandline)
@@ -115,16 +126,82 @@ class AuroraIntGeneratorTest(unittest.TestCase):
             config.component.append(fakepackage.fullpath)
 
         generator = auroraint.AuroraIntGenerator(config)
+        generator.deploy_monitor_client = DeployMonitorClient("http://localhost")
+
         tasklist = generator.generate()
         self.log.info("%s" % tasklist)
+        simpliefied_tasklist = self.json_simplify(tasklist, [
+            'source', 'timestamped_location'
+        ])
 
-    def flatten(self, l):
-        for el in l:
-            if isinstance(el, collections.Sequence) and not isinstance(el, basestring):
-                for sub in self.flatten(el):
-                    yield sub
-            else:
-                yield el
+        self.assertEquals(simpliefied_tasklist, {
+              'stages': [{
+                  'tasks': [{
+                      'source': None,
+                      'command': 'local_createdirectory',
+                      'clobber': False
+                    },{
+                      'tarballs_location': '/opt/tarballs',
+                      'service_names': [
+                        'nl.marktplaats.authorization.authorizationservice-server',
+                        'nl.marktplaats.statistics.statisticsservice-server'
+                      ],
+                      'remote_user': 'mpdeploy',
+                      'command': 'createdeploypackage',
+                      'timestamped_location': None,
+                      'webapps_location': '/opt/webapps',
+                      'properties_location': '/tmp',
+                      'destination': '/tmp',
+                      'remote_host': 'somehost',
+                      'packagegroup': 'user'
+                    },{
+                      'tarballs_location': '/opt/tarballs',
+                      'service_names': [
+                        'nl.marktplaats.aurora-metrics-frontend',
+                        'nl.marktplaats.aurora-carsl1-frontend'
+                      ],
+                      'remote_user': 'mpdeploy',
+                      'command': 'createdeploypackage',
+                      'timestamped_location': None,
+                      'webapps_location': '/opt/webapps',
+                      'properties_location': '/tmp',
+                      'destination': '/tmp',
+                      'remote_host': 'somehost',
+                      'packagegroup': 'user'
+                    },{
+                      'path': '/tmp/aurora/user',
+                      'filespec': '*',
+                      'command': 'local_cleanup',
+                      'keepversions': 5
+                    }
+                  ],
+                  'name': '',
+                  'concurrency': 1
+                }
+              ],
+              'name': 'Copy deployables'
+            })
+
+
+
+    def json_simplify(self, json_object, properties_for_truncation):
+        copied = copy.deepcopy(json_object)
+        self._simplify(copied, properties_for_truncation)
+        return copied
+            
+
+    def _simplify(self, json_object, properties_for_truncation):
+        if isinstance(json_object, dict):
+            for key, value in json_object.iteritems():
+                if key in properties_for_truncation:
+                    json_object[key] = None
+                else:
+                    self._simplify(json_object[key], properties_for_truncation)
+        elif isinstance(json_object, list):
+            for value in json_object:
+                self._simplify(value, properties_for_truncation)
+
+
 
 if __name__ == '__main__':
     unittest.main()
