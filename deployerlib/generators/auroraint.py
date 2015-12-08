@@ -85,5 +85,3 @@ class AuroraIntGenerator(Generator):
 
         return tasklist
 
-    
-
