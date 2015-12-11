@@ -1,3 +1,18 @@
+software-deployer (1.0.46) precise; urgency=low
+
+  [ Ivan Shubin ]
+  * Removed use_pipeline from generator and moved all deployment monitor notifications to AuroraGenerator
+  * Added script to run all tests
+  * Renamed test
+  * Removed use_pipeline from rts2 generator
+  * Changed package creation in aurora int generator to use deploy monitor for services instead of config
+  * Added deployment monitor client test to test.sh
+  * Removed trailing lines
+
+  [ Sander van den Berg ]
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Fri, 11 Dec 2015 15:51:45 +0100
+
 software-deployer (1.0.45) precise; urgency=low
 
   * SSL fix for web-deployer
