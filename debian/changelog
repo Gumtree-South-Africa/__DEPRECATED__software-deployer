@@ -1,3 +1,9 @@
+software-deployer (1.0.47) precise; urgency=low
+
+  * Fixed url building for deployment monitor usage
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Mon, 14 Dec 2015 13:22:10 +0100
+
 software-deployer (1.0.46) precise; urgency=low
 
   [ Ivan Shubin ]
