@@ -29,7 +29,7 @@ class DeploymonitorUpload(Command):
     def initialize(self, deploy_package_basedir, release, url, platform, proxy=None, continue_on_fail=True):
         self.release_version = release
         self.continue_on_fail=continue_on_fail
-        self.url = url
+        self.url = "%s/%s" % (url, 'api/events')
         self.platform = platform
         if proxy is None:
             self.proxy = None

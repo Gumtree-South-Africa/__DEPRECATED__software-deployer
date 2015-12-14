@@ -19,7 +19,7 @@ class DeploymonitorNotify(Command):
     """
 
     def initialize(self, url, release_version, environment, status, proxy=None, continue_on_fail=True):
-        self.url = url
+        self.url = "%s/%s" % (url, 'api/events')
         self.environment = environment
         self.release_version = release_version
         if proxy is None:
