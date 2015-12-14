@@ -15,7 +15,7 @@ class DeployMonitorNotifyTest(unittest.TestCase):
         response.status_code = 201
         mock_postrequest.post.return_value = response
 
-        url = "http://deployment-monitor.platform.qa-mp.so/"
+        url = "http://deployment-monitor.platform.qa-mp.so"
         release_version = "aurora-core-20151020132010"
         environment = "lp"
 
@@ -33,7 +33,7 @@ class DeployMonitorNotifyTest(unittest.TestCase):
 
         monitor.execute()
 
-        mock_postrequest.assert_called_with(url,json=expected_json)
+        mock_postrequest.assert_called_with("%s/api/events" % url,json=expected_json)
 
 if __name__ == '__main__':
     unittest.main()

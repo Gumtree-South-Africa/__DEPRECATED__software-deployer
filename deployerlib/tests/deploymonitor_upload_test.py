@@ -21,7 +21,7 @@ class DeployMonitorUploadTest(unittest.TestCase):
                     'nl.marktplaats.aurora-common-api-v3-frontend_d8457afac91b780f7dcf06d15cae0d5b9dc14513-20151119113948.tar.gz'
                     ]
 
-        url = "http://deployment-monitor.platform.qa-mp.so/"
+        url = "http://deployment-monitor.platform.qa-mp.so"
         platform = 'aurora'
         deliverable = "aurora-core"
         version = "20151020132010"
@@ -57,7 +57,7 @@ class DeployMonitorUploadTest(unittest.TestCase):
         monitor.execute()
 
         mock_os.listdir.assert_called_with(full_path)
-        mock_postrequest.assert_called_with(url,json=expected_json)
+        mock_postrequest.assert_called_with("%s/api/events" % url,json=expected_json)
 
 if __name__ == '__main__':
     unittest.main()
