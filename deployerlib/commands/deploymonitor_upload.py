@@ -26,11 +26,14 @@ class DeploymonitorUpload(Command):
         }
     """
 
-    def initialize(self, deploy_package_basedir, release, url, platform, proxy=None, continue_on_fail=True):
-        self.release_version = release
-        self.continue_on_fail=continue_on_fail
+    def initialize(self, deploy_package_dir, package_group, package_number, url, platform, proxy=None, continue_on_fail=True):
+        self.deploy_package_dir = deploy_package_dir
+        self.package_group = package_group
+        self.package_number = package_number
+        self.continue_on_fail = continue_on_fail
         self.url = "%s/%s" % (url, 'api/events')
         self.platform = platform
+
         if proxy is None:
             self.proxy = None
         else:
@@ -41,20 +44,15 @@ class DeploymonitorUpload(Command):
     def execute(self):
         self.log.info("Calling %s on deploy monitor..." % self.url)
 
-        split_string = re.split("(.+)-(\d{14})",self.release_version)
-        if not len(split_string) == 4:
-            raise DeployerException("invalid package_version %s" % self.release_version)
-
-        deliverable = split_string[1]
-        version = split_string[2]
+        deliverable = self.package_group
+        version = self.package_number
 
         projects = []
 
-        deploy_package_dir = os.path.join(self.deploy_package_basedir, self.platform, deliverable, '%s-%s' % (self.platform,self.release_version))
-        self.log.info("Using %s as deploy_package directory" % deploy_package_dir)
+        self.log.info("Using %s as deploy_package directory" % self.deploy_package_dir)
 
         try:
-            for fileName in os.listdir(deploy_package_dir):
+            for fileName in os.listdir(self.deploy_package_dir):
                 if re.match(".*(.tar.gz|.war)", fileName):
 
                     name_parts = fileName.split("_")

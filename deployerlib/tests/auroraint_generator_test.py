@@ -131,7 +131,7 @@ class AuroraIntGeneratorTest(unittest.TestCase):
         tasklist = generator.generate()
         self.log.info("%s" % tasklist)
         simpliefied_tasklist = self.json_simplify(tasklist, [
-            'source', 'timestamped_location'
+            'source', 'timestamped_location', 'release', 'deploy_package_dir', 'package_number'
         ])
 
         self.assertEquals(simpliefied_tasklist, {
@@ -168,6 +168,14 @@ class AuroraIntGeneratorTest(unittest.TestCase):
                       'destination': '/tmp',
                       'remote_host': 'somehost',
                       'packagegroup': 'user'
+                    },{
+                      'platform': 'aurora',
+                      'url': 'http://localhost:9010',
+                      'deploy_package_dir': None,
+                      'package_group': 'user',
+                      'command': 'deploymonitor_upload',
+                      'proxy': None,
+                      'package_number': None
                     },{
                       'path': '/tmp/aurora/user',
                       'filespec': '*',

@@ -52,7 +52,7 @@ class DeployMonitorUploadTest(unittest.TestCase):
               }
             }
 
-        monitor = deploymonitor_upload.DeploymonitorUpload(url=url, deploy_package_basedir=basedir, release=release_version, platform=platform)
+        monitor = deploymonitor_upload.DeploymonitorUpload(url=url, deploy_package_dir=full_path, package_group=deliverable, package_number=version, platform=platform)
 
         monitor.execute()
 
