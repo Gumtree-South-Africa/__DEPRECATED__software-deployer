@@ -60,8 +60,8 @@ class DeploymonitorNotify(Command):
             r.raise_for_status()
 
             return True
-        except:
-            msg = "Could not notify deploy monitor!"
+        except Exception as e:
+            msg = "Could not notify deploy monitor!, Exception: %s" % e.strerror
             if self.continue_on_fail:
                 self.log.warning(msg)
                 return True
