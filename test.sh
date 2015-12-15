@@ -37,4 +37,7 @@ if [ "$failure" -ne "0" ]; then
     for test in ${failed_tests[@]}; do
         echo "     $test"
     done
+    exit 1
 fi
+
+exit 0
