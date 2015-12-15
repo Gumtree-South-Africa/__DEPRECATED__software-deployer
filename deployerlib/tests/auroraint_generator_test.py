@@ -79,8 +79,10 @@ class AuroraIntGeneratorTest(unittest.TestCase):
         }
 
 
+    @mock.patch('deployerlib.generators.auroraint.AuroraIntGenerator.generate_package_number')
     @mock.patch('deployerlib.deploymonitor_client.DeployMonitorClient.get_all_services_for_deliverable')
-    def test_auroraIntGeneratorShouldGenerateDirectory(self, mock_get_all_services_for_deliverable):
+    def test_auroraIntGeneratorShouldGenerateDirectory(self, mock_get_all_services_for_deliverable, mock_generate_package_number):
+        mock_generate_package_number.return_value = "20160102030405"
         mock_get_all_services_for_deliverable.return_value = [
             'nl.marktplaats.authorization.authorizationservice-server',
             'nl.marktplaats.statistics.statisticsservice-server',
@@ -129,15 +131,12 @@ class AuroraIntGeneratorTest(unittest.TestCase):
         generator.deploy_monitor_client = DeployMonitorClient("http://localhost")
 
         tasklist = generator.generate()
-        self.log.info("%s" % tasklist)
-        simpliefied_tasklist = self.json_simplify(tasklist, [
-            'source', 'timestamped_location', 'release', 'deploy_package_dir', 'package_number'
-        ])
+        self.log.info("Actual tasklist %s" % tasklist)
 
-        self.assertEquals(simpliefied_tasklist, {
+        self.assertEquals(tasklist, {
               'stages': [{
                   'tasks': [{
-                      'source': None,
+                      'source': '/tmp/aurora/user/aurora-user-20160102030405',
                       'command': 'local_createdirectory',
                       'clobber': False
                     },{
@@ -148,7 +147,7 @@ class AuroraIntGeneratorTest(unittest.TestCase):
                       ],
                       'remote_user': 'mpdeploy',
                       'command': 'createdeploypackage',
-                      'timestamped_location': None,
+                      'timestamped_location': '/tmp/aurora/user/aurora-user-20160102030405',
                       'webapps_location': '/opt/webapps',
                       'properties_location': '/tmp',
                       'destination': '/tmp',
@@ -162,7 +161,7 @@ class AuroraIntGeneratorTest(unittest.TestCase):
                       ],
                       'remote_user': 'mpdeploy',
                       'command': 'createdeploypackage',
-                      'timestamped_location': None,
+                      'timestamped_location': '/tmp/aurora/user/aurora-user-20160102030405',
                       'webapps_location': '/opt/webapps',
                       'properties_location': '/tmp',
                       'destination': '/tmp',
@@ -171,11 +170,11 @@ class AuroraIntGeneratorTest(unittest.TestCase):
                     },{
                       'platform': 'aurora',
                       'url': 'http://localhost:9010',
-                      'deploy_package_dir': None,
+                      'deploy_package_dir': '/tmp/aurora/user/aurora-user-20160102030405',
                       'package_group': 'user',
                       'command': 'deploymonitor_upload',
                       'proxy': None,
-                      'package_number': None
+                      'package_number': '20160102030405'
                     },{
                       'path': '/tmp/aurora/user',
                       'filespec': '*',
@@ -189,25 +188,6 @@ class AuroraIntGeneratorTest(unittest.TestCase):
               ],
               'name': 'Copy deployables'
             })
-
-
-
-    def json_simplify(self, json_object, properties_for_truncation):
-        copied = copy.deepcopy(json_object)
-        self._simplify(copied, properties_for_truncation)
-        return copied
-            
-
-    def _simplify(self, json_object, properties_for_truncation):
-        if isinstance(json_object, dict):
-            for key, value in json_object.iteritems():
-                if key in properties_for_truncation:
-                    json_object[key] = None
-                else:
-                    self._simplify(json_object[key], properties_for_truncation)
-        elif isinstance(json_object, list):
-            for value in json_object:
-                self._simplify(value, properties_for_truncation)
 
 
 

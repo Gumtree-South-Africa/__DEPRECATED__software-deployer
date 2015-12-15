@@ -28,7 +28,7 @@ class AuroraIntGenerator(Generator):
         self.log.info("FE services: %s" % fe_service_names)
         self.log.info("BE services: %s" % be_service_names)
 
-        package_number = strftime("%Y%m%d%H%M%S")
+        package_number = self.generate_package_number()
 
         timestamped_destination = "%s-%s-%s" % (self.config.platform, self.config.packagegroup, package_number)
         dir_path = os.path.join(self.config.destination, self.config.platform, self.config.packagegroup, timestamped_destination)
@@ -89,6 +89,9 @@ class AuroraIntGenerator(Generator):
 
         return tasklist
 
+
+    def generate_package_number(self):
+        return strftime("%Y%m%d%H%M%S")
 
     def deploy_monitor_upload_task(self, deploy_package_dir, package_number):
         """Upload project of a deploypackage to the new pipeline"""
