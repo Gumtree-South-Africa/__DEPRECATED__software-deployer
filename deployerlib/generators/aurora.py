@@ -44,9 +44,6 @@ class AuroraGenerator(Generator):
         self.deploy_monitor_notify('deploying', release_version)
         self.deploy_monitor_notify('deployed', release_version)
 
-        if environment == 'demo':
-            self.deploy_monitor_upload(release_version)
-
 
     def deploy_monitor_notify(self, status, release_version):
         self.log.info('Creating task for: notify deployment monitor with status {0} for {1}'.format(status, release_version))
@@ -64,22 +61,5 @@ class AuroraGenerator(Generator):
             'proxy': self.config.get('proxy'),
         })
 
-
-    def deploy_monitor_upload(self, release_version):
-        """Upload project of a deploypackage to the new pipeline"""
-
-        deploy_package_basedir = self.config.get('deploy_package_basedir', '/opt/deploy_packages')
-        deploy_monitor_url = self.config.get('deploy_monitor_url')
-
-        stage_name = 'Pipeline upload'
-        self.tasklist.create_stage(stage_name)
-        self.tasklist.add(stage_name, {
-            'command': 'deploymonitor_upload',
-            'deploy_package_basedir': deploy_package_basedir,
-            'release': release_version,
-            'url': deploy_monitor_url,
-            'platform': self.config.get('platform'),
-            'proxy': self.config.get('proxy'),
-        })
 
 

@@ -28,7 +28,9 @@ class AuroraIntGenerator(Generator):
         self.log.info("FE services: %s" % fe_service_names)
         self.log.info("BE services: %s" % be_service_names)
 
-        timestamped_destination = "%s-%s-%s" % (self.config.platform, self.config.packagegroup, strftime("%Y%m%d%H%M%S")) 
+        package_number = self.generate_package_number()
+
+        timestamped_destination = "%s-%s-%s" % (self.config.platform, self.config.packagegroup, package_number)
         dir_path = os.path.join(self.config.destination, self.config.platform, self.config.packagegroup, timestamped_destination)
 
         tasks.append({
@@ -63,6 +65,8 @@ class AuroraIntGenerator(Generator):
             'remote_user': self.config.user,
         })
 
+        tasks.append(self.deploy_monitor_upload_task(dir_path, package_number))
+
         root_dir = os.path.join(self.config.destination, self.config.platform, self.config.packagegroup)
         tasks.append({
             'command': 'local_cleanup',
@@ -84,4 +88,21 @@ class AuroraIntGenerator(Generator):
         }
 
         return tasklist
+
+
+    def generate_package_number(self):
+        return strftime("%Y%m%d%H%M%S")
+
+    def deploy_monitor_upload_task(self, deploy_package_dir, package_number):
+        """Upload project of a deploypackage to the new pipeline"""
+        
+        return {
+            'command': 'deploymonitor_upload',
+            'deploy_package_dir': deploy_package_dir,
+            'package_group': self.config.packagegroup,
+            'package_number': package_number,
+            'url': self.config.get('deploy_monitor_url'),
+            'platform': self.config.get('platform'),
+            'proxy': self.config.get('proxy'),
+        }
 
