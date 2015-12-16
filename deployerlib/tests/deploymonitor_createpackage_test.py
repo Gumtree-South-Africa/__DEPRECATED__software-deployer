@@ -8,7 +8,7 @@ import requests
 from deployerlib.commands import *
 from deployerlib.deploymonitor_client import DeployMonitorClient
 
-class DeployMonitorNotifyTest(unittest.TestCase):
+class DeployMonitorCreatePackageTest(unittest.TestCase):
 
     @mock.patch('deployerlib.deploymonitor_client.DeployMonitorClient.create_package')
     def test_creates_proper_payload_for_http_call(self, mock_create_package):

@@ -32,7 +32,7 @@ class DeploymentMonitorClientTest(unittest.TestCase):
         client.create_package("aurora-core", "123456789")
 
         mock_request_post.assert_has_calls([
-            call('ht tp://localhost/api/events', {'name': 'package-create', 'event': {'deliverable': 'aurora-core', 'version': '123456789'}}),
+            call('http://localhost/api/events', {'name': 'package-create', 'event': {'deliverable': 'aurora-core', 'version': '123456789'}}),
             call().raise_for_status()
         ])
 
