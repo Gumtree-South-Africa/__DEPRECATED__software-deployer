@@ -65,7 +65,8 @@ class AuroraIntGenerator(Generator):
             'remote_user': self.config.user,
         })
 
-        tasks.append(self.deploy_monitor_upload_task(dir_path, package_number))
+        tasks.append(self.deploymonitor_createpackage_task(package_number))
+        tasks.append(self.deploymonitor_upload_task(dir_path, package_number))
 
         root_dir = os.path.join(self.config.destination, self.config.platform, self.config.packagegroup)
         tasks.append({
@@ -93,7 +94,20 @@ class AuroraIntGenerator(Generator):
     def generate_package_number(self):
         return strftime("%Y%m%d%H%M%S")
 
-    def deploy_monitor_upload_task(self, deploy_package_dir, package_number):
+
+    def deploymonitor_createpackage_task(self, package_number):
+        """Create a package on deployment monitor app"""
+
+        return {
+            'command': 'deploymonitor_createpackage',
+            'package_group': self.config.packagegroup,
+            'package_number': package_number,
+            'url': self.config.get('deploy_monitor_url'),
+            'proxy': self.config.get('proxy'),
+        }
+
+
+    def deploymonitor_upload_task(self, deploy_package_dir, package_number):
         """Upload project of a deploypackage to the new pipeline"""
         
         return {
