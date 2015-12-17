@@ -29,7 +29,7 @@ class DeployMonitorClient:
 
     def post_json(self, resource, payload):
         url = "%s/%s" % (self.deploy_monitor_api_url, resource)
-        self.log.info("calling: requests.post(%s, json=%s, proxies=%s)" % (url, payload, self.proxy))
+        self.log.info("calling: requests.post('%s', json=%s, proxies=%s)" % (url, payload, self.proxy))
         r = self.request_post(url, payload)
         r.raise_for_status()
 
