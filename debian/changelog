@@ -1,3 +1,14 @@
+software-deployer (1.0.50) precise; urgency=low
+
+  [ Ivan Shubin ]
+  * Added create package call for deployment monitor
+  * Fixed tests
+  * Wrapped url in quotes in requests.post logging statement
+  * Removed continue_on_fail flag from deployment monitor createpackage and upload commands
+  * Added deploymonitor_createpackage to the executor list
+
+ -- Ivan Shubin <ishubin@builder001.dro.aurora.integration.mp.ecg.so>  Thu, 17 Dec 2015 14:27:22 +0100
+
 software-deployer (1.0.49) precise; urgency=low
 
   [ Ivan Shubin ]
