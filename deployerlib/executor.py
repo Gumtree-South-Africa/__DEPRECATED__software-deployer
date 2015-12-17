@@ -55,6 +55,7 @@ class Executor(object):
           'daemontools': daemontools.DaemonTools,
           'createdeploypackage': createdeploypackage.CreateDeployPackage,
           'deploymonitor_notify': deploymonitor_notify.DeploymonitorNotify,
+          'deploymonitor_createpackage': deploymonitor_createpackage.DeploymonitorCreatePackage,
           'deploymonitor_upload': deploymonitor_upload.DeploymonitorUpload,
           'local_cleanup': localcleanup.LocalCleanUp,
           'local_createdirectory': localcreatedirectory.LocalCreateDirectory

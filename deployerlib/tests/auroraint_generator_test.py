@@ -168,6 +168,12 @@ class AuroraIntGeneratorTest(unittest.TestCase):
                       'remote_host': 'somehost',
                       'packagegroup': 'user'
                     },{
+                      'url': 'http://localhost:9010',
+                      'package_group': 'user',
+                      'command': 'deploymonitor_createpackage',
+                      'proxy': None,
+                      'package_number': '20160102030405'
+                    },{
                       'platform': 'aurora',
                       'url': 'http://localhost:9010',
                       'deploy_package_dir': '/tmp/aurora/user/aurora-user-20160102030405',
