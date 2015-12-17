@@ -26,11 +26,10 @@ class DeploymonitorUpload(Command):
         }
     """
 
-    def initialize(self, deploy_package_dir, package_group, package_number, url, platform, proxy=None, continue_on_fail=True):
+    def initialize(self, deploy_package_dir, package_group, package_number, url, platform, proxy=None):
         self.deploy_package_dir = deploy_package_dir
         self.package_group = package_group
         self.package_number = package_number
-        self.continue_on_fail = continue_on_fail
         self.url = "%s/%s" % (url, 'api/events')
         self.platform = platform
 
@@ -68,13 +67,8 @@ class DeploymonitorUpload(Command):
                     })
 
         except OSError as e:
-            msg = "Deployment packages directory %s not present: %s or upload failed" % (deploy_package_dir, e.strerror)
-            if self.continue_on_fail:
-                self.log.warning(msg)
-                return True
-            else:
-                self.log.critical(msg)
-                return False
+            self.log.critical("Deployment packages directory %s not present: %s or upload failed" % (deploy_package_dir, e.strerror))
+            return False
 
         try:
             payload = {
@@ -97,11 +91,7 @@ class DeploymonitorUpload(Command):
 
             return True
         except Exception as e:
-            msg = "Could not notify deploy monitor! Exception: %s" % e.strerror
-            if self.continue_on_fail:
-                self.log.warning(msg)
-                return True
-            else:
-                self.log.critical(msg)
-                return False
+            self.log.critical("Could not notify deploy monitor! Exception: %s" % e.strerror)
+            return False
+
         return True
