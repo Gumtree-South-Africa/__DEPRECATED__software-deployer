@@ -7,6 +7,7 @@ from requests import ConnectionError
 
 from deployerlib.log import Log
 from deployerlib.deploymonitor_client import DeployMonitorClient
+from deployerlib.deploymonitor_client import ProjectHash
 
 
 class DeploymentMonitorClientTest(unittest.TestCase):
@@ -36,6 +37,73 @@ class DeploymentMonitorClientTest(unittest.TestCase):
             call().raise_for_status()
         ])
 
+
+    @mock.patch('deployerlib.deploymonitor_client.DeployMonitorClient.request_post')
+    def test_clientShouldNotifyDeployment(self, mock_request_post):
+        client = DeployMonitorClient("http://localhost")
+        client.notify_deployment("demo", "aurora-core", "1234567890", "deploying")
+
+        mock_request_post.assert_has_calls([
+            call('http://localhost/api/events', {
+                'name': 'deployment', 
+                'event': {
+                    'environment': 'demo',
+                    'deliverable': 'aurora-core', 
+                    'version': '1234567890',
+                    'status': 'deploying'
+                }
+            }),
+            call().raise_for_status()
+        ])
+
+        client.notify_deployment("demo", "aurora-core", "1234567890", "deployed")
+
+        mock_request_post.assert_has_calls([
+            call('http://localhost/api/events', {
+                'name': 'deployment', 
+                'event': {
+                    'environment': 'demo',
+                    'deliverable': 'aurora-core', 
+                    'version': '1234567890',
+                    'status': 'deployed'
+                }
+            }),
+            call().raise_for_status()
+        ])
+
+
+    @mock.patch('deployerlib.deploymonitor_client.DeployMonitorClient.request_post')
+    def test_clientShouldUploadProjects(self, mock_request_post):
+        client = DeployMonitorClient("http://localhost")
+        client.upload_project_hashes("aurora-core", "1234567890", [
+            ProjectHash("nl.marktplaats.aurora-frontend", "69e518"),
+            ProjectHash("nl.marktplaats.aurora-transaction-service", "qweasdzc"),
+            ProjectHash("selenium-tests", "123546", False)
+        ])
+
+        mock_request_post.assert_has_calls([
+            call('http://localhost/api/events', {
+                'name': 'project-hashes', 
+                'event': {
+                    'deliverable': 'aurora-core', 
+                    'version': '1234567890',
+                    'projects': [{
+                        "name": "nl.marktplaats.aurora-frontend",
+                        "hash": "69e518",
+                        "hasMain": True
+                    },{
+                        "name": "nl.marktplaats.aurora-transaction-service",
+                        "hash": "qweasdzc",
+                        "hasMain": True
+                    },{
+                        "name": "selenium-tests",
+                        "hash": "123546",
+                        "hasMain": False
+                    }]
+                }
+            }),
+            call().raise_for_status()
+        ])
 
 if __name__ == '__main__':
     unittest.main()

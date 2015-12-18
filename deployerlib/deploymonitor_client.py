@@ -3,6 +3,36 @@ import requests
 import time
 
 
+class ProjectHash:
+    def __init__(self, name, hash, has_main=True):
+        self.name = name
+        self.hash = hash
+        self.has_main = has_main
+
+
+    def __repr__(self):
+        return "ProjectHash(name=%s, hash=%s, has_main=%s)" % (self.name, self.hash, self.has_main)
+
+
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__)
+            and self.__dict__ == other.__dict__)
+
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+    def get_json(self):
+        return {
+            "name": self.name,
+            "hash": self.hash,
+            "hasMain": self.has_main
+        }
+
+
+
+
 class DeployMonitorClient:
     def __init__(self, deploy_monitor_url, proxy=None):
         self.deploy_monitor_url = deploy_monitor_url
@@ -12,16 +42,68 @@ class DeployMonitorClient:
 
 
     def create_package(self, deliverable, package_number):
+        """ Crates a package with specified version for specified deliverable
+
+        Keyword arguments:
+        deliverable     -- the name of deliverable (e.g. "aurora-core")
+        package_number  -- version of deliverable package (e.g. "20151217101023")
+        """
         self.post_json("events", {
-                "name": "package-create",
-                "event": {
-                    "deliverable": deliverable,
-                    "version": package_number
-                }
-            })
+            "name": "package-create",
+            "event": {
+                "deliverable": deliverable,
+                "version": package_number
+            }
+        })
+
+
+    def upload_project_hashes(self, deliverable, package_number, projects):
+        """ Uploads projects with hashes for specified package in specified deliverable
+    
+        Keyword arguments:
+        deliverable     -- the name of deliverable (e.g. "aurora-core")
+        package_number  -- version of deliverable package (e.g. "20151217101023")
+        projects        -- list of ProjectHash objects (e.g. [ProjectHash("aurora-frontend","123qwe", True), ProjectHash("selenium-tests", "asd34324", False)])
+        """
+
+        self.post_json("events", {
+            "name": "project-hashes",
+            "event": {
+                "deliverable": deliverable,
+                "version": package_number,
+                "projects": map(lambda p: p.get_json(), projects)
+            }
+        })
+
+
+    def notify_deployment(self, environment, deliverable, package_number, status):
+        """ Updates deployment status for a specified package on a specified environment
+
+        Keyword arguments:
+        environment     -- name of environment (e.g. "demo")
+        deliverable     -- the name of deliverable (e.g. "aurora-core")
+        package_number  -- version of deliverable package (e.g. "20151217101023")
+        status          -- status of deployment ("deploying", "deployed", "crashed")
+        """
+        self.post_json("events", {
+            'name': 'deployment', 
+            'event': {
+                'environment': environment,
+                'deliverable': deliverable, 
+                'version': package_number,
+                'status': status
+            }
+        })
 
 
     def get_all_services_for_deliverable(self, deliverable):
+        """ Returns all services/projects for specified deliverable
+        This call is used by package creator in order to get all the services
+        it is supposed to put in a new package
+
+        Keyword arguments:
+        deliverable     -- the name of deliverable (e.g. "aurora-core")
+        """
         response = self.get_json('deliverables/%s' % deliverable)
         filtered = filter( lambda p: p['hasMain']== True, response['projects'] )
         return map(lambda p: str(p['name']), filtered)

@@ -1,4 +1,5 @@
 import os
+import re
 import urllib2
 
 from deployerlib.log import Log
@@ -41,12 +42,20 @@ class AuroraGenerator(Generator):
 
 
     def use_deploy_monitor(self, release_version, environment):
-        self.deploy_monitor_notify('deploying', release_version)
-        self.deploy_monitor_notify('deployed', release_version)
+        split_string = re.split("(.+)-(\d{14})", release_version)
+
+        if not len(split_string) == 4:
+            raise DeployerException("invalid package_version %s" % release_version)
+    
+        package_group = split_string[1]
+        package_version = split_string[2]
+
+        self.deploy_monitor_notify('deploying', package_group, package_version)
+        self.deploy_monitor_notify('deployed', package_group, package_version)
 
 
-    def deploy_monitor_notify(self, status, release_version):
-        self.log.info('Creating task for: notify deployment monitor with status {0} for {1}'.format(status, release_version))
+    def deploy_monitor_notify(self, status, package_group, package_version):
+        self.log.info('Creating task for: notify deployment monitor with status {0} for {1}-{2}'.format(status, package_group, package_version))
 
         deploy_monitor_url = self.config.get('deploy_monitor_url')
 
@@ -55,7 +64,8 @@ class AuroraGenerator(Generator):
         self.tasklist.add(stage_name, {
             'command': 'deploymonitor_notify',
             'url': deploy_monitor_url,
-            'release_version': release_version,
+            'package_group': package_group,
+            'package_version': package_version,
             'environment':self.config.get('environment'),
             'status': status,
             'proxy': self.config.get('proxy'),
