@@ -53,6 +53,7 @@ class Executor(object):
           'listdirectory': listdirectory.ListDirectory,
           'getremoteversions': getremoteversions.GetRemoteVersions,
           'daemontools': daemontools.DaemonTools,
+          'apache': apache.Apache,
           'createdeploypackage': createdeploypackage.CreateDeployPackage,
           'deploymonitor_notify': deploymonitor_notify.DeploymonitorNotify,
           'deploymonitor_createpackage': deploymonitor_createpackage.DeploymonitorCreatePackage,

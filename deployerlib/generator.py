@@ -563,7 +563,20 @@ class Generator(object):
             return subtasks
 
         # Add steps to stop/start the service
-        stop_tasks, start_tasks = self._deploy_subtask_svc_control(hostname, package.servicename, control_type)
+        # Build funtion name using control_type and check if it exists and callable, then execute on success
+        try:
+            deploy_subtask_control = getattr(self, "_deploy_subtask_" + control_type + "_control")
+        except AttributeError as e:
+            self.log.critical('Unable to locate function for requested control type "{}" : {}.'.format(control_type, e.message))
+            exit(1)
+        else:
+            if callable(deploy_subtask_control):
+                stop_tasks, start_tasks = deploy_subtask_control(hostname, package.servicename, control_type)
+            else:
+                print deploy_subtask_control
+                self.log.critical('Unable to call function for requested control type "{}" - it is not callable property.'.format(control_type))
+                exit(1)
+
         subtasks = stop_tasks + subtasks + start_tasks
 
         # Add stops to disable/enable LB service if LB configuration is present
@@ -572,6 +585,7 @@ class Generator(object):
             subtasks = disable_tasks + subtasks + enable_tasks
 
         return subtasks
+
 
     def _filter_ignored_packages(self, packages):
         """Strip packages which is in ignore_packages list/str if it exist"""
@@ -839,7 +853,7 @@ class Generator(object):
           },
         ]
 
-    def _deploy_subtask_svc_control(self, hostname, servicename, control):
+    def _deploy_subtask_daemontools_control(self, hostname, servicename, control):
         """Steps to stop, start and check a daemontools service"""
 
         service_config = self.config.get_with_defaults('service', servicename)
@@ -876,6 +890,48 @@ class Generator(object):
           dict(check_task.items() + [('want_state', 0)]),
         ]
 
+        return stop_tasks, start_tasks
+
+    def _deploy_subtask_apache_control(self, hostname, servicename, control):
+        """Steps to stop, start and check a daemontools service"""
+
+        service_config = self.config.get_with_defaults('service', servicename)
+        force_kill = service_config.get('force_kill', False)
+
+        control_task = {
+          'command': control,
+          'remote_host': hostname,
+          'remote_user': self.config.user,
+          'tag': servicename,
+          'servicename': servicename,
+        }
+
+        stop_tasks = [
+          dict(control_task.items() + [('action', 'stop'), ('force_kill', force_kill)]),
+        ]
+
+        start_tasks = [
+          dict(control_task.items() + [('action', 'start')]),
+        ]
+
+        if hasattr(service_config, 'check_command'):
+            check_task = {
+              'command': 'check_service',
+              'remote_host': hostname,
+              'remote_user': self.config.user,
+              'tag': servicename,
+              'check_command': service_config['check_command'].format(servicename=servicename, port=service_config['port']),
+            }
+
+            # Add optional values
+            if hasattr(service_config, 'control_timeout'):
+                check_task['timeout'] = service_config['control_timeout']
+
+            # Add check task if applicable
+            stop_task.append(dict(check_task.items() + [('want_state', 2)]))
+            start_task.append(dict(check_task.items() + [('want_state', 0)]))
+
+        # Return a tuple of tasks for stopping and tasks for starting
         return stop_tasks, start_tasks
 
     def _deploy_subtask_lb_control(self, hostname, servicename):
