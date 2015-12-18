@@ -1,3 +1,18 @@
+software-deployer (1.0.51) precise; urgency=low
+
+  [ Yevgen Flerko ]
+  * Aanbieding deployment fix
+
+  [ Ivan Shubin ]
+  * Refactored all deployment monitor communication into deployment monitor client
+
+  [ Yevgen Flerko ]
+  * remove deploymentmonitor-notify
+
+  [ Ivan Shubin ]
+
+ -- Ivan Shubin <ishubin@builder001.dro.aurora.integration.mp.ecg.so>  Fri, 18 Dec 2015 11:51:00 +0100
+
 software-deployer (1.0.50) precise; urgency=low
 
   [ Ivan Shubin ]
