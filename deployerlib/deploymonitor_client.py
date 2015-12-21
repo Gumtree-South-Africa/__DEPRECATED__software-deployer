@@ -4,14 +4,15 @@ import time
 
 
 class ProjectHash:
-    def __init__(self, name, hash, has_main=True):
+    def __init__(self, name, hash, has_main=True, git_lookup_path=None):
         self.name = name
         self.hash = hash
         self.has_main = has_main
+        self.git_lookup_path = git_lookup_path
 
 
     def __repr__(self):
-        return "ProjectHash(name=%s, hash=%s, has_main=%s)" % (self.name, self.hash, self.has_main)
+        return "ProjectHash(name=%s, hash=%s, has_main=%s, git_lookup_path=%s)" % (self.name, self.hash, self.has_main, self.git_lookup_path)
 
 
     def __eq__(self, other):
@@ -24,11 +25,15 @@ class ProjectHash:
 
 
     def get_json(self):
-        return {
+        json = {
             "name": self.name,
             "hash": self.hash,
             "hasMain": self.has_main
         }
+        if self.git_lookup_path is not None:
+            json["gitLookupPath"] = self.git_lookup_path
+
+        return json
 
 
 
