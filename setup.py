@@ -47,6 +47,7 @@ setup(
         'bin/servicecontrol.py',
         'bin/deploywebapp.py',
         'bin/deploywebmanage.py',
-        "bin/createpackage.py"
+        "bin/createpackage.py",
+        "bin/jenkins_upstreams_project_hashes.py"
     ],
 )
