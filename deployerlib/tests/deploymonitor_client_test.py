@@ -78,7 +78,7 @@ class DeploymentMonitorClientTest(unittest.TestCase):
         client.upload_project_hashes("aurora-core", "1234567890", [
             ProjectHash("nl.marktplaats.aurora-frontend", "69e518"),
             ProjectHash("nl.marktplaats.aurora-transaction-service", "qweasdzc"),
-            ProjectHash("selenium-tests", "123546", False)
+            ProjectHash("selenium-tests", "123546", False, "http://example.com/some/github/lookup")
         ])
 
         mock_request_post.assert_has_calls([
@@ -98,7 +98,8 @@ class DeploymentMonitorClientTest(unittest.TestCase):
                     },{
                         "name": "selenium-tests",
                         "hash": "123546",
-                        "hasMain": False
+                        "hasMain": False,
+                        "gitLookupPath": "http://example.com/some/github/lookup"
                     }]
                 }
             }),
