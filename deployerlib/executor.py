@@ -59,7 +59,9 @@ class Executor(object):
           'deploymonitor_createpackage': deploymonitor_createpackage.DeploymonitorCreatePackage,
           'deploymonitor_upload': deploymonitor_upload.DeploymonitorUpload,
           'local_cleanup': localcleanup.LocalCleanUp,
-          'local_createdirectory': localcreatedirectory.LocalCreateDirectory
+          'local_createdirectory': localcreatedirectory.LocalCreateDirectory,
+          'consulservicecheck': consulservicecheck.ConsulServiceCheck,
+          'consulservicemaint': consulservicemaint.ConsulServiceMaint,
         }
 
         # Start manager manually in order to have the child processes ignore
