@@ -1,3 +1,15 @@
+software-deployer (1.0.52) precise; urgency=low
+
+  [ Ivan Shubin ]
+  * Implemented a script for fetching all upstream test projects in jenkins and uploading their hashes to deployment monitor
+
+  [ Witt, Arnoud(awitt) ]
+  * Update setup.py: add jenkins_upstreams_... script
+
+  [ Ivan Shubin ]
+
+ -- Ivan Shubin <ishubin@builder001.dro.aurora.integration.mp.ecg.so>  Wed, 23 Dec 2015 10:25:42 +0100
+
 software-deployer (1.0.51) precise; urgency=low
 
   [ Yevgen Flerko ]
