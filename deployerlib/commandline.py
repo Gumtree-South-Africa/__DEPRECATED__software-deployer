@@ -28,6 +28,7 @@ class CommandLine(object):
         parser.add_argument('--verify-config', action='store_true', help='Verify config file syntax')
 
         parser.add_argument('--ignore-lb', action='store_true', help='Ignore service state on loadbalancer')
+        parser.add_argument('--ignore-consul', action='store_true', help='Skip consul maintenance and check')
 
         host_group = parser.add_mutually_exclusive_group(required=require_host)
         host_group.add_argument('--hosts', nargs='+', help='Specify a list of hosts to deploy to')
