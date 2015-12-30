@@ -519,7 +519,6 @@ class Config(AttrDict):
                 }
 
         config_structure = {
-                # command line options:
                 'config': {
                     'type': str,
                     'allowed_re': path_re,
@@ -597,6 +596,10 @@ class Config(AttrDict):
                     'options': ['allow_none'],
                     },
                 'dump': {
+                    'type': bool,
+                    'options': ['allow_none'],
+                    },
+                'enable_consul': {
                     'type': bool,
                     'options': ['allow_none'],
                     },

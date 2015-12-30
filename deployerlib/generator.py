@@ -579,6 +579,11 @@ class Generator(object):
 
         subtasks = stop_tasks + subtasks + start_tasks
 
+        # Add stops to disable/enable Consul service if not disabled
+        if hasattr(self.config, 'enable_consul') and self.config.enable_consul and not self.config.ignore_consul:
+            disable_tasks, enable_tasks = self._deploy_subtask_consul_control(hostname, package.servicename)
+            subtasks = disable_tasks + subtasks + enable_tasks
+
         # Add stops to disable/enable LB service if LB configuration is present
         if not self.config.ignore_lb:
             disable_tasks, enable_tasks = self._deploy_subtask_lb_control(hostname, package.servicename)
@@ -867,28 +872,31 @@ class Generator(object):
           'servicename': servicename,
         }
 
-        check_task = {
-          'command': 'check_service',
-          'remote_host': hostname,
-          'remote_user': self.config.user,
-          'tag': servicename,
-          'check_command': service_config['check_command'].format(servicename=servicename, port=service_config['port']),
-        }
-
-        # Add optional values
-        if hasattr(service_config, 'control_timeout'):
-            check_task['timeout'] = service_config['control_timeout']
-
         # Return a tuple of tasks for stopping and tasks for starting
         stop_tasks = [
-          dict(control_task.items() + [('action', 'stop'), ('force_kill', force_kill)]),
-          dict(check_task.items() + [('want_state', 2)]),
+          dict(control_task.items() + [('action', 'stop'), ('force_kill', force_kill)])
         ]
 
         start_tasks = [
-          dict(control_task.items() + [('action', 'start')]),
-          dict(check_task.items() + [('want_state', 0)]),
+          dict(control_task.items() + [('action', 'start')])
         ]
+
+        if hasattr(service_config, 'check_command'):
+            check_task = {
+              'command': 'check_service',
+              'remote_host': hostname,
+              'remote_user': self.config.user,
+              'tag': servicename,
+              'check_command': service_config['check_command'].format(servicename=servicename, port=service_config['port']),
+            }
+
+            # Add optional values
+            if hasattr(service_config, 'control_timeout'):
+                check_task['timeout'] = service_config['control_timeout']
+
+            # Add check task if applicable
+            stop_tasks.append(dict(check_task.items() + [('want_state', 2)]))
+            start_tasks.append(dict(check_task.items() + [('want_state', 0)]))
 
         return stop_tasks, start_tasks
 
@@ -928,8 +936,8 @@ class Generator(object):
                 check_task['timeout'] = service_config['control_timeout']
 
             # Add check task if applicable
-            stop_task.append(dict(check_task.items() + [('want_state', 2)]))
-            start_task.append(dict(check_task.items() + [('want_state', 0)]))
+            stop_tasks.append(dict(check_task.items() + [('want_state', 2)]))
+            start_tasks.append(dict(check_task.items() + [('want_state', 0)]))
 
         # Return a tuple of tasks for stopping and tasks for starting
         return stop_tasks, start_tasks
@@ -961,3 +969,16 @@ class Generator(object):
         disable_tasks = [dict(lb_task.items() + [('command', 'enable_loadbalancer')])]
 
         return enable_tasks, disable_tasks
+
+    def _deploy_subtask_consul_control(self, hostname, servicename):
+        """Steps to disable and enable a consul registered service"""
+
+        consul_task = {
+            'command': 'consul_service',
+            'remote_host': hostname,
+            'servicename': servicename,
+        }
+        disable_tasks = [dict(consul_task.items() + [('action', 'maintenance')])]
+        enable_tasks = [dict(consul_task.items() + [('action', 'check')])]
+
+        return disable_tasks, enable_tasks
