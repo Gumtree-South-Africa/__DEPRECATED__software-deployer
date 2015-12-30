@@ -1,3 +1,11 @@
+software-deployer (1.0.54) precise; urgency=low
+
+  [ Vladislav Bakayev ]
+  * move enable_consul from global conf to service_defaults so it allows
+    per-service enable_consul override
+
+ -- Vladislav Bakayev <vbakayev@ebay.com>  Wed, 30 Dec 2015 15:08:00 +0100
+
 software-deployer (1.0.53) precise; urgency=low
 
   [ Vladislav Bakayev ]
