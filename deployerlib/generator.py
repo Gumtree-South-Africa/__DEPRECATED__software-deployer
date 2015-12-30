@@ -580,7 +580,7 @@ class Generator(object):
         subtasks = stop_tasks + subtasks + start_tasks
 
         # Add stops to disable/enable Consul service if not disabled
-        if hasattr(self.config, 'enable_consul') and self.config.enable_consul and not self.config.ignore_consul:
+        if not self.config.ignore_consul:
             disable_tasks, enable_tasks = self._deploy_subtask_consul_control(hostname, package.servicename)
             subtasks = disable_tasks + subtasks + enable_tasks
 
@@ -972,6 +972,16 @@ class Generator(object):
 
     def _deploy_subtask_consul_control(self, hostname, servicename):
         """Steps to disable and enable a consul registered service"""
+
+        if not hasattr(self.config, 'service_defaults') or \
+           not hasattr(self.config.service_defaults, 'enable_consul') or \
+           not bool(self.config.service_defaults.enable_consul):
+            return [], []
+
+        service_config = self.config.get_with_defaults('service', servicename)
+        if not bool(service_config.get('enable_consul')):
+            self.log.info('Consul is disabled for service {}'.format(servicename))
+            return [], []
 
         consul_task = {
             'command': 'consul_service',
