@@ -1,3 +1,16 @@
+software-deployer (1.0.53) precise; urgency=low
+
+  [ Vladislav Bakayev ]
+  * consul enablement for the deployer:
+    - add enable_consul platform key and --ignore-consul command-line argument
+    - add consul_service command which can put/remove service into maintenance mode
+      or check if its healthy (based on own service health checks)
+    - hook consul_service up into generator and executor
+    - make service_config check_command configuration key optional, and do nothing
+      it if its not defined, so deployer can rely upon consul service health
+
+ -- Vladislav Bakayev <vbakayev@ebay.com>  Wed, 30 Dec 2015 15:08:00 +0100
+
 software-deployer (1.0.52) precise; urgency=low
 
   [ Ivan Shubin ]
