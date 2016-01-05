@@ -8,6 +8,17 @@ from deployerlib.exceptions import DeployerException
 class ConsulService(Command):
     """Operate or monitor consul-registered services"""
 
+    # flow details:
+    # - generator class if enable_consul is present, adds ConsulService.maintenance()
+    #   to disable_tasks and ConsulService.check() to enable_tasks
+
+    # assumptions:
+    # - services register themselves upon startup, and deregister during shutdown;
+    #   if that is not the case, disable consul for that particular service in platform
+    #   yaml file using 'enable_consul: false'
+    # - services register service together with a related health check, so it would stay
+    #   critical until that check detects that the service is up
+
     def initialize(self, remote_host, servicename, action, want_state=0, timeout=60, notify_interval=30,
             post_delay=0, maint_enable=True, maint_reason='Software_Deployer'):
         self.servicename = str(servicename)
@@ -26,31 +37,30 @@ class ConsulService(Command):
 
     def check(self):
         """Probe a consul-registered service if its healthy (want_state=0 or want_state=passing)
-           or is not registered (any other want_state)"""
+           or is not registered (any other want_state) within specified timeout"""
         last_notify = time.time()
         max_time = time.time() + self.timeout
         success = False
-        url = 'http://localhost:8500/v1/health/service/{servicename}?tag=node-{shorthost}'.\
+        url = 'http://localhost:8500/v1/health/service/{servicename}'.\
                 format(servicename=self.servicename, shorthost=self.remote_host.hostname.split('.')[0])
         if self.require_healthy:
             url += '&passing'
 
         while time.time() < max_time and not success:
 
-            try:
-                req = requests.get(url)
-                if req.status_code != 200:
-                    response.raise_for_status()
-            except Exception as e:
-                raise DeployerException('Error connecting to consul API: {0}'.format(e))
-
-            decoded_response = req.json()
+            decoded_response = self._get_json(url)
+            self.log.debug('URL: {}, response: \'{}\''.format(url, str(decoded_response)))
             if not self.require_healthy and len(decoded_response) == 0:
                 self.log.debug('Service {0} is absent, OK'.format(self.servicename))
                 success = True
                 continue
 
             for response in decoded_response:
+                # ignore this service entries from other nodes
+                if 'Node' in response and 'Node' in response['Node'] \
+                    and response['Node']['Node'] != shorthost:
+                    continue
+
                 if 'Service' in response and 'ID' in response['Service']:
                     self.log.debug('Service {0} is present, OK'.format(self.servicename))
                     success = True
@@ -87,22 +97,16 @@ class ConsulService(Command):
 
         shorthost = self.remote_host.hostname.split('.')[0]
 
-        if self.maint_enable:
-            opts = 'enable=true&reason={reason}'.format(reason=self.maint_reason)
-        else:
-            opts = 'enable=false'
-
         if len(self.service_id_list) == 0:
-            url = 'http://127.0.0.1:8500/v1/health/service/{servicename}?tag=node-{shorthost}'.\
-                    format(servicename=self.servicename, shorthost=shorthost)
-            try:
-                req = requests.get(url)
-                if req.status_code != 200:
-                    response.raise_for_status()
-            except Exception as e:
-                raise DeployerException('Error connecting to consul API: {0}'.format(e))
+            url = 'http://127.0.0.1:8500/v1/health/service/{servicename}'.\
+                    format(servicename=self.servicename)
 
-            for response in req.json():
+            for response in self._get_json(url):
+                # ignore this service entries from other nodes
+                if 'Node' in response and 'Node' in response['Node'] \
+                    and response['Node']['Node'] != shorthost:
+                    continue
+
                 if 'Service' in response and 'ID' in response['Service']:
                     self.service_id_list.append(str(response['Service']['ID']))
 
@@ -111,6 +115,13 @@ class ConsulService(Command):
                     format(servicename=self.servicename, shorthost=shorthost))
                 return True
 
+        if self.maint_enable:
+            opts = 'enable=true&reason={reason}'.format(reason=self.maint_reason)
+            wording = 'into'
+        else:
+            opts = 'enable=false'
+            wording = 'out of'
+
         success = True
         for service_id in self.service_id_list:
             # this has to be run on the host itself - /v1/agent/service only maintains local services
@@ -118,15 +129,25 @@ class ConsulService(Command):
                     format(service_id=service_id, opts=opts)
             cmd = 'curl -XPUT -s -w \'{writeout}\' \'{url}\' 2>&1 | grep -q 200'.format(url=url, writeout='%{http_code}')
             self.log.debug('CMD: {cmd} on the node {shorthost}'.\
-                format(cmd=cmd, shorthost=self.remote_host.hostname.split('.')[0]))
+                format(cmd=cmd, shorthost=shorthost))
 
             res = self.remote_host.execute_remote(cmd)
             if res.return_code == 0:
-                self.log.info('Service now is in the maintenance state')
+                self.log.debug('Service {} has been put {} maintenance state'.format(service_id, wording))
                 time.sleep(self.post_delay)
             else:
-                self.log.critical('Failed to put service {0} into maintenance state: {1}'.format(service_id, str(res)))
+                self.log.critical('Failed to put service {} {} maintenance state: {}'.format(service_id, wording, str(res)))
                 success = False
 
         return success
 
+    def _get_json(self, url):
+
+        try:
+            req = requests.get(url)
+            if req.status_code != 200:
+                response.raise_for_status()
+        except Exception as e:
+            raise DeployerException('Error connecting to consul API: {0}'.format(e))
+
+        return req.json()
