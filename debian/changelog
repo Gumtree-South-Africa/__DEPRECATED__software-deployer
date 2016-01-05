@@ -1,3 +1,11 @@
+software-deployer (1.0.55) precise; urgency=low
+
+  [ Vladislav Bakayev ]
+  * tweak consul_service command to be able to find services
+    including those which has no 'node-<shorthost>' service tag
+
+ -- Vladislav Bakayev <vbakayev@ebay.com>  Tue, 05 Jan 2016 14:10:50 +0100
+
 software-deployer (1.0.54) precise; urgency=low
 
   [ Vladislav Bakayev ]
