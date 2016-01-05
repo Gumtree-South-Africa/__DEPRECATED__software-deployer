@@ -44,7 +44,7 @@ class ConsulService(Command):
         url = 'http://localhost:8500/v1/health/service/{servicename}'.\
                 format(servicename=self.servicename, shorthost=self.remote_host.hostname.split('.')[0])
         if self.require_healthy:
-            url += '&passing'
+            url += '?passing'
 
         while time.time() < max_time and not success:
 
