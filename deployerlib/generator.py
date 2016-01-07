@@ -988,6 +988,9 @@ class Generator(object):
             'remote_host': hostname,
             'servicename': servicename,
         }
+        if hasattr(service_config, 'control_timeout'):
+            consul_task['timeout'] = service_config['control_timeout']
+
         disable_tasks = [dict(consul_task.items() + [('action', 'maintenance')])]
         enable_tasks = [dict(consul_task.items() + [('action', 'check')])]
 
