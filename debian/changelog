@@ -1,3 +1,10 @@
+software-deployer (1.0.57) precise; urgency=low
+
+  [ Vladislav Bakayev ]
+  * bugfix shorthost variable in consulservice command
+
+ -- Vladislav Bakayev <vbakayev@ebay.com>  Thu, 07 Jan 2016 12:22:40 +0100
+
 software-deployer (1.0.56) precise; urgency=low
 
   [ Vladislav Bakayev ]
