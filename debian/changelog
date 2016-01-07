@@ -1,3 +1,10 @@
+software-deployer (1.0.58) precise; urgency=low
+
+  [ Vladislav Bakayev ]
+  * respect service-specific control_timeout in consul check
+
+ -- Vladislav Bakayev <vbakayev@ebay.com>  Thu, 07 Jan 2016 17:03:40 +0100
+
 software-deployer (1.0.57) precise; urgency=low
 
   [ Vladislav Bakayev ]
