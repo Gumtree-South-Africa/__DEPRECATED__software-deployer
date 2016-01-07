@@ -33,6 +33,7 @@ class ConsulService(Command):
 
     def execute(self):
         # Run the requested action
+        self.shorthost = self.remote_host.hostname.split('.')[0]
         return getattr(self, self.action)()
 
     def check(self):
@@ -42,7 +43,7 @@ class ConsulService(Command):
         max_time = time.time() + self.timeout
         success = False
         url = 'http://localhost:8500/v1/health/service/{servicename}'.\
-                format(servicename=self.servicename, shorthost=self.remote_host.hostname.split('.')[0])
+                format(servicename=self.servicename)
         if self.require_healthy:
             url += '?passing'
 
@@ -58,7 +59,7 @@ class ConsulService(Command):
             for response in decoded_response:
                 # ignore this service entries from other nodes
                 if 'Node' in response and 'Node' in response['Node'] \
-                    and response['Node']['Node'] != shorthost:
+                    and response['Node']['Node'] != self.shorthost:
                     continue
 
                 if 'Service' in response and 'ID' in response['Service']:
@@ -95,8 +96,6 @@ class ConsulService(Command):
         #
         # 2) schedule maintenance mode on the service if found any
 
-        shorthost = self.remote_host.hostname.split('.')[0]
-
         if len(self.service_id_list) == 0:
             url = 'http://127.0.0.1:8500/v1/health/service/{servicename}'.\
                     format(servicename=self.servicename)
@@ -104,7 +103,7 @@ class ConsulService(Command):
             for response in self._get_json(url):
                 # ignore this service entries from other nodes
                 if 'Node' in response and 'Node' in response['Node'] \
-                    and response['Node']['Node'] != shorthost:
+                    and response['Node']['Node'] != self.shorthost:
                     continue
 
                 if 'Service' in response and 'ID' in response['Service']:
@@ -112,7 +111,7 @@ class ConsulService(Command):
 
             if len(self.service_id_list) == 0:
                 self.log.warning('Failed to find service {servicename} on the node {shorthost}'.\
-                    format(servicename=self.servicename, shorthost=shorthost))
+                    format(servicename=self.servicename, shorthost=self.shorthost))
                 return True
 
         if self.maint_enable:
@@ -129,7 +128,7 @@ class ConsulService(Command):
                     format(service_id=service_id, opts=opts)
             cmd = 'curl -XPUT -s -w \'{writeout}\' \'{url}\' 2>&1 | grep -q 200'.format(url=url, writeout='%{http_code}')
             self.log.debug('CMD: {cmd} on the node {shorthost}'.\
-                format(cmd=cmd, shorthost=shorthost))
+                format(cmd=cmd, shorthost=self.shorthost))
 
             res = self.remote_host.execute_remote(cmd)
             if res.return_code == 0:
