@@ -23,14 +23,13 @@ args = CommandLine(parents=parser)
 log = Log(os.path.basename(__file__))
 config = Config(args)
 
-if config.dry_run:
-    log.info('Dry run, not executing any tasks')
-    print json.dumps(tasklist, indent=4, sort_keys=True)
-    sys.exit(0)
-
 try:
     generator = ServiceControl(config)
     tasklist = generator.generate()
+    if config.dry_run:
+        log.info('Dry run, not executing any tasks')
+        print json.dumps(tasklist, indent=4, sort_keys=True)
+        sys.exit(0)
     executor = Executor(tasklist=tasklist)
     executor.run()
 except DeployerException as e:
