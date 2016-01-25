@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name="software-deployer",
-    version="0.9",
+    version="1.0.59",
     author="Patrick McConnell",
     author_email="pmcconnell@ebay.com",
     description=("A modular, extendable, configuration-driven deployment system."),
