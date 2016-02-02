@@ -15,17 +15,7 @@ class CreateDeployPackage(Command):
             os.makedirs(self.timestamped_destination)
 
         self.make_package_for(self.remote_host, self.service_names, self.timestamped_location)
-
-        # properties, we copy it for now because not everything is puppetized
-        properties_version = self.remote_host.execute_remote('cat %s/properties_version' % self.properties_location)
-        if not properties_version:
-            self.log.warning("Can not find installed properties version!")
-            return False
-        else:
-            prop_file_name = "%s/%s_%s.tar.gz" % (self.tarballs_location, "*properties", properties_version)
-            self.log.info("Fetching properties from %s" % prop_file_name)
-            self.remote_host.get_remote(prop_file_name, self.timestamped_location)
-            return True
+        return True
 
     def find_package_name(self, remote_host, service_name):
         service_location = "%s/%s" % (self.webapps_location, service_name)
