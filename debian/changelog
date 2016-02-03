@@ -1,3 +1,12 @@
+software-deployer (1.0.60) precise; urgency=low
+
+  [ Sander van den Berg ]
+  * Removed code that takes the properties from the be and adds them to the package
+
+  [ Ivan Shubin ]
+
+ -- Ivan Shubin <ishubin@builder001.dro.aurora.integration.mp.ecg.so>  Wed, 03 Feb 2016 10:50:36 +0100
+
 software-deployer (1.0.59) precise; urgency=low
 
   [ Denys Zhdanov ]
