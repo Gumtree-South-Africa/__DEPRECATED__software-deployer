@@ -19,15 +19,20 @@ class CreateDeployPackage(Command):
 
     def find_package_name(self, remote_host, service_name):
         service_location = "%s/%s" % (self.webapps_location, service_name)
-        current_green_integration_packages = remote_host.execute_remote('find %s -type l -exec readlink {} \;' % service_location)
-        return current_green_integration_packages
+        command = 'find %s -type l -exec readlink {} \;'
+        current_green_integration_packages = remote_host.execute_remote(command % service_location)
+        if current_green_integration_packages.return_code != 0:
+            self.log.error("Executing %s on host %s failed." % command, remote_host)
+            return []
+        else:
+            return current_green_integration_packages
 
     def make_package_for(self, remote_host, service_names, destination):
         self.log.info("Fetching list from: %s" % remote_host)
         current_green_integration_packages = [self.find_package_name(remote_host, service) for service in service_names]
 
-	for link in current_green_integration_packages:
-		 package_path = "%s/%s.tar.gz" % (self.tarballs_location, link)
+    for link in current_green_integration_packages:
+         package_path = "%s/%s.tar.gz" % (self.tarballs_location, link)
 
-		 self.log.info("Fetching archive: %s" % package_path)
-                 remote_host.get_remote(package_path, destination)
+         self.log.info("Fetching archive: %s" % package_path)
+         remote_host.get_remote(package_path, destination)
