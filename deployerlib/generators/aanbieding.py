@@ -23,7 +23,7 @@ class AanbiedingGenerator(Generator):
         self.deploy_properties(properties_packages)
         #not yet enabled for aurora#self.daemontools_stage(packages)
         self.deploy_ordered_packages(packages, self.config.deployment_order)
-        self.dbmigrations_stage(packages, migration_path_suffix='db/migrations')
+        self.dbmigrations_stage(packages, migration_path_suffix='migrations')
         self.templates_stage(packages)
 
         if self.config.release:
