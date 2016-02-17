@@ -1,15 +1,3 @@
-software-deployer (1.0.61) precise; urgency=low
-
-  [ Sander van den Berg ]
-  * Added error handling for create package
-
-  [ Witt, Arnoud(awitt) ]
-  * Fix migration_path_suffix in aanbieding generator
-
-  [ Arnoud Witt ]
-
- -- Arnoud Witt <awitt@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Wed, 17 Feb 2016 10:52:02 +0100
-
 software-deployer (1.0.60) precise; urgency=low
 
   [ Sander van den Berg ]
