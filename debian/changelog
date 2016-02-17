@@ -1,3 +1,15 @@
+software-deployer (1.0.61) precise; urgency=low
+
+  [ Arnoud Witt ]
+  * Fix changelog
+  * Fixing indentation in commands/createdeploypackage
+  * Fix migration_path_suffix in aanbieding generator
+
+  [ Sander van den Berg ]
+  * Added error handling for create package
+
+ -- Arnoud Witt <awitt@dpkgbuilder001.dro.platform.control.mp.ecg.so>  Wed, 17 Feb 2016 11:17:36 +0100
+
 software-deployer (1.0.60) precise; urgency=low
 
   [ Sander van den Berg ]
