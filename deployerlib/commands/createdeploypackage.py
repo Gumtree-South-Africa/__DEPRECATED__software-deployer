@@ -31,8 +31,8 @@ class CreateDeployPackage(Command):
         self.log.info("Fetching list from: %s" % remote_host)
         current_green_integration_packages = [self.find_package_name(remote_host, service) for service in service_names]
 
-    for link in current_green_integration_packages:
-         package_path = "%s/%s.tar.gz" % (self.tarballs_location, link)
+        for link in current_green_integration_packages:
+             package_path = "%s/%s.tar.gz" % (self.tarballs_location, link)
 
-         self.log.info("Fetching archive: %s" % package_path)
-         remote_host.get_remote(package_path, destination)
+             self.log.info("Fetching archive: %s" % package_path)
+             remote_host.get_remote(package_path, destination)
