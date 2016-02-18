@@ -22,7 +22,7 @@ class CreateDeployPackage(Command):
         command = 'find %s -type l -exec readlink {} \;'
         current_green_integration_packages = remote_host.execute_remote(command % service_location)
         if current_green_integration_packages.return_code != 0:
-            self.log.error("Executing %s on host %s failed." % command, remote_host)
+            self.log.error("Executing %s on host %s failed." % (command, remote_host))
             return []
         else:
             return current_green_integration_packages
