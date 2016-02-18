@@ -1,3 +1,9 @@
+software-deployer (1.0.62) precise; urgency=low
+
+  * Fixed error printing output
+
+ -- Sander van den Berg <svandenberg@builder001.dro.aurora.integration.mp.ecg.so>  Thu, 18 Feb 2016 09:49:13 +0100
+
 software-deployer (1.0.61) precise; urgency=low
 
   [ Arnoud Witt ]
