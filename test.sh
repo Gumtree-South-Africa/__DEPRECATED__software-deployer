@@ -21,7 +21,7 @@ passed_tests=()
 
 for test in ${tests[@]}; do
     echo Testing $test
-    python $test
+    ipython $test
     if [ "$?" -ne "0" ]; then
         failure=1
         failed_tests+=($test)

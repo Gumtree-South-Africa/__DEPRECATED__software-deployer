@@ -20,12 +20,12 @@ class CreateDeployPackage(Command):
     def find_package_name(self, remote_host, service_name):
         service_location = "%s/%s" % (self.webapps_location, service_name)
         command = 'find %s -type l -exec readlink {} \;'
-        current_green_integration_packages = remote_host.execute_remote(command % service_location)
-        if current_green_integration_packages.return_code != 0:
+        current_green_integration_package = remote_host.execute_remote(command % service_location)
+        if current_green_integration_package.return_code != 0:
             self.log.error("Executing %s on host %s failed." % (command, remote_host))
-            return []
+            raise Exception("Error finding linked service while excecuting %s on %s" % (command, remote_host))
         else:
-            return current_green_integration_packages
+            return current_green_integration_package
 
     def make_package_for(self, remote_host, service_names, destination):
         self.log.info("Fetching list from: %s" % remote_host)
