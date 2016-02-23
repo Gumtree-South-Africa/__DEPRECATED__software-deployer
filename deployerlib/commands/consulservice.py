@@ -76,11 +76,11 @@ class ConsulService(Command):
             time.sleep(1)
 
         if success:
-            self.log.info('Service is in the required state')
+            self.log.info('Service {0} is in the required state'.format(self.servicename))
             return True
         else:
-            self.log.critical('Service is not in the required state within configured timeout of {0} seconds'.format(
-                self.timeout))
+            self.log.critical('Service {0} is not in the required state within configured timeout of {1} seconds'.format(
+                self.servicename, self.timeout))
             return False
 
     def maintenance(self):
