@@ -22,7 +22,7 @@ class CreateDeployPackage(Command):
         command = 'find %s -type l -exec readlink {} \;'
         current_green_integration_package = remote_host.execute_remote(command % service_location)
         if current_green_integration_package.return_code != 0:
-            self.log.error("Executing %s on host %s failed." % (command, remote_host))
+            self.log.error("Executing %s on host %s failed." % (command % service_location, remote_host))
             raise Exception("Error finding linked service while excecuting %s on %s" % (command, remote_host))
         else:
             return current_green_integration_package
