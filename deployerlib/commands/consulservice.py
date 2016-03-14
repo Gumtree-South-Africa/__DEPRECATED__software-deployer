@@ -44,8 +44,10 @@ class ConsulService(Command):
         success = False
         url = 'http://localhost:8500/v1/health/service/{servicename}'.\
                 format(servicename=self.servicename)
+        wanted_state_msg = 'deregister'
         if self.require_healthy:
             url += '?passing'
+            wanted_state_msg = 'become healthy'
 
         while time.time() < max_time and not success:
 
@@ -68,9 +70,9 @@ class ConsulService(Command):
                     continue
 
             if self.notify_interval and (time.time() - last_notify) > self.notify_interval:
-                time_left = int(5 * round(max_time - time.time()) / 5)
-                self.log.info('Will wait up to {0} more seconds for service to enter required state'.format(
-                    time_left))
+                time_left = round(max_time - time.time())
+                self.log.info('Waiting {time_left} more seconds for service {servicename} to {wanted_state_msg}'.format(
+                    time_left=time_left, servicename=self.servicename, wanted_state_msg=wanted_state_msg))
                 last_notify = time.time()
 
             time.sleep(1)
