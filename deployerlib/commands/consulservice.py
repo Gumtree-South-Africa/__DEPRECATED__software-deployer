@@ -54,7 +54,8 @@ class ConsulService(Command):
             decoded_response = self._get_json(url)
             self.log.debug('URL: {}, response: \'{}\''.format(url, str(decoded_response)))
             if not self.require_healthy and len(decoded_response) == 0:
-                self.log.debug('Service {0} is absent, OK'.format(self.servicename))
+                self.log.debug('Service {servicename} did {wanted_state_msg} successfully'.format(
+                     servicename=self.servicename, wanted_state_msg=wanted_state_msg))
                 success = True
                 continue
 
@@ -65,11 +66,12 @@ class ConsulService(Command):
                     continue
 
                 if 'Service' in response and 'ID' in response['Service']:
-                    self.log.debug('Service {0} is present, OK'.format(self.servicename))
+                    self.log.debug('Service {servicename} did {wanted_state_msg} successfully'.format(
+                        servicename=self.servicename, wanted_state_msg=wanted_state_msg))
                     success = True
                     continue
 
-            if self.notify_interval and (time.time() - last_notify) > self.notify_interval:
+            if (time.time() - last_notify) > self.notify_interval:
                 time_left = round(max_time - time.time())
                 self.log.info('Waiting {time_left} more seconds for service {servicename} to {wanted_state_msg}'.format(
                     time_left=time_left, servicename=self.servicename, wanted_state_msg=wanted_state_msg))
@@ -78,11 +80,10 @@ class ConsulService(Command):
             time.sleep(1)
 
         if success:
-            self.log.info('Service {0} is in the required state'.format(self.servicename))
             return True
         else:
-            self.log.critical('Service {0} is not in the required state within configured timeout of {1} seconds'.format(
-                self.servicename, self.timeout))
+            self.log.critical('Service {servicename} did not {wanted_state_msg} in {timeout} seconds'.format(
+                servicename=self.servicename, wanted_state_msg=wanted_state_msg, timeout=self.timeout))
             return False
 
     def maintenance(self):
