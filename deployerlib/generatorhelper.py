@@ -24,6 +24,7 @@ class GeneratorHelper(object):
             'rts2': rts2.RTS2Generator,
             'csbizapp': csbizapp.CsbizappGenerator,
             'test': testgenerator.TestGenerator,
+            'bolt': bolt.BoltGenerator,
         }
 
         generator = generators.get(generator_name)

@@ -61,6 +61,7 @@ class Executor(object):
           'local_cleanup': localcleanup.LocalCleanUp,
           'local_createdirectory': localcreatedirectory.LocalCreateDirectory,
           'consul_service': consulservice.ConsulService,
+          'init_script': initscript.InitScript,
         }
 
         # Start manager manually in order to have the child processes ignore
