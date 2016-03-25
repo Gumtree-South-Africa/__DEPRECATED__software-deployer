@@ -1,3 +1,23 @@
+software-deployer (1.0.63) trusty; urgency=medium
+
+  [ Sander van den Berg ]
+  * Added a test for the find faillure case
+
+  [ Vladislav Bakayev ]
+  * Log service name during Consul interaction
+
+  [ Sander van den Berg ]
+  * Improved the error message for createdeploypackage
+
+  [ Vladislav Bakayev ]
+  * better logging of what consulservice command is expecting
+  * better logging of what consulservice command is expecting
+
+  [ Patrick McConnell ]
+  * Add Bolt platform support
+
+ -- Patrick <pmcconnell@ebay.com>  Sat, 26 Mar 2016 00:27:38 +0100
+
 software-deployer (1.0.62) precise; urgency=low
 
   * Fixed error printing output
