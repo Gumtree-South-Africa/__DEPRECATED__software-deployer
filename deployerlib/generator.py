@@ -782,14 +782,16 @@ class Generator(object):
         service_config = self.config.get_with_defaults('service', package.servicename)
 
         # environment might be specified per service (icas) or per platform (aurora)
-        environment = service_config.get('environment')
-        if not environment:
-            environment = self.config.get('environment')
+        environment = service_config.get('environment', '')
+        if not environment and self.config.get('properties_per_environment', True):
+            environment = self.config.get('environment', '')
 
         # properties path might be specified as properties_path (icas) or properties_location (aurora)
         install_path = service_config.get('properties_path')
         if not install_path:
             install_path = service_config.get('properties_location')
+
+        install_path = install_path.format(version=package.version)
 
         source_path = os.path.join(
           service_config.install_location,
@@ -798,27 +800,40 @@ class Generator(object):
           environment,
         )
 
-        return [
-          {
-            'command': 'copyfile',
-            'remote_host': hostname,
-            'remote_user': self.config.user,
-            'source': '{0}/*'.format(source_path),
-            'destination': '{0}/'.format(install_path),
-            'recursive': True,
-            'continue_if_exists': True,
-            'tag': package.servicename,
-          },
-          {
-            'command': 'writefile',
-            'remote_host': hostname,
-            'remote_user': self.config.user,
-            'destination': '{0}/properties_version'.format(install_path),
-            'contents': package.version,
-            'clobber': True,
-            'tag': package.servicename,
-          }
-        ]
+        tasks = []
+
+        if self.config.get('properties_create_destination', False):
+            tasks.append({
+              'command': 'createdirectory',
+              'remote_host': hostname,
+              'remote_user': self.config.user,
+              'source': install_path,
+              'clobber': True,
+            })
+
+        tasks.append({
+          'command': 'copyfile',
+          'remote_host': hostname,
+          'remote_user': self.config.user,
+          'source': '{0}/*'.format(source_path),
+          'destination': '{0}/'.format(install_path),
+          'recursive': True,
+          'continue_if_exists': True,
+          'tag': package.servicename,
+        })
+
+        if self.config.get('properties_write_version', True):
+            tasks.append({
+              'command': 'writefile',
+              'remote_host': hostname,
+              'remote_user': self.config.user,
+              'destination': '{0}/properties_version'.format(install_path),
+              'contents': package.version,
+              'clobber': True,
+              'tag': package.servicename,
+            })
+
+        return tasks
 
     def _deploy_subtask_move(self, hostname, package):
         """Minimum deploy consists of moving a directory into place and creating a symlink"""

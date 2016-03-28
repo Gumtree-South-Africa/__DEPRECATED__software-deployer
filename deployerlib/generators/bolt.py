@@ -14,7 +14,7 @@ class BoltGenerator(Generator):
         if not self.config.redeploy:
             self.use_remote_versions(packages)
 
-        properties_packages = [x for x in packages if x.servicename.endswith('-properties')]
+        properties_packages = [x for x in packages if x.servicename.endswith('-static')]
         packages = [x for x in packages if not x in properties_packages]
 
         self.deploy_properties(properties_packages)
