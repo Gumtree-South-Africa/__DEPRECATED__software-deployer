@@ -29,6 +29,10 @@ class GetRemoteVersions(Command):
                 if not item:
                     continue
                 item = os.path.basename(item)
+
+                if not '_' in item:
+                    continue
+
                 name_vers = item.split('_')
                 service_name = name_vers[0]
                 remote_version = name_vers[1]
