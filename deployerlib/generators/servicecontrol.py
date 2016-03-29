@@ -55,7 +55,7 @@ class ServiceControl(Generator):
                         continue
 
                     self.log.debug('Adding {0} commands for {1} on {2}'.format(action, servicename, hostname))
-                    stop, start = self._deploy_subtask_daemontools_control(hostname, servicename, control_type)
+                    stop, start = self._deploy_subtask_svc_control(hostname, servicename, control_type)
 
                     if self.config.ignore_lb:
                         disable_lb, enable_lb = [], []
