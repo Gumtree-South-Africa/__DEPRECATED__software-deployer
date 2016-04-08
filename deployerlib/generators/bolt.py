@@ -22,12 +22,9 @@ class BoltGenerator(Generator):
         self.dbmigrations_stage(packages, migration_path_suffix='migrations')
         self.templates_stage(packages)
 
-        if self.config.release:
+        if self.config.release or self.config.component:
 
             if self.config.get('graphite') and not self.tasklist.is_empty():
                 self.use_graphite()
-
-            if self.config.get('history'):
-                self.archive_stage()
 
         return self.tasklist.generate()
