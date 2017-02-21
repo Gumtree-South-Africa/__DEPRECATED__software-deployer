@@ -185,7 +185,12 @@ class Executor(object):
                 else:
                     username = None
 
-                task['remote_host'] = self.get_remote_host(task['remote_host'], username)
+                if 'ssh_private_key' in task:
+                    ssh_private_key = task.pop('ssh_private_key')
+                else:
+                    ssh_private_key = None
+
+                task['remote_host'] = self.get_remote_host(task['remote_host'], username, ssh_private_key)
                 job_id = task['remote_host'].hostname
             elif 'lb_hostname' in task:
                 job_id = task['lb_hostname']
@@ -224,7 +229,7 @@ class Executor(object):
 
         return job_list
 
-    def get_remote_host(self, hostname, username=''):
+    def get_remote_host(self, hostname, username='', ssh_private_key=None):
         """Return a host object from a hostname"""
 
         match = [x for x in self.remote_hosts if x.hostname == hostname]
@@ -234,7 +239,7 @@ class Executor(object):
         elif len(match) > 1:
             raise DeployerException('More than one host found with hostname{0}'.format(hostname))
         else:
-            host = RemoteHost(hostname, username)
+            host = RemoteHost(hostname, username, ssh_private_key=ssh_private_key)
             self.remote_hosts.append(host)
             return host
 

@@ -135,6 +135,7 @@ class Generator(object):
           'command': 'createdirectory',
           'remote_host': hostname,
           'remote_user': self.config.user,
+          'ssh_private_key': self.config.get('ssh_private_key'),
           'source': tempdir,
           'clobber': self.config.get('remove_temp_dirs', False),
         })
@@ -143,6 +144,7 @@ class Generator(object):
           'command': 'upload',
           'remote_host': hostname,
           'remote_user': self.config.user,
+          'ssh_private_key': self.config.get('ssh_private_key'),
           'source': package.fullpath,
           'destination': service_config.destination,
           'tag': package.servicename,
@@ -152,6 +154,7 @@ class Generator(object):
           'command': 'unpack',
           'remote_host': hostname,
           'remote_user': self.config.user,
+          'ssh_private_key': self.config.get('ssh_private_key'),
           'source': os.path.join(service_config.destination, package.filename),
           'destination': os.path.join(service_config.install_location, service_config.unpack_dir),
           'tag': package.servicename,
@@ -163,6 +166,7 @@ class Generator(object):
               'command': 'removefile',
               'remote_host': hostname,
               'remote_user': self.config.user,
+              'ssh_private_key': self.config.get('ssh_private_key'),
               'source': tempdir,
             })
         else:
@@ -170,6 +174,7 @@ class Generator(object):
                 'command': 'cleanup',
                 'remote_host': hostname,
                 'remote_user': self.config.user,
+                'ssh_private_key': self.config.get('ssh_private_key'),
                 'path': os.path.join(service_config.install_location, service_config.unpack_dir),
                 'filespec': '{0}_*'.format(package.servicename),
                 'keepversions': 0,
@@ -181,6 +186,7 @@ class Generator(object):
           'command': 'cleanup',
           'remote_host': hostname,
           'remote_user': self.config.user,
+          'ssh_private_key': self.config.get('ssh_private_key'),
           'path': service_config.destination,
           'filespec': '{0}_*'.format(package.servicename),
           'keepversions': self.config.keep_versions,
@@ -195,6 +201,7 @@ class Generator(object):
               'command': 'cleanup',
               'remote_host': hostname,
               'remote_user': self.config.user,
+              'ssh_private_key': self.config.get('ssh_private_key'),
               'path': service_config.install_location,
               'filespec': '{0}_*'.format(package.servicename),
               'keepversions': self.config.keep_versions,
@@ -326,6 +333,7 @@ class Generator(object):
               'command': 'migration_script',
               'remote_host': hostname,
               'remote_user': self.config.user,
+              'ssh_private_key': self.config.get('ssh_private_key'),
               'source': service_config.migration_command.format(
                 unpack_location=unpack_location,
                 migration_location=migration_location,
@@ -382,6 +390,7 @@ class Generator(object):
                   'command': 'migration_script',
                   'remote_host': hostname,
                   'remote_user': self.config.user,
+                  'ssh_private_key': self.config.get('ssh_private_key'),
                   'source': service_config.template_command.format(template_location=template_location),
                   'tag': package.servicename,
                   'if_exists': template_location,
@@ -432,6 +441,7 @@ class Generator(object):
                       'action': 'enable',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
+                      'ssh_private_key': self.config.get('ssh_private_key'),
                       'servicename': package.servicename,
                       'tag': package.servicename,
                     })
@@ -444,6 +454,7 @@ class Generator(object):
                       'action': 'disable',
                       'remote_host': hostname,
                       'remote_user': self.config.user,
+                      'ssh_private_key': self.config.get('ssh_private_key'),
                       'servicename': package.servicename,
                       'tag': package.servicename,
                     })
@@ -501,6 +512,7 @@ class Generator(object):
               'command': 'getremoteversions',
               'remote_host': host,
               'remote_user': self.config.user,
+              'ssh_private_key': self.config.get('ssh_private_key'),
               'install_location': self.config.service_defaults.install_location,
               'remote_versions': remote_versions,
               'properties_defs': self.config.get_all_properties(),
@@ -542,7 +554,7 @@ class Generator(object):
         elif len(match) > 1:
             raise DeployerException('More than one host found with hostname {0}'.format(hostname))
         else:
-            host = RemoteHost(hostname, username)
+            host = RemoteHost(hostname, username, ssh_private_key=self.config.get('ssh_private_key'))
             self._remote_hosts.append(host)
             return host
 
@@ -807,6 +819,7 @@ class Generator(object):
               'command': 'createdirectory',
               'remote_host': hostname,
               'remote_user': self.config.user,
+              'ssh_private_key': self.config.get('ssh_private_key'),
               'source': install_path,
               'clobber': True,
             })
@@ -815,6 +828,7 @@ class Generator(object):
           'command': 'copyfile',
           'remote_host': hostname,
           'remote_user': self.config.user,
+          'ssh_private_key': self.config.get('ssh_private_key'),
           'source': '{0}/*'.format(source_path),
           'destination': '{0}/'.format(install_path),
           'recursive': True,
@@ -827,6 +841,7 @@ class Generator(object):
               'command': 'writefile',
               'remote_host': hostname,
               'remote_user': self.config.user,
+              'ssh_private_key': self.config.get('ssh_private_key'),
               'destination': '{0}/properties_version'.format(install_path),
               'contents': package.version,
               'clobber': True,
@@ -845,6 +860,7 @@ class Generator(object):
             'command': 'movefile',
             'remote_host': hostname,
             'remote_user': self.config.user,
+            'ssh_private_key': self.config.get('ssh_private_key'),
             'tag': package.servicename,
             'source': os.path.join(service_config.install_location, service_config.unpack_dir, package.packagename),
             'destination': os.path.join(service_config.install_location, package.packagename),
@@ -854,6 +870,7 @@ class Generator(object):
             'command': 'symlink',
             'remote_host': hostname,
             'remote_user': self.config.user,
+            'ssh_private_key': self.config.get('ssh_private_key'),
             'tag': package.servicename,
             'source': os.path.join(service_config.install_location, package.packagename),
             'destination': os.path.join(service_config.install_location, package.servicename),
@@ -870,6 +887,7 @@ class Generator(object):
           'command': control,
           'remote_host': hostname,
           'remote_user': self.config.user,
+          'ssh_private_key': self.config.get('ssh_private_key'),
           'tag': servicename,
           'servicename': servicename,
         }
@@ -888,6 +906,7 @@ class Generator(object):
               'command': 'check_service',
               'remote_host': hostname,
               'remote_user': self.config.user,
+              'ssh_private_key': self.config.get('ssh_private_key'),
               'tag': servicename,
               'check_command': service_config['check_command'].format(servicename=servicename, port=service_config['port']),
             }

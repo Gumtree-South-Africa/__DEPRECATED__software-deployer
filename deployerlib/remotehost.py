@@ -13,7 +13,7 @@ from fabric.operations import run, sudo, put, get
 class RemoteHost(object):
     """Handle execution of tasks on a remote host"""
 
-    def __init__(self, hostname, username='', pool_size=1, caller=None):
+    def __init__(self, hostname, username='', pool_size=1, caller=None, ssh_private_key=None):
         self.log = Log(self.__class__.__name__)
 
         self.hostname = hostname
@@ -27,6 +27,9 @@ class RemoteHost(object):
         output.everything = False
         env.parallel = False
         env.serial = True
+
+        if ssh_private_key:
+            env.key_filename = ssh_private_key
 
     def __str__(self):
         return self.hostname
