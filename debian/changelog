@@ -1,3 +1,10 @@
+software-deployer (1.0.65) trusty; urgency=medium
+
+  [ Patrick McConnell ]
+  * Add ssh_private_key config option
+
+ -- Patrick <pmcconnell@ebay.com>  Tue, 21 Feb 2017 11:11:29 -0800
+
 software-deployer (1.0.64) trusty; urgency=medium
 
   [ Patrick McConnell ]
