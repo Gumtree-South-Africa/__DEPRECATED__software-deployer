@@ -1,3 +1,10 @@
+software-deployer (1.0.68) trusty; urgency=medium
+
+  [ Patrick McConnell ]
+  * Fix for servicecontrol.py
+
+ -- Patrick <pmcconnell@ebay.com>  Tue, 21 Feb 2017 21:59:43 -0800
+
 software-deployer (1.0.67) trusty; urgency=medium
 
   [ Patrick McConnell ]
