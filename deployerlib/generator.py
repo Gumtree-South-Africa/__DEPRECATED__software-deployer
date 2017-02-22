@@ -584,7 +584,7 @@ class Generator(object):
             subtasks = disable_tasks + subtasks + enable_tasks
 
         # Add stops to disable/enable LB service if LB configuration is present
-        if not self.config.ignore_lb:
+        if not self.config.ignore_lb and not self.config.get('skip_lb_control'):
             disable_tasks, enable_tasks = self._deploy_subtask_lb_control(hostname, package.servicename)
             subtasks = disable_tasks + subtasks + enable_tasks
 
