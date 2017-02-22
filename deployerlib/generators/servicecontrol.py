@@ -57,7 +57,7 @@ class ServiceControl(Generator):
                     self.log.debug('Adding {0} commands for {1} on {2}'.format(action, servicename, hostname))
                     stop, start = self._deploy_subtask_svc_control(hostname, servicename, control_type)
 
-                    if self.config.ignore_lb:
+                    if self.config.ignore_lb or self.config.skip_lb_control:
                         disable_lb, enable_lb = [], []
                     else:
                         disable_lb, enable_lb = self._deploy_subtask_lb_control(hostname, servicename)
