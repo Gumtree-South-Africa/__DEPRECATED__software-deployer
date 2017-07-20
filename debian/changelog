@@ -1,3 +1,10 @@
+software-deployer (1.0.69) trusty; urgency=medium
+
+  [ Patrick McConnell ]
+  * Add properties_symlink option
+
+ -- Patrick <pmcconnell@localhost>  Thu, 20 Jul 2017 13:58:59 -0700
+
 software-deployer (1.0.68) trusty; urgency=medium
 
   [ Patrick McConnell ]
