@@ -848,6 +848,17 @@ class Generator(object):
               'tag': package.servicename,
             })
 
+        if self.config.get('properties_symlink'):
+            tasks.append({
+              'command': 'symlink',
+              'remote_host': hostname,
+              'remote_user': self.config.user,
+              'ssh_private_key': self.config.get('ssh_private_key'),
+              'tag': package.servicename,
+              'source': install_path,
+              'destination': os.path.join(os.path.dirname(install_path), self.config['properties_symlink'])
+            })
+
         return tasks
 
     def _deploy_subtask_move(self, hostname, package):
