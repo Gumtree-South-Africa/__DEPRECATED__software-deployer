@@ -62,6 +62,7 @@ class Executor(object):
           'local_createdirectory': localcreatedirectory.LocalCreateDirectory,
           'consul_service': consulservice.ConsulService,
           'init_script': initscript.InitScript,
+          'write_local_file': writelocalfile.WriteLocalFile,
         }
 
         # Start manager manually in order to have the child processes ignore
